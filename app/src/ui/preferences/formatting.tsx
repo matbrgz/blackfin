@@ -52,22 +52,18 @@ export class Formatting extends React.Component<IFormattingProps> {
   private onRelativeTimeInCommitListChanged = (
     event: React.FormEvent<HTMLInputElement>
   ) => {
-    this.props.onRelativeTimeInCommitListChanged(
-      event.currentTarget.checked
-    )
+    this.props.onRelativeTimeInCommitListChanged(event.currentTarget.checked)
   }
 
   private onRelativeTimeInBranchListChanged = (
     event: React.FormEvent<HTMLInputElement>
   ) => {
-    this.props.onRelativeTimeInBranchListChanged(
-      event.currentTarget.checked
-    )
+    this.props.onRelativeTimeInBranchListChanged(event.currentTarget.checked)
   }
 
   public render() {
     return (
-      <DialogContent>
+      <DialogContent className="formatting-tab">
         <h2>{__DARWIN__ ? 'Formatting' : 'Formatting'}</h2>
 
         <Select
