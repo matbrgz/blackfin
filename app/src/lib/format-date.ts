@@ -44,15 +44,29 @@ export function formatDate(
     }).format(value)
   }
 
-  const parts: Array<string> = []
+  let formatString: string
 
-  if (date) {
-    parts.push(format(value, getDateFormatPreference()))
+  if (date && time) {
+    formatString = `${getDateFormatPreference()} ${getTimeFormatPreference()}`
+  } else if (date) {
+    formatString = getDateFormatPreference()
+  } else if (time) {
+    formatString = getTimeFormatPreference()
+  } else {
+    // If neither date nor time is included, just return an empty string or
+    // else date-fns will throw because it doesn't know what to do with the
+    // format string
+    return ''
   }
 
-  if (time) {
-    parts.push(format(value, getTimeFormatPreference()))
-  }
+  try {
+    return format(value, formatString)
+  } catch (e) {
+    // In case the user has configured an invalid format pattern, we don't want
+    // the app to crash, let's fall back to a default format and log the error
+    // so we can investigate.
+    log.error(`Error formatting date with format string "${formatString}"`, e)
 
-  return parts.join(' ')
+    return value.toISOString()
+  }
 }
