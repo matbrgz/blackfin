@@ -158,16 +158,16 @@ const numberFormatKey = 'numberFormat'
 
 /** Get the user's preferred date format from localStorage. */
 export function getDateFormatPreference(): DateFormat {
-  return (
-    (localStorage.getItem(dateFormatKey) as DateFormat) ?? defaultDateFormat
-  )
+  const stored = localStorage.getItem(dateFormatKey)
+  const match = dateFormats.find(f => f.pattern === stored)
+  return match?.pattern ?? defaultDateFormat
 }
 
 /** Get the user's preferred time format from localStorage. */
 export function getTimeFormatPreference(): TimeFormat {
-  return (
-    (localStorage.getItem(timeFormatKey) as TimeFormat) ?? defaultTimeFormat
-  )
+  const stored = localStorage.getItem(timeFormatKey)
+  const match = timeFormats.find(f => f.pattern === stored)
+  return match?.pattern ?? defaultTimeFormat
 }
 
 /** Get the user's preferred number format from localStorage. */
