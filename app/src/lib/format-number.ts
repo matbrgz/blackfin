@@ -44,11 +44,35 @@ export function formatNumber(value: number, fmt?: INumberFormat): string {
   return isNegative ? `-${result}` : result
 }
 
+interface ICompactFormatOptions {
+  /** Number of decimal places to display */
+  readonly decimals?: number
+  /**
+   * The base to use for unit scaling.
+   * - 1000: SI/decimal units (k, m, b, t or KB, MB, GB)
+   * - 1024: IEC/binary units (KiB, MiB, GiB)
+   */
+  readonly base?: 1000 | 1024
+  /**
+   * Custom unit suffixes to use. If not provided, defaults to:
+   * - For base 1000: ['', 'k', 'm', 'b', 't']
+   * - For base 1024: no default (must be provided)
+   */
+  readonly units?: ReadonlyArray<string>
+  /**
+   * Whether to add a space between the number and the unit suffix.
+   * Defaults to false for the shorthand k/m/b/t units.
+   */
+  readonly unitSeparator?: string
+
+  readonly numberFormat?: INumberFormat
+}
+
+const defaultDecimalUnits = ['', 'k', 'm', 'b', 't']
+
 export function formatCompactNumber(
   value: number,
-  fmt?: INumberFormat & {
-    decimals?: number
-  }
+  fmt?: ICompactFormatOptions
 ): string {
   if (!fmt && !enableFormattingPreferences()) {
     return `${value}`
@@ -59,22 +83,22 @@ export function formatCompactNumber(
   }
 
   const abs = Math.abs(value)
+  const base = fmt?.base ?? 1000
+  const units = fmt?.units ?? defaultDecimalUnits
+  const unitSeparator = fmt?.unitSeparator ?? ''
 
-  if (abs < 1000) {
-    return formatNumber(value, fmt)
+  if (abs < base) {
+    const result = formatNumber(value, fmt?.numberFormat)
+    // For byte formatting, always show units even for small values
+    return units[0] ? `${result}${unitSeparator}${units[0]}` : result
   }
 
-  const units = ['', 'k', 'm', 'b', 't']
   const unitIx = Math.min(
     units.length - 1,
-    Math.floor(Math.log(abs) / Math.log(1000))
+    Math.floor(Math.log(abs) / Math.log(base))
   )
 
-  if (unitIx === 0) {
-    return formatNumber(value, fmt) + ' ' + units[unitIx]
-  }
-
-  const scaled = value / Math.pow(1000, unitIx)
+  const scaled = value / Math.pow(base, unitIx)
 
   // If the user didn't provide an explicit number of decimals to use, we'll
   // default to 1 decimal for numbers less than 10 and no decimals for numbers
@@ -83,5 +107,7 @@ export function formatCompactNumber(
   const decimals = fmt?.decimals ?? (Math.abs(scaled) < 10 ? 1 : 0)
 
   const result = round(scaled, decimals)
-  return formatNumber(result, fmt) + units[unitIx]
+  return `${formatNumber(result, fmt?.numberFormat)}${unitSeparator}${
+    units[unitIx]
+  }`
 }

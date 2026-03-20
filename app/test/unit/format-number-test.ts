@@ -177,22 +177,31 @@ describe('formatNumber', () => {
 describe('formatCompactNumber', () => {
   describe('small numbers (< 1000)', () => {
     it('formats small numbers without compaction', () => {
-      assert.strictEqual(formatCompactNumber(0, commaThousandsDotDecimal), '0')
-      assert.strictEqual(formatCompactNumber(1, commaThousandsDotDecimal), '1')
-      assert.strictEqual(formatCompactNumber(42, commaThousandsDotDecimal), '42')
       assert.strictEqual(
-        formatCompactNumber(999, commaThousandsDotDecimal),
+        formatCompactNumber(0, { numberFormat: commaThousandsDotDecimal }),
+        '0'
+      )
+      assert.strictEqual(
+        formatCompactNumber(1, { numberFormat: commaThousandsDotDecimal }),
+        '1'
+      )
+      assert.strictEqual(
+        formatCompactNumber(42, { numberFormat: commaThousandsDotDecimal }),
+        '42'
+      )
+      assert.strictEqual(
+        formatCompactNumber(999, { numberFormat: commaThousandsDotDecimal }),
         '999'
       )
     })
 
     it('formats small decimals without compaction', () => {
       assert.strictEqual(
-        formatCompactNumber(1.5, commaThousandsDotDecimal),
+        formatCompactNumber(1.5, { numberFormat: commaThousandsDotDecimal }),
         '1.5'
       )
       assert.strictEqual(
-        formatCompactNumber(123.45, commaThousandsDotDecimal),
+        formatCompactNumber(123.45, { numberFormat: commaThousandsDotDecimal }),
         '123.45'
       )
     })
@@ -201,52 +210,52 @@ describe('formatCompactNumber', () => {
   describe('thousands (k)', () => {
     it('formats thousands with k suffix', () => {
       assert.strictEqual(
-        formatCompactNumber(1000, commaThousandsDotDecimal),
+        formatCompactNumber(1000, { numberFormat: commaThousandsDotDecimal }),
         '1k'
       )
       assert.strictEqual(
-        formatCompactNumber(1500, commaThousandsDotDecimal),
+        formatCompactNumber(1500, { numberFormat: commaThousandsDotDecimal }),
         '1.5k'
       )
       assert.strictEqual(
-        formatCompactNumber(9999, commaThousandsDotDecimal),
+        formatCompactNumber(9999, { numberFormat: commaThousandsDotDecimal }),
         '10k'
       )
     })
 
     it('shows one decimal for values under 10k', () => {
       assert.strictEqual(
-        formatCompactNumber(1234, commaThousandsDotDecimal),
+        formatCompactNumber(1234, { numberFormat: commaThousandsDotDecimal }),
         '1.2k'
       )
       assert.strictEqual(
-        formatCompactNumber(5678, commaThousandsDotDecimal),
+        formatCompactNumber(5678, { numberFormat: commaThousandsDotDecimal }),
         '5.7k'
       )
     })
 
     it('shows no decimals for values 10k and above', () => {
       assert.strictEqual(
-        formatCompactNumber(10000, commaThousandsDotDecimal),
+        formatCompactNumber(10000, { numberFormat: commaThousandsDotDecimal }),
         '10k'
       )
       assert.strictEqual(
-        formatCompactNumber(12345, commaThousandsDotDecimal),
+        formatCompactNumber(12345, { numberFormat: commaThousandsDotDecimal }),
         '12k'
       )
       assert.strictEqual(
-        formatCompactNumber(99999, commaThousandsDotDecimal),
+        formatCompactNumber(99999, { numberFormat: commaThousandsDotDecimal }),
         '100k'
       )
     })
 
     it('uses configured decimal separator', () => {
       assert.strictEqual(
-        formatCompactNumber(1234, dotThousandsCommaDecimal),
+        formatCompactNumber(1234, { numberFormat: dotThousandsCommaDecimal }),
         '1,2k'
       )
       assert.strictEqual(
-        formatCompactNumber(5678, spaceThousandsCommaDecimal),
+        formatCompactNumber(5678, { numberFormat: spaceThousandsCommaDecimal }),
         '5,7k'
       )
     })
@@ -255,33 +264,37 @@ describe('formatCompactNumber', () => {
   describe('millions (m)', () => {
     it('formats millions with m suffix', () => {
       assert.strictEqual(
-        formatCompactNumber(1000000, commaThousandsDotDecimal),
+        formatCompactNumber(1000000, { numberFormat: commaThousandsDotDecimal }),
         '1m'
       )
       assert.strictEqual(
-        formatCompactNumber(1500000, commaThousandsDotDecimal),
+        formatCompactNumber(1500000, { numberFormat: commaThousandsDotDecimal }),
         '1.5m'
       )
     })
 
     it('shows one decimal for values under 10m', () => {
       assert.strictEqual(
-        formatCompactNumber(1234567, commaThousandsDotDecimal),
+        formatCompactNumber(1234567, { numberFormat: commaThousandsDotDecimal }),
         '1.2m'
       )
       assert.strictEqual(
-        formatCompactNumber(9876543, commaThousandsDotDecimal),
+        formatCompactNumber(9876543, { numberFormat: commaThousandsDotDecimal }),
         '9.9m'
       )
     })
 
     it('shows no decimals for values 10m and above', () => {
       assert.strictEqual(
-        formatCompactNumber(10000000, commaThousandsDotDecimal),
+        formatCompactNumber(10000000, {
+          numberFormat: commaThousandsDotDecimal,
+        }),
         '10m'
       )
       assert.strictEqual(
-        formatCompactNumber(99999999, commaThousandsDotDecimal),
+        formatCompactNumber(99999999, {
+          numberFormat: commaThousandsDotDecimal,
+        }),
         '100m'
       )
     })
@@ -290,25 +303,33 @@ describe('formatCompactNumber', () => {
   describe('billions (b)', () => {
     it('formats billions with b suffix', () => {
       assert.strictEqual(
-        formatCompactNumber(1000000000, commaThousandsDotDecimal),
+        formatCompactNumber(1000000000, {
+          numberFormat: commaThousandsDotDecimal,
+        }),
         '1b'
       )
       assert.strictEqual(
-        formatCompactNumber(1500000000, commaThousandsDotDecimal),
+        formatCompactNumber(1500000000, {
+          numberFormat: commaThousandsDotDecimal,
+        }),
         '1.5b'
       )
     })
 
     it('shows one decimal for values under 10b', () => {
       assert.strictEqual(
-        formatCompactNumber(1234567890, commaThousandsDotDecimal),
+        formatCompactNumber(1234567890, {
+          numberFormat: commaThousandsDotDecimal,
+        }),
         '1.2b'
       )
     })
 
     it('shows no decimals for values 10b and above', () => {
       assert.strictEqual(
-        formatCompactNumber(10000000000, commaThousandsDotDecimal),
+        formatCompactNumber(10000000000, {
+          numberFormat: commaThousandsDotDecimal,
+        }),
         '10b'
       )
     })
@@ -317,11 +338,15 @@ describe('formatCompactNumber', () => {
   describe('trillions (t)', () => {
     it('formats trillions with t suffix', () => {
       assert.strictEqual(
-        formatCompactNumber(1000000000000, commaThousandsDotDecimal),
+        formatCompactNumber(1000000000000, {
+          numberFormat: commaThousandsDotDecimal,
+        }),
         '1t'
       )
       assert.strictEqual(
-        formatCompactNumber(1500000000000, commaThousandsDotDecimal),
+        formatCompactNumber(1500000000000, {
+          numberFormat: commaThousandsDotDecimal,
+        }),
         '1.5t'
       )
     })
@@ -329,7 +354,9 @@ describe('formatCompactNumber', () => {
     it('caps at trillion for extremely large numbers', () => {
       // Quadrillions and beyond still use 't' suffix
       assert.strictEqual(
-        formatCompactNumber(1000000000000000, commaThousandsDotDecimal),
+        formatCompactNumber(1000000000000000, {
+          numberFormat: commaThousandsDotDecimal,
+        }),
         '1,000t'
       )
     })
@@ -338,26 +365,35 @@ describe('formatCompactNumber', () => {
   describe('edge cases', () => {
     it('handles Infinity', () => {
       assert.strictEqual(
-        formatCompactNumber(Infinity, commaThousandsDotDecimal),
+        formatCompactNumber(Infinity, {
+          numberFormat: commaThousandsDotDecimal,
+        }),
         'Infinity'
       )
       assert.strictEqual(
-        formatCompactNumber(-Infinity, commaThousandsDotDecimal),
+        formatCompactNumber(-Infinity, {
+          numberFormat: commaThousandsDotDecimal,
+        }),
         '-Infinity'
       )
     })
 
     it('handles NaN', () => {
-      assert.strictEqual(formatCompactNumber(NaN, commaThousandsDotDecimal), 'NaN')
+      assert.strictEqual(
+        formatCompactNumber(NaN, { numberFormat: commaThousandsDotDecimal }),
+        'NaN'
+      )
     })
 
     it('handles negative large numbers', () => {
       assert.strictEqual(
-        formatCompactNumber(-1234, commaThousandsDotDecimal),
+        formatCompactNumber(-1234, { numberFormat: commaThousandsDotDecimal }),
         '-1.2k'
       )
       assert.strictEqual(
-        formatCompactNumber(-1000000, commaThousandsDotDecimal),
+        formatCompactNumber(-1000000, {
+          numberFormat: commaThousandsDotDecimal,
+        }),
         '-1m'
       )
     })
@@ -368,7 +404,10 @@ describe('formatCompactNumber', () => {
       // By default, 12345 would show '12k' (0 decimals for >= 10)
       // With explicit decimals: 2, it should show '12.35k'
       assert.strictEqual(
-        formatCompactNumber(12345, { ...commaThousandsDotDecimal, decimals: 2 }),
+        formatCompactNumber(12345, {
+          numberFormat: commaThousandsDotDecimal,
+          decimals: 2,
+        }),
         '12.35k'
       )
     })
@@ -377,7 +416,10 @@ describe('formatCompactNumber', () => {
       // By default, 1234 would show '1.2k' (1 decimal for < 10)
       // With explicit decimals: 0, it should show '1k'
       assert.strictEqual(
-        formatCompactNumber(1234, { ...commaThousandsDotDecimal, decimals: 0 }),
+        formatCompactNumber(1234, {
+          numberFormat: commaThousandsDotDecimal,
+          decimals: 0,
+        }),
         '1k'
       )
     })
@@ -385,14 +427,14 @@ describe('formatCompactNumber', () => {
     it('works with explicit decimals across magnitude boundaries', () => {
       assert.strictEqual(
         formatCompactNumber(1234567, {
-          ...commaThousandsDotDecimal,
+          numberFormat: commaThousandsDotDecimal,
           decimals: 3,
         }),
         '1.235m'
       )
       assert.strictEqual(
         formatCompactNumber(1234567890, {
-          ...commaThousandsDotDecimal,
+          numberFormat: commaThousandsDotDecimal,
           decimals: 2,
         }),
         '1.23b'
@@ -401,7 +443,10 @@ describe('formatCompactNumber', () => {
 
     it('uses configured decimal separator with explicit decimals', () => {
       assert.strictEqual(
-        formatCompactNumber(12345, { ...dotThousandsCommaDecimal, decimals: 2 }),
+        formatCompactNumber(12345, {
+          numberFormat: dotThousandsCommaDecimal,
+          decimals: 2,
+        }),
         '12,35k'
       )
     })
@@ -410,33 +455,37 @@ describe('formatCompactNumber', () => {
   describe('all format configurations', () => {
     it('works with space thousands and dot decimal', () => {
       assert.strictEqual(
-        formatCompactNumber(1234, spaceThousandsDotDecimal),
+        formatCompactNumber(1234, { numberFormat: spaceThousandsDotDecimal }),
         '1.2k'
       )
       assert.strictEqual(
-        formatCompactNumber(1000000000000000, spaceThousandsDotDecimal),
+        formatCompactNumber(1000000000000000, {
+          numberFormat: spaceThousandsDotDecimal,
+        }),
         '1 000t'
       )
     })
 
     it('works with space thousands and comma decimal', () => {
       assert.strictEqual(
-        formatCompactNumber(1234, spaceThousandsCommaDecimal),
+        formatCompactNumber(1234, { numberFormat: spaceThousandsCommaDecimal }),
         '1,2k'
       )
     })
 
     it('works with no thousands separator', () => {
       assert.strictEqual(
-        formatCompactNumber(1234, noThousandsDotDecimal),
+        formatCompactNumber(1234, { numberFormat: noThousandsDotDecimal }),
         '1.2k'
       )
       assert.strictEqual(
-        formatCompactNumber(1234, noThousandsCommaDecimal),
+        formatCompactNumber(1234, { numberFormat: noThousandsCommaDecimal }),
         '1,2k'
       )
       assert.strictEqual(
-        formatCompactNumber(1000000000000000, noThousandsDotDecimal),
+        formatCompactNumber(1000000000000000, {
+          numberFormat: noThousandsDotDecimal,
+        }),
         '1000t'
       )
     })
