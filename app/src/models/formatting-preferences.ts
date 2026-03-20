@@ -239,8 +239,8 @@ export const defaultTimeFormat: TimeFormat = prefersTwelveHourTime()
   ? 'h:mm aaa'
   : 'HH:mm'
 export const defaultNumberFormat: INumberFormat = prefersDecimalPoint()
-  ? { thousandsSeparator: ' ', decimalSeparator: '.' }
-  : { thousandsSeparator: ' ', decimalSeparator: ',' }
+  ? { thousandsSeparator: '', decimalSeparator: '.' }
+  : { thousandsSeparator: '', decimalSeparator: ',' }
 
 const dateFormatKey = 'dateFormat'
 const timeFormatKey = 'timeFormat'
