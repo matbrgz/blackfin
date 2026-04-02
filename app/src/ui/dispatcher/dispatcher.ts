@@ -4018,6 +4018,10 @@ export class Dispatcher {
     return this.appStore._updateShowDiffCheckMarks(diffCheckMarks)
   }
 
+  public setPreferAbsoluteDates(value: boolean) {
+    return this.appStore._setPreferAbsoluteDates(value)
+  }
+
   public testPruneBranches() {
     return this.appStore._testPruneBranches()
   }

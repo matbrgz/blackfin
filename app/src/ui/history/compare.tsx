@@ -61,9 +61,8 @@ interface ICompareSidebarProps {
   readonly isMultiCommitOperationInProgress?: boolean
   readonly shasToHighlight: ReadonlyArray<string>
   readonly accounts: ReadonlyArray<Account>
-}
-
-interface ICompareSidebarState {
+  readonly preferAbsoluteDates: boolean
+}interface ICompareSidebarState {
   /**
    * This branch should only be used when tracking interactions that the user is performing.
    *
@@ -286,6 +285,7 @@ export class CompareSidebar extends React.Component<
         }
         keyboardReorderData={this.state.keyboardReorderData}
         accounts={this.props.accounts}
+        preferAbsoluteDates={this.props.preferAbsoluteDates}
       />
     )
   }

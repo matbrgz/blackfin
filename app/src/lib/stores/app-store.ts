@@ -20,6 +20,10 @@ import { BranchesTab } from '../../models/branches-tab'
 import { CloneRepositoryTab } from '../../models/clone-repository-tab'
 import { CloningRepository } from '../../models/cloning-repository'
 import {
+  getPreferAbsoluteDates,
+  setPreferAbsoluteDates,
+} from '../../models/formatting-preferences'
+import {
   Commit,
   ICommitContext,
   CommitOneLine,
@@ -623,6 +627,8 @@ export class AppStore extends TypedBaseStore<IAppState> {
 
   private showDiffCheckMarks: boolean = showDiffCheckMarksDefault
 
+  private preferAbsoluteDates: boolean = false
+
   private cachedRepoRulesets = new Map<number, IAPIRepoRuleset>()
 
   private underlineLinks: boolean = underlineLinksDefault
@@ -1128,6 +1134,7 @@ export class AppStore extends TypedBaseStore<IAppState> {
       cachedRepoRulesets: this.cachedRepoRulesets,
       underlineLinks: this.underlineLinks,
       showDiffCheckMarks: this.showDiffCheckMarks,
+      preferAbsoluteDates: this.preferAbsoluteDates,
       updateState: updateStore.state,
       commitMessageGenerationDisclaimerLastSeen:
         this.commitMessageGenerationDisclaimerLastSeen,
@@ -2380,6 +2387,8 @@ export class AppStore extends TypedBaseStore<IAppState> {
       showDiffCheckMarksKey,
       showDiffCheckMarksDefault
     )
+
+    this.preferAbsoluteDates = getPreferAbsoluteDates()
 
     this.commitMessageGenerationDisclaimerLastSeen =
       getNumber(commitMessageGenerationDisclaimerLastSeenKey) ?? null
@@ -8558,6 +8567,15 @@ export class AppStore extends TypedBaseStore<IAppState> {
     if (showDiffCheckMarks !== this.showDiffCheckMarks) {
       this.showDiffCheckMarks = showDiffCheckMarks
       setBoolean(showDiffCheckMarksKey, showDiffCheckMarks)
+      this.emitUpdate()
+    }
+  }
+
+  /** This shouldn't be called directly. See 'Dispatcher'. */
+  public _setPreferAbsoluteDates(value: boolean) {
+    if (value !== this.preferAbsoluteDates) {
+      this.preferAbsoluteDates = value
+      setPreferAbsoluteDates(value)
       this.emitUpdate()
     }
   }

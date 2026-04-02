@@ -62,7 +62,6 @@ import {
   TimeFormat,
   INumberFormat,
   getPreferAbsoluteDates,
-  setPreferAbsoluteDates,
   getDateFormatPreference,
   getTimeFormatPreference,
   getNumberFormatPreference,
@@ -980,7 +979,7 @@ export class Preferences extends React.Component<
       }
 
       if (this.state.preferAbsoluteDates !== undefined) {
-        setPreferAbsoluteDates(this.state.preferAbsoluteDates)
+        dispatcher.setPreferAbsoluteDates(this.state.preferAbsoluteDates)
       }
     }
 
