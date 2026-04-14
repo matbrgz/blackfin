@@ -19,9 +19,7 @@ export async function getLatestRelease(options: {
   onlyBetaReleases?: boolean
 }): Promise<string> {
   if (options.excludeBetaReleases && options.onlyBetaReleases) {
-    throw new Error(
-      'Cannot set both excludeBetaReleases and onlyBetaReleases'
-    )
+    throw new Error('Cannot set both excludeBetaReleases and onlyBetaReleases')
   }
 
   let releaseTags = (await sh('git', 'tag'))

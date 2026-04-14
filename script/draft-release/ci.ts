@@ -108,7 +108,9 @@ async function commandVersion(channel: Channel): Promise<void> {
       const message = e instanceof Error ? e.message : String(e)
       if (message.includes('No matching release tags found')) {
         // No beta tags exist yet — fall back to previous (production tag)
-        console.log('ℹ️ No beta tags found, using previous release as compare base')
+        console.log(
+          'ℹ️ No beta tags found, using previous release as compare base'
+        )
       } else {
         throw e
       }
