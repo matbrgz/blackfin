@@ -1,8 +1,8 @@
 {
   "fill" : {
     "linear-gradient" : [
-      "display-p3:0.56772,0.25840,0.76000,1.00000",
-      "srgb:0.35121,0.06360,0.53000,1.00000"
+      "srgb:0.69763,0.17326,0.96147,1.00000",
+      "srgb:0.45319,0.00059,0.66724,1.00000"
     ],
     "orientation" : {
       "start" : {
@@ -19,21 +19,15 @@
     {
       "layers" : [
         {
-          "fill-specializations" : [
-            {
-              "value" : {
-                "solid" : "srgb:1.00000,1.00000,1.00000,1.00000"
-              }
-            },
-            {
-              "appearance" : "dark",
-              "value" : {
-                "solid" : "srgb:1.00000,1.00000,1.00000,1.00000"
-              }
-            }
-          ],
-          "image-name" : "1 – Layer 3.svg",
-          "name" : "octocat"
+          "image-name" : "git-branch-plus 4.svg",
+          "name" : "lucide-git-branch-plus",
+          "position" : {
+            "scale" : 36,
+            "translation-in-points" : [
+              0,
+              0
+            ]
+          }
         }
       ],
       "name" : "foreground",
@@ -48,9 +42,8 @@
     }
   ],
   "supported-platforms" : {
-    "circles" : [
-      "watchOS"
-    ],
-    "squares" : "shared"
+    "squares" : [
+      "macOS"
+    ]
   }
 }
