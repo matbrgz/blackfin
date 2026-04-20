@@ -260,6 +260,12 @@ describe('CopilotPreferences', () => {
         }}
       />
     )
+    const tabs = view.container.querySelectorAll('[role="tab"]')
+    const providersTab = Array.from(tabs).find(t =>
+      (t.textContent ?? '').toLowerCase().includes('custom providers')
+    )
+    assert.ok(providersTab)
+    fireEvent.click(providersTab!)
     const buttons = view.container.querySelectorAll('button')
     const addButton = Array.from(buttons).find(b =>
       (b.textContent ?? '').toLowerCase().includes('add provider')

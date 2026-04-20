@@ -4,6 +4,7 @@ import { Select } from '../lib/select'
 import { Button } from '../lib/button'
 import { Octicon } from '../octicons'
 import * as octicons from '../octicons/octicons.generated'
+import { TabBar } from '../tab-bar'
 import type { ModelInfo } from '@github/copilot-sdk'
 import {
   DefaultCopilotModel,
@@ -33,7 +34,23 @@ interface ICopilotPreferencesProps {
   readonly onDeleteBYOKProvider: (provider: IBYOKProvider) => void
 }
 
-export class CopilotPreferences extends React.Component<ICopilotPreferencesProps> {
+interface ICopilotPreferencesState {
+  readonly selectedTabIndex: number
+}
+
+export class CopilotPreferences extends React.Component<
+  ICopilotPreferencesProps,
+  ICopilotPreferencesState
+> {
+  public constructor(props: ICopilotPreferencesProps) {
+    super(props)
+    this.state = { selectedTabIndex: 0 }
+  }
+
+  private onTabClicked = (index: number) => {
+    this.setState({ selectedTabIndex: index })
+  }
+
   private onCommitMessageModelChanged = (
     event: React.FormEvent<HTMLSelectElement>
   ) => {
@@ -54,22 +71,34 @@ export class CopilotPreferences extends React.Component<ICopilotPreferencesProps
 
   public render() {
     const showBYOK = this.props.showBYOKSettings && this.props.copilotAvailable
+
+    if (!showBYOK) {
+      return (
+        <DialogContent className="copilot-tab">
+          <div className="copilot-section">{this.renderModelPicker()}</div>
+        </DialogContent>
+      )
+    }
+
     return (
       <DialogContent className="copilot-tab">
-        <div className="copilot-section">
-          <h2 id="copilot-model-heading">
-            {__DARWIN__ ? 'Language Models' : 'Language models'}
-          </h2>
-          {this.renderModelPicker()}
-        </div>
-        {showBYOK && (
-          <div className="copilot-section">
-            <h2>{__DARWIN__ ? 'Custom Providers' : 'Custom providers'}</h2>
-            {this.renderBYOKProviders()}
-          </div>
-        )}
+        <TabBar
+          selectedIndex={this.state.selectedTabIndex}
+          onTabClicked={this.onTabClicked}
+        >
+          <span>Models</span>
+          <span>{__DARWIN__ ? 'Custom Providers' : 'Custom providers'}</span>
+        </TabBar>
+        <div className="copilot-section">{this.renderCurrentTab()}</div>
       </DialogContent>
     )
+  }
+
+  private renderCurrentTab() {
+    if (this.state.selectedTabIndex === 1) {
+      return this.renderBYOKProviders()
+    }
+    return this.renderModelPicker()
   }
 
   private renderModelPicker() {
