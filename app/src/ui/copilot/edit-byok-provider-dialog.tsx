@@ -3,7 +3,6 @@ import { Dialog, DialogContent, DialogFooter, DialogError } from '../dialog'
 import { OkCancelButtonGroup } from '../dialog/ok-cancel-button-group'
 import { TextBox } from '../lib/text-box'
 import { Select } from '../lib/select'
-import { Checkbox, CheckboxValue } from '../lib/checkbox'
 import { Button } from '../lib/button'
 import { Octicon } from '../octicons'
 import * as octicons from '../octicons/octicons.generated'
@@ -14,6 +13,8 @@ import {
   BYOKAuthKind,
   BYOKWireApi,
 } from '../../lib/copilot/byok'
+import { EditCopilotBYOKModelDialog } from './edit-byok-model-dialog'
+import { ReasoningEffort } from '../../lib/stores/copilot-store'
 
 interface IEditCopilotBYOKProviderDialogProps {
   /** Provider to edit, or `null` when adding a new one. */
@@ -44,11 +45,11 @@ interface IEditCopilotBYOKProviderDialogState {
   readonly requestTimeoutSeconds: string
   readonly models: ReadonlyArray<IBYOKModel>
   readonly errorMessage: string | null
-}
-
-const DefaultModel: IBYOKModel = {
-  id: '',
-  name: '',
+  /**
+   * State of the nested 'add/edit model' dialog. `null` means it is closed.
+   * `index === null` indicates the dialog is in 'add' mode.
+   */
+  readonly editingModel: { readonly index: number | null } | null
 }
 
 /**
@@ -58,77 +59,61 @@ const DefaultModel: IBYOKModel = {
 interface IModelRowProps {
   readonly index: number
   readonly model: IBYOKModel
-  readonly canRemove: boolean
-  readonly onIdChanged: (index: number, id: string) => void
-  readonly onNameChanged: (index: number, name: string) => void
-  readonly onReasoningChanged: (index: number, value: boolean) => void
+  readonly onEdit: (index: number) => void
   readonly onRemove: (index: number) => void
 }
 
 class ModelRow extends React.Component<IModelRowProps> {
   public render() {
-    const { model, canRemove, index } = this.props
-    const heading = model.name.trim() !== '' ? model.name : `Model ${index + 1}`
-
+    const { model } = this.props
+    const heading =
+      model.name.trim() !== ''
+        ? model.name
+        : model.id !== ''
+        ? model.id
+        : 'Untitled model'
+    const reasoningLabel =
+      model.reasoningEffort !== undefined
+        ? `Thinking: ${formatReasoningEffort(model.reasoningEffort)}`
+        : null
     return (
-      <div className="copilot-byok-model-card">
-        <div className="copilot-byok-model-card-header">
-          <span className="copilot-byok-model-card-title">{heading}</span>
-          <Button
-            onClick={this.onRemove}
-            ariaLabel={`Remove ${heading}`}
-            disabled={!canRemove}
-          >
+      <li className="copilot-byok-provider">
+        <div className="copilot-byok-provider-info">
+          <div className="copilot-byok-provider-title">
+            <span>{heading}</span>
+          </div>
+          <span className="copilot-byok-provider-meta">
+            <code>{model.id || '—'}</code>
+            {reasoningLabel !== null ? ` · ${reasoningLabel}` : ''}
+          </span>
+        </div>
+        <div className="copilot-byok-provider-actions">
+          <Button onClick={this.onEdit} ariaLabel={`Edit ${heading}`}>
+            <Octicon symbol={octicons.pencil} />
+          </Button>
+          <Button onClick={this.onRemove} ariaLabel={`Remove ${heading}`}>
             <Octicon symbol={octicons.trash} />
           </Button>
         </div>
-        <TextBox
-          label={__DARWIN__ ? 'Display Name' : 'Display name'}
-          value={model.name}
-          onValueChanged={this.onNameChanged}
-          placeholder="GPT-4o"
-        />
-        <p className="copilot-byok-field-hint">
-          The friendly name shown in the Copilot model picker.
-        </p>
-        <TextBox
-          label={__DARWIN__ ? 'Model Identifier' : 'Model identifier'}
-          value={model.id}
-          onValueChanged={this.onIdChanged}
-          placeholder="gpt-4o"
-          required={true}
-        />
-        <p className="copilot-byok-field-hint">
-          The exact name your provider expects (e.g. <code>gpt-4o</code>,
-          <code>llama3</code>).
-        </p>
-        <Checkbox
-          label="Supports extended thinking"
-          value={
-            model.supportsReasoningEffort === true
-              ? CheckboxValue.On
-              : CheckboxValue.Off
-          }
-          onChange={this.onReasoningChanged}
-        />
-        <p className="copilot-byok-field-hint copilot-byok-field-hint-checkbox">
-          Enable for reasoning models that take longer to think before
-          responding (e.g. o1, o3, GPT-5 reasoning variants).
-        </p>
-      </div>
+      </li>
     )
   }
 
-  private onIdChanged = (id: string) =>
-    this.props.onIdChanged(this.props.index, id)
-
-  private onNameChanged = (name: string) =>
-    this.props.onNameChanged(this.props.index, name)
-
-  private onReasoningChanged = (event: React.FormEvent<HTMLInputElement>) =>
-    this.props.onReasoningChanged(this.props.index, event.currentTarget.checked)
-
+  private onEdit = () => this.props.onEdit(this.props.index)
   private onRemove = () => this.props.onRemove(this.props.index)
+}
+
+export function formatReasoningEffort(effort: ReasoningEffort): string {
+  switch (effort) {
+    case 'low':
+      return 'Low'
+    case 'medium':
+      return 'Medium'
+    case 'high':
+      return 'High'
+    case 'xhigh':
+      return 'Extra high'
+  }
 }
 
 /**
@@ -166,11 +151,9 @@ export class EditCopilotBYOKProviderDialog extends React.Component<
         provider?.requestTimeoutSeconds !== undefined
           ? String(provider.requestTimeoutSeconds)
           : '',
-      models:
-        provider && provider.models.length > 0
-          ? [...provider.models]
-          : [{ ...DefaultModel }],
+      models: provider ? [...provider.models] : [],
       errorMessage: null,
+      editingModel: null,
     }
   }
 
@@ -185,24 +168,48 @@ export class EditCopilotBYOKProviderDialog extends React.Component<
       : 'Add custom provider'
 
     return (
-      <Dialog
-        id="edit-copilot-byok-provider"
-        title={title}
-        onSubmit={this.onSubmit}
-        onDismissed={this.props.onDismissed}
-      >
-        {this.state.errorMessage !== null && (
-          <DialogError>{this.state.errorMessage}</DialogError>
-        )}
-        <DialogContent>
-          {this.renderProviderSection()}
-          {this.renderAuthenticationSection(isEditing)}
-          {this.renderModelsSection()}
-        </DialogContent>
-        <DialogFooter>
-          <OkCancelButtonGroup okButtonText={isEditing ? 'Save' : 'Add'} />
-        </DialogFooter>
-      </Dialog>
+      <>
+        <Dialog
+          id="edit-copilot-byok-provider"
+          title={title}
+          onSubmit={this.onSubmit}
+          onDismissed={this.props.onDismissed}
+        >
+          {this.state.errorMessage !== null && (
+            <DialogError>{this.state.errorMessage}</DialogError>
+          )}
+          <DialogContent>
+            {this.renderProviderSection()}
+            {this.renderAuthenticationSection(isEditing)}
+            {this.renderModelsSection()}
+          </DialogContent>
+          <DialogFooter>
+            <OkCancelButtonGroup okButtonText={isEditing ? 'Save' : 'Add'} />
+          </DialogFooter>
+        </Dialog>
+        {this.renderModelDialog()}
+      </>
+    )
+  }
+
+  private renderModelDialog() {
+    const editing = this.state.editingModel
+    if (editing === null) {
+      return null
+    }
+    const model =
+      editing.index !== null ? this.state.models[editing.index] : null
+    const otherModelIds = this.state.models
+      .filter((_, i) => i !== editing.index)
+      .map(m => m.id.trim())
+      .filter(id => id !== '')
+    return (
+      <EditCopilotBYOKModelDialog
+        model={model}
+        otherModelIds={otherModelIds}
+        onSave={this.onModelDialogSaved}
+        onDismissed={this.onModelDialogDismissed}
+      />
     )
   }
 
@@ -305,28 +312,32 @@ export class EditCopilotBYOKProviderDialog extends React.Component<
       <fieldset className="copilot-byok-fieldset copilot-byok-models">
         <legend>Models</legend>
         <p className="copilot-byok-section-hint">
-          Tell Desktop which models this provider offers. You can add as many as
-          you like — each one will appear in the model picker for Copilot
-          features.
+          Tell Desktop which models this provider offers. Each one will appear
+          in the model picker for Copilot features.
         </p>
-        {this.state.models.map((m, i) => (
-          <ModelRow
-            key={i}
-            index={i}
-            model={m}
-            canRemove={this.state.models.length > 1}
-            onIdChanged={this.onModelIdChanged}
-            onNameChanged={this.onModelNameChanged}
-            onReasoningChanged={this.onModelReasoningChanged}
-            onRemove={this.onRemoveModel}
-          />
-        ))}
+        {this.state.models.length === 0 ? (
+          <p className="copilot-byok-empty">
+            No models yet. Add at least one to use this provider.
+          </p>
+        ) : (
+          <ul className="copilot-byok-providers">
+            {this.state.models.map((m, i) => (
+              <ModelRow
+                key={i}
+                index={i}
+                model={m}
+                onEdit={this.onEditModel}
+                onRemove={this.onRemoveModel}
+              />
+            ))}
+          </ul>
+        )}
         <Button
           onClick={this.onAddModel}
           className="copilot-byok-add-model-button"
         >
           <Octicon symbol={octicons.plus} />
-          {__DARWIN__ ? 'Add Another Model' : 'Add another model'}
+          {__DARWIN__ ? 'Add Model…' : 'Add model…'}
         </Button>
       </fieldset>
     )
@@ -356,40 +367,36 @@ export class EditCopilotBYOKProviderDialog extends React.Component<
   private onRequestTimeoutChanged = (requestTimeoutSeconds: string) =>
     this.setState({ requestTimeoutSeconds })
 
-  private onModelIdChanged = (index: number, id: string) => {
-    this.setState(state => ({
-      models: state.models.map((m, i) => (i === index ? { ...m, id } : m)),
-    }))
-  }
-
-  private onModelNameChanged = (index: number, name: string) => {
-    this.setState(state => ({
-      models: state.models.map((m, i) => (i === index ? { ...m, name } : m)),
-    }))
-  }
-
-  private onModelReasoningChanged = (
-    index: number,
-    supportsReasoningEffort: boolean
-  ) => {
-    this.setState(state => ({
-      models: state.models.map((m, i) =>
-        i === index ? { ...m, supportsReasoningEffort } : m
-      ),
-    }))
-  }
-
   private onAddModel = () => {
-    this.setState(state => ({ models: [...state.models, { ...DefaultModel }] }))
+    this.setState({ editingModel: { index: null } })
+  }
+
+  private onEditModel = (index: number) => {
+    this.setState({ editingModel: { index } })
   }
 
   private onRemoveModel = (index: number) => {
     this.setState(state => ({
-      models:
-        state.models.length > 1
-          ? state.models.filter((_, i) => i !== index)
-          : state.models,
+      models: state.models.filter((_, i) => i !== index),
     }))
+  }
+
+  private onModelDialogDismissed = () => {
+    this.setState({ editingModel: null })
+  }
+
+  private onModelDialogSaved = (model: IBYOKModel) => {
+    this.setState(state => {
+      const editing = state.editingModel
+      if (editing === null) {
+        return null
+      }
+      const models =
+        editing.index !== null
+          ? state.models.map((m, i) => (i === editing.index ? model : m))
+          : [...state.models, model]
+      return { models, editingModel: null }
+    })
   }
 
   private onSubmit = () => {
@@ -404,8 +411,11 @@ export class EditCopilotBYOKProviderDialog extends React.Component<
     const trimmedModels = this.state.models.map(m => ({
       id: m.id.trim(),
       name: m.name.trim() === '' ? m.id.trim() : m.name.trim(),
-      ...(m.supportsReasoningEffort === true
-        ? { supportsReasoningEffort: true }
+      ...(m.reasoningEffort !== undefined
+        ? { reasoningEffort: m.reasoningEffort }
+        : {}),
+      ...(m.maxContextWindowTokens !== undefined
+        ? { maxContextWindowTokens: m.maxContextWindowTokens }
         : {}),
     }))
 
