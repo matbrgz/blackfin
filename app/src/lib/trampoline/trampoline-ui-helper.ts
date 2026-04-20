@@ -120,6 +120,10 @@ class TrampolineUIHelper {
 
   public async getLoginForRepositoryPath(path: string): Promise<string | null> {
     const repo = await this.dispatcher.getRepositoryForPath(path)
+    if (repo) {
+      // TODO: Delete this line
+      await this.dispatcher.refreshRepository(repo)
+    }
     return repo?.login ?? null
   }
 }
