@@ -162,6 +162,66 @@ describe('parseCopilotConflictResolution', () => {
     const result = parseCopilotConflictResolution(json)
     assert.equal(result.resolutions[0].resolvedContent, '')
   })
+
+  it('handles resolvedContent containing triple backticks', () => {
+    const json = JSON.stringify({
+      resolutions: [
+        {
+          path: 'README.md',
+          resolvedContent: '# Hello\n```js\nconsole.log()\n```\n',
+          reasoning: 'kept code block',
+        },
+      ],
+    })
+    const wrapped = '```json\n' + json + '\n```'
+    const result = parseCopilotConflictResolution(wrapped)
+    assert.equal(result.resolutions[0].path, 'README.md')
+    assert.ok(result.resolutions[0].resolvedContent.includes('```js'))
+  })
+
+  it('parses when LLM adds preamble/postamble around code block', () => {
+    const json = JSON.stringify({
+      resolutions: [
+        { path: 'a.ts', resolvedContent: 'fixed', reasoning: 'merged' },
+      ],
+    })
+    const content =
+      'Here is my answer:\n```json\n' + json + '\n```\nHope this helps!'
+    const result = parseCopilotConflictResolution(content)
+    assert.equal(result.resolutions[0].path, 'a.ts')
+  })
+
+  it('throws when resolvedContent still contains conflict markers', () => {
+    const json = JSON.stringify({
+      resolutions: [
+        {
+          path: 'a.ts',
+          resolvedContent:
+            '<<<<<<< HEAD\nours\n=======\ntheirs\n>>>>>>> feature',
+          reasoning: 'oops',
+        },
+      ],
+    })
+    assert.throws(
+      () => parseCopilotConflictResolution(json),
+      /still contains conflict markers/
+    )
+  })
+
+  it('does not reject resolvedContent with partial marker-like text', () => {
+    const json = JSON.stringify({
+      resolutions: [
+        {
+          path: 'a.ts',
+          resolvedContent: '// <<<<<<< this is just a comment\nreal code',
+          reasoning: 'fine',
+        },
+      ],
+    })
+    // Should NOT throw — only reject when all three markers are present
+    const result = parseCopilotConflictResolution(json)
+    assert.equal(result.resolutions[0].path, 'a.ts')
+  })
 })
 
 // ---------------------------------------------------------------------------
@@ -261,6 +321,49 @@ describe('extractSymbols', () => {
     assert.equal(exports.size, 0)
     assert.equal(importPaths.size, 0)
     assert.equal(references.size, 0)
+  })
+
+  it('extracts namespace imports (import * as X)', () => {
+    const file = makeFile('app.ts', "import * as React from 'react'", '')
+    const { importPaths, references } = extractSymbols(file)
+    assert.ok(importPaths.has('react'))
+    assert.ok(references.has('React'))
+  })
+
+  it('extracts combined default + named imports', () => {
+    const file = makeFile(
+      'app.ts',
+      "import React, { useState, useEffect } from 'react'",
+      ''
+    )
+    const { importPaths, references } = extractSymbols(file)
+    assert.ok(importPaths.has('react'))
+    assert.ok(references.has('React'))
+    assert.ok(references.has('useState'))
+    assert.ok(references.has('useEffect'))
+  })
+
+  it('extracts type-only imports', () => {
+    const file = makeFile(
+      'types.ts',
+      "import type { Foo, Bar } from './models'",
+      ''
+    )
+    const { importPaths, references } = extractSymbols(file)
+    assert.ok(importPaths.has('./models'))
+    assert.ok(references.has('Foo'))
+    assert.ok(references.has('Bar'))
+  })
+
+  it('strips inline type keyword from named imports', () => {
+    const file = makeFile(
+      'consumer.ts',
+      "import { type Foo, bar } from './lib'",
+      ''
+    )
+    const { references } = extractSymbols(file)
+    assert.ok(references.has('Foo'), 'should extract Foo without "type" prefix')
+    assert.ok(references.has('bar'))
   })
 })
 
@@ -365,5 +468,100 @@ describe('createDependencyAwareChunks', () => {
     // Every file accounted for
     assert.equal(allPaths.length, 25)
     assert.equal(new Set(allPaths).size, 25, 'no duplicates')
+  })
+
+  it('does not false-positive group files with short basenames', () => {
+    // "e.ts" basename "e" should NOT match import path "../database"
+    // via the old .includes() logic — the new matchesBaseName requires
+    // a full segment match. We verify by checking that "e.ts" and
+    // "database.ts" are NOT forced into the same dependency group.
+    // With 4 files and targetSize 2, if e and database were incorrectly
+    // grouped they'd form a group of 2 that stays together.
+    const fileE = makeFile('src/e.ts', 'export const val = 1', '')
+    const fileDb = makeFile(
+      'src/database.ts',
+      "import { something } from '../e'",
+      ''
+    )
+    const fileOther = makeFile('src/other.ts', 'const x = 1', '')
+    const fileThird = makeFile('src/third.ts', 'const y = 2', '')
+
+    // e.ts and database.ts SHOULD be grouped because database imports from '../e'
+    const chunks = createDependencyAwareChunks(
+      [fileE, fileDb, fileOther, fileThird],
+      2
+    )
+    const chunkPaths = paths(chunks)
+    const chunkWithE = chunkPaths.find(c => c.includes('src/e.ts'))!
+    assert.ok(
+      chunkWithE.includes('src/database.ts'),
+      'e.ts and database.ts should be grouped (database imports from e)'
+    )
+
+    // Now verify that a different import path does NOT match
+    const fileE2 = makeFile('src/e.ts', 'export const val = 1', '')
+    const fileDb2 = makeFile(
+      'src/database.ts',
+      "import { something } from '../components'",
+      ''
+    )
+    const fileApi = makeFile(
+      'src/api.ts',
+      "import { thing } from '@sentry/error-reporting'",
+      ''
+    )
+    const fileMisc = makeFile('src/misc.ts', 'const z = 3', '')
+
+    // None of these files actually import from each other
+    const chunks2 = createDependencyAwareChunks(
+      [fileE2, fileDb2, fileApi, fileMisc],
+      2
+    )
+    // Should split into 2 chunks of 2, not collapse into fewer
+    assert.equal(chunks2.length, 2, 'unrelated files should not be grouped')
+  })
+
+  it('does not group unrelated index.ts files together', () => {
+    const file1 = makeFile(
+      'src/auth/index.ts',
+      "import { User } from '../models/user'",
+      ''
+    )
+    const file2 = makeFile(
+      'src/ui/index.ts',
+      "import { Button } from './button'",
+      ''
+    )
+    const file3 = makeFile('src/api/index.ts', 'export const api = {}', '')
+
+    const chunks = createDependencyAwareChunks([file1, file2, file3], 2)
+    // They should NOT all be in one chunk — they're unrelated despite
+    // sharing basename "index"
+    assert.ok(
+      chunks.length >= 2,
+      'unrelated index.ts files should not all be grouped together'
+    )
+  })
+
+  it('handles group.length exactly equal to targetSize', () => {
+    // 3 files all referencing the same symbol, targetSize = 3
+    const files = [
+      makeFile('a.ts', 'export class Shared {}', ''),
+      makeFile('b.ts', '', 'const x = new Shared()'),
+      makeFile('c.ts', '', 'const y = new Shared()'),
+      makeFile('d.ts', 'const standalone = 1', ''),
+    ]
+
+    const chunks = createDependencyAwareChunks(files, 3)
+    const allPaths = chunks.flatMap(c => c.map(f => f.path))
+    assert.equal(new Set(allPaths).size, 4, 'all files present')
+    // The group of 3 should be split (>= targetSize takes split path)
+    // and d.ts should be separate
+    for (const chunk of chunks) {
+      assert.ok(
+        chunk.length <= 3,
+        `chunk has ${chunk.length} files, expected <= 3`
+      )
+    }
   })
 })

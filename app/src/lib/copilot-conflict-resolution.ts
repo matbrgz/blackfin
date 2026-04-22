@@ -28,18 +28,31 @@ function isRecord(value: unknown): value is Readonly<Record<string, unknown>> {
 export function parseCopilotConflictResolution(
   content: string
 ): ICopilotConflictResolutionResponse {
+  // Extract JSON from optional markdown code fences. Use a greedy match
+  // for the closing fence so that triple backticks inside the JSON
+  // (e.g., resolvedContent containing code blocks) don't truncate early.
   const jsonMatch =
-    content.match(/```json\s*([\s\S]*?)```/) ||
-    content.match(/```\s*([\s\S]*?)```/)
-  const jsonStr = jsonMatch ? jsonMatch[1].trim() : content.trim()
+    content.match(/```json\s*([\s\S]*)```/) ||
+    content.match(/```\s*([\s\S]*)```/)
+  const candidates = jsonMatch
+    ? [jsonMatch[1].trim(), content.trim()]
+    : [content.trim()]
 
   let parsed: unknown
-  try {
-    parsed = JSON.parse(jsonStr)
-  } catch {
-    throw new Error(
-      'Copilot returned invalid JSON for conflict resolution generation'
-    )
+  let parseError: Error | undefined
+  for (const candidate of candidates) {
+    try {
+      parsed = JSON.parse(candidate)
+      parseError = undefined
+      break
+    } catch {
+      parseError = new Error(
+        'Copilot returned invalid JSON for conflict resolution generation'
+      )
+    }
+  }
+  if (parseError) {
+    throw parseError
   }
 
   if (!isRecord(parsed)) {
@@ -84,6 +97,16 @@ export function parseCopilotConflictResolution(
     if (typeof resolvedContent !== 'string') {
       throw new Error(
         `Copilot returned an invalid conflict resolution payload: "resolvedContent" at index ${i} must be a string`
+      )
+    }
+
+    if (
+      /^<{7}\s/m.test(resolvedContent) &&
+      /^={7}$/m.test(resolvedContent) &&
+      /^>{7}\s/m.test(resolvedContent)
+    ) {
+      throw new Error(
+        `Copilot returned an invalid conflict resolution payload: "resolvedContent" at index ${i} still contains conflict markers`
       )
     }
 

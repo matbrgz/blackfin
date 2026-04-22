@@ -27,6 +27,17 @@ import { BaseStore } from './base-store'
 export const DefaultCopilotModel = 'gpt-5-mini'
 const DefaultReasoningEffort: ReasoningEffort = 'low'
 
+/**
+ * Error subclass for parse and validation failures from Copilot responses.
+ * Used to distinguish retryable errors from transport/auth failures.
+ */
+class CopilotValidationError extends Error {
+  public constructor(message: string) {
+    super(message)
+    this.name = 'CopilotValidationError'
+  }
+}
+
 /** Copilot features that support per-model selection. */
 export type CopilotFeature = 'commit-message-generation'
 
@@ -454,7 +465,7 @@ export class CopilotStore extends BaseStore {
       // Process chunks with bounded concurrency
       for (let i = 0; i < chunks.length; i += MaxConcurrentChunks) {
         const batch = chunks.slice(i, i + MaxConcurrentChunks)
-        const batchResults = await Promise.all(
+        const batchSettled = await Promise.allSettled(
           batch.map(chunkFiles => {
             const chunkContext: ICopilotConflictContext = {
               ourLabel: context.ourLabel,
@@ -470,14 +481,27 @@ export class CopilotStore extends BaseStore {
           })
         )
 
-        for (const resolutions of batchResults) {
-          allResolutions.push(...resolutions)
-          filesResolved += resolutions.length
-          onProgress?.({
-            kind: 'chunk-complete',
-            filesResolved,
-            filesTotal,
-          })
+        // Collect results; throw the first failure after all settle
+        let firstError: Error | undefined
+        for (const result of batchSettled) {
+          if (result.status === 'fulfilled') {
+            allResolutions.push(...result.value)
+            filesResolved += result.value.length
+            onProgress?.({
+              kind: 'chunk-complete',
+              filesResolved,
+              filesTotal,
+            })
+          } else if (firstError === undefined) {
+            firstError =
+              result.reason instanceof Error
+                ? result.reason
+                : new Error(String(result.reason))
+          }
+        }
+
+        if (firstError !== undefined) {
+          throw firstError
         }
       }
 
@@ -489,8 +513,8 @@ export class CopilotStore extends BaseStore {
   }
 
   /**
-   * Resolve a single chunk of files. Retries once on parse failure.
-   * Validates that returned paths match the requested files.
+   * Resolve a single chunk of files. Retries once on parse or validation
+   * failure. Transport errors (timeouts, auth, session creation) fail fast.
    */
   private async resolveChunk(
     client: CopilotClient,
@@ -530,7 +554,7 @@ export class CopilotStore extends BaseStore {
         const returnedPaths = new Set(parsed.resolutions.map(r => r.path))
         for (const path of returnedPaths) {
           if (!expectedPaths.has(path)) {
-            throw new Error(
+            throw new CopilotValidationError(
               `Copilot returned resolution for unexpected file: ${path}`
             )
           }
@@ -538,7 +562,7 @@ export class CopilotStore extends BaseStore {
 
         // Check for duplicate paths
         if (returnedPaths.size !== parsed.resolutions.length) {
-          throw new Error(
+          throw new CopilotValidationError(
             'Copilot returned duplicate file paths in resolutions'
           )
         }
@@ -551,7 +575,7 @@ export class CopilotStore extends BaseStore {
           }
         }
         if (missingPaths.length > 0) {
-          throw new Error(
+          throw new CopilotValidationError(
             `Copilot did not return resolutions for: ${missingPaths.join(', ')}`
           )
         }
@@ -559,12 +583,22 @@ export class CopilotStore extends BaseStore {
         return parsed.resolutions
       } catch (e) {
         lastError = e instanceof Error ? e : new Error(String(e))
-        if (attempt === 0) {
-          log.warn(
-            'CopilotStore: Conflict resolution attempt failed, retrying',
-            e
-          )
+
+        // Only retry on parse/validation failures — fail fast on
+        // transport errors (timeouts, auth, session creation)
+        const isRetryable =
+          lastError instanceof CopilotValidationError ||
+          lastError.message.includes('invalid JSON') ||
+          lastError.message.includes('invalid conflict resolution payload')
+
+        if (!isRetryable || attempt > 0) {
+          break
         }
+
+        log.warn(
+          'CopilotStore: Conflict resolution parse/validation failed, retrying',
+          e
+        )
       } finally {
         await session?.destroy().catch(() => {})
       }
@@ -655,6 +689,17 @@ export class CopilotStore extends BaseStore {
 }
 
 /**
+ * Check if an import path refers to a file with the given baseName.
+ * Requires the baseName to appear as a complete path segment
+ * (e.g., `./utils` matches baseName `utils`, but `./utilities` does not).
+ */
+function matchesBaseName(importPath: string, baseName: string): boolean {
+  // Strip extension from import path's final segment for comparison
+  const importBase = importPath.replace(/\.[^./]+$/, '').replace(/^.*\//, '')
+  return importBase === baseName
+}
+
+/**
  * Extract exported and imported symbols from conflict hunk content for
  * dependency detection. Scans all hunk sections (ours, theirs, context)
  * to find import paths, exported names, and referenced identifiers.
@@ -688,14 +733,42 @@ export function extractSymbols(file: IFileConflictContext): {
     exports.add(m[1])
   }
 
+  // Match all common import forms:
+  //   import { a, b } from 'x'
+  //   import X from 'x'
+  //   import * as X from 'x'
+  //   import X, { a, b } from 'x'
+  //   import type { a } from 'x'
   for (const m of content.matchAll(
-    /import\s+(?:\{([^}]+)\}|(\w+))\s+from\s+['"]([^'"]+)['"]/g
+    /import\s+(?:type\s+)?(?:(\*\s+as\s+\w+)|(\w+)\s*,\s*\{([^}]+)\}|\{([^}]+)\}|(\w+))\s+from\s+['"]([^'"]+)['"]/g
   )) {
-    importPaths.add(m[3])
-    const namedImports = m[1] || m[2] || ''
-    for (const name of namedImports.split(',')) {
+    // m[6] is always the import path
+    importPaths.add(m[6])
+
+    // Collect referenced names from whichever capture group matched
+    const parts: Array<string> = []
+    if (m[1]) {
+      // import * as X — extract X
+      const asName = m[1].replace(/^\*\s+as\s+/, '').trim()
+      if (asName) {
+        parts.push(asName)
+      }
+    } else if (m[2] && m[3]) {
+      // import Default, { named } — both
+      parts.push(m[2])
+      parts.push(...m[3].split(','))
+    } else if (m[4]) {
+      // import { named }
+      parts.push(...m[4].split(','))
+    } else if (m[5]) {
+      // import Default
+      parts.push(m[5])
+    }
+
+    for (const name of parts) {
       const trimmed = name
         .trim()
+        .replace(/^type\s+/, '')
         .split(/\s+as\s+/)[0]
         .trim()
       if (trimmed) {
@@ -759,8 +832,14 @@ export function createDependencyAwareChunks(
       const a = fileSymbols[i]
       const b = fileSymbols[j]
 
-      const aImportsB = [...a.importPaths].some(p => p.includes(b.baseName))
-      const bImportsA = [...b.importPaths].some(p => p.includes(a.baseName))
+      // Match import paths by path-segment boundary — not bare substring —
+      // to avoid false positives with short basenames like "e" or "api".
+      const aImportsB = [...a.importPaths].some(p =>
+        matchesBaseName(p, b.baseName)
+      )
+      const bImportsA = [...b.importPaths].some(p =>
+        matchesBaseName(p, a.baseName)
+      )
 
       let sharedSymbols = false
       if (!sharedSymbols) {
