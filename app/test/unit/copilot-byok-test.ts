@@ -8,7 +8,6 @@ import {
   parseModelKey,
   requiresNewBYOKSecret,
   saveBYOKProviders,
-  type IBYOKModel,
   type IBYOKProvider,
 } from '../../src/lib/copilot/byok'
 
@@ -57,26 +56,6 @@ describe('byok storage', () => {
       ])
     )
     assert.deepStrictEqual(loadBYOKProviders(), [sampleProvider])
-  })
-
-  it('migrates legacy supportsReasoningEffort: true to a default reasoningEffort', () => {
-    localStorage.setItem(
-      StorageKey,
-      JSON.stringify([
-        {
-          ...sampleProvider,
-          models: [
-            {
-              id: 'gpt-4o',
-              name: 'GPT-4o',
-              supportsReasoningEffort: true,
-            } as unknown as IBYOKModel,
-          ],
-        },
-      ])
-    )
-    const [loaded] = loadBYOKProviders()
-    assert.strictEqual(loaded.models[0].reasoningEffort, 'low')
   })
 })
 
@@ -223,14 +202,8 @@ describe('requiresNewBYOKSecret', () => {
   })
 
   it('does not require a new secret when editing with the same auth kind', () => {
-    assert.strictEqual(
-      requiresNewBYOKSecret('apiKey', apiKeyProvider),
-      false
-    )
-    assert.strictEqual(
-      requiresNewBYOKSecret('bearer', bearerProvider),
-      false
-    )
+    assert.strictEqual(requiresNewBYOKSecret('apiKey', apiKeyProvider), false)
+    assert.strictEqual(requiresNewBYOKSecret('bearer', bearerProvider), false)
   })
 
   it('requires a new secret when switching from none to a credential kind', () => {

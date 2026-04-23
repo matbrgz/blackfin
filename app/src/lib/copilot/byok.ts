@@ -77,31 +77,10 @@ export function loadBYOKProviders(): ReadonlyArray<IBYOKProvider> {
     if (!Array.isArray(parsed)) {
       return []
     }
-    return parsed.filter(isBYOKProvider).map(migrateLegacyProvider)
+    return parsed.filter(isBYOKProvider)
   } catch {
     return []
   }
-}
-
-/**
- * Default reasoning effort applied to a model that was previously stored with
- * the legacy `supportsReasoningEffort: true` boolean. We pick the lowest
- * supported level to match the previous runtime behaviour.
- */
-const LegacyReasoningEffortDefault: ReasoningEffort = 'low'
-
-function migrateLegacyProvider(provider: IBYOKProvider): IBYOKProvider {
-  let mutated = false
-  const models = provider.models.map(m => {
-    const legacy = (m as { supportsReasoningEffort?: boolean })
-      .supportsReasoningEffort
-    if (m.reasoningEffort === undefined && legacy === true) {
-      mutated = true
-      return { ...m, reasoningEffort: LegacyReasoningEffortDefault }
-    }
-    return m
-  })
-  return mutated ? { ...provider, models } : provider
 }
 
 /** Persists the given list of BYOK providers to local storage. */
