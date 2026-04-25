@@ -1,39 +1,21 @@
 import * as React from 'react'
 
-import { DiffRowType, SimplifiedDiffRow, isRowChanged } from './diff-helpers'
+import { DiffRowType, SimplifiedDiffRow } from './diff-helpers'
 
 interface IDiffMinimapProps {
   readonly rows: ReadonlyArray<SimplifiedDiffRow>
   readonly showSideBySideDiff: boolean
   readonly getScrollableNode: () => HTMLElement | null
   readonly onScrollToPosition: (scrollTop: number) => void
+  /**
+   * Returns the actual rendered height of a diff row at the given index.
+   * Needed to map minimap row indices to scrollTop correctly when diff
+   * rows have variable heights.
+   */
+  readonly getRowHeight: (index: number) => number
 }
 
-interface IViewportMetrics {
-  readonly top: number
-  readonly height: number
-  readonly maxScrollTop: number
-}
-
-interface IScrollMetrics {
-  readonly trackHeight: number
-  readonly clientHeight: number
-  readonly scrollHeight: number
-  readonly scrollTop: number
-  readonly maxScrollTop: number
-}
-
-interface IVisibleRowBounds {
-  readonly start: number
-  readonly end: number
-}
-
-interface IViewportGeometry {
-  readonly top: number
-  readonly height: number
-}
-
-interface IRowGeometry {
+interface IGeometry {
   readonly top: number
   readonly height: number
 }
@@ -41,8 +23,8 @@ interface IRowGeometry {
 interface IMergedChangeRun {
   readonly row: SimplifiedDiffRow
   readonly startIndex: number
-  readonly geometry: IRowGeometry
   readonly endIndex: number
+  readonly geometry: IGeometry
 }
 
 interface IViewportRenderState {
@@ -50,22 +32,6 @@ interface IViewportRenderState {
   readonly top: number
   readonly height: number
 }
-
-interface ICondensedMinimapBucket {
-  readonly row: SimplifiedDiffRow
-  readonly geometry: IRowGeometry
-}
-
-type IContextMinimapRow = Extract<
-  SimplifiedDiffRow,
-  { type: DiffRowType.Context }
->
-type IHunkMinimapRow = Extract<SimplifiedDiffRow, { type: DiffRowType.Hunk }>
-type IAddedMinimapRow = Extract<SimplifiedDiffRow, { type: DiffRowType.Added }>
-type IDeletedMinimapRow = Extract<
-  SimplifiedDiffRow,
-  { type: DiffRowType.Deleted }
->
 
 interface ILineMetrics {
   readonly leadingWidth: number
@@ -91,20 +57,6 @@ interface IMinimapPalette {
   readonly hunkBackground: string
 }
 
-const MinViewportHeight = 28
-const MinCondensedViewportHeight = 14
-const MinimapPadding = 6
-const MinimapColumnGap = 4
-const MinimapLanePadding = 1
-const KeyboardScrollStep = 48
-const MinimapContentSelector = '.ReactVirtualized__Grid__innerScrollContainer'
-const MinChangedRowHeight = 2
-const MinHunkRowHeight = 2
-const MinMergedChangeRunRows = 2
-const MaxContextBarHeight = 4
-const MaxChangedBarHeight = 10
-const MaxChangedRowHeight = 10
-
 interface IMinimapLane {
   readonly x: number
   readonly width: number
@@ -116,94 +68,37 @@ interface IMinimapLanes {
   readonly gapWidth: number
 }
 
-export function getScaledChangedRowHeight(
-  rowCount: number,
-  contentHeight: number
-) {
-  if (rowCount <= 0 || contentHeight <= 0) {
-    return MinChangedRowHeight
-  }
-
-  // Scale marker height with compression so isolated edits remain visible in
-  // very large files without turning medium-size diffs into solid blocks.
-  const rowsPerPixel = rowCount / contentHeight
-  const scaledHeight =
-    MinChangedRowHeight + Math.max(0, Math.floor(Math.log2(rowsPerPixel) * 4))
-
-  return clamp(scaledHeight, MinChangedRowHeight, MaxChangedRowHeight)
+interface IVisibleRowBounds {
+  readonly start: number
+  readonly end: number
 }
 
-export function shouldCondenseMinimapRows(
-  rowCount: number,
-  contentHeight: number
-) {
-  return rowCount > contentHeight && contentHeight > 0
+/**
+ * The minimap layout, derived from the diff line height and viewport
+ * width so a minimap pixel represents the same fraction of the source
+ * horizontally and vertically. The minimap can be shorter than the
+ * container (small files) or taller (large files), in which case its
+ * content scrolls along with the diff.
+ */
+interface IMinimapGeometry {
+  /** Pixels per logical row in the minimap (≥ 1). */
+  readonly minimapRowHeight: number
+  /** Total minimap content height (rows × rowHeight). May exceed canvas. */
+  readonly minimapTotalHeight: number
+  /** Visible canvas height (≤ container height). */
+  readonly canvasHeight: number
+  /** Pixels of minimap content scrolled above the canvas. */
+  readonly scrollOffset: number
 }
 
-export function getMinimumViewportHeight(
-  rowCount: number,
-  contentHeight: number
-) {
-  if (!shouldCondenseMinimapRows(rowCount, contentHeight)) {
-    return MinViewportHeight
-  }
-
-  const rowsPerPixel = rowCount / contentHeight
-  const reduction = Math.max(0, Math.floor(Math.log2(rowsPerPixel)) * 5)
-
-  return clamp(
-    MinViewportHeight - reduction,
-    MinCondensedViewportHeight,
-    MinViewportHeight
-  )
-}
-
-export function getCondensedMinimapBucketRow(
-  rows: ReadonlyArray<SimplifiedDiffRow>,
-  startIndex = 0,
-  endIndex = rows.length
-): SimplifiedDiffRow | null {
-  let contextRow: IContextMinimapRow | null = null
-  let hunkRow: IHunkMinimapRow | null = null
-  let addedRow: IAddedMinimapRow | null = null
-  let deletedRow: IDeletedMinimapRow | null = null
-
-  for (let index = startIndex; index < endIndex; index++) {
-    const row = rows[index]
-
-    switch (row.type) {
-      case DiffRowType.Modified:
-        return row
-
-      case DiffRowType.Added:
-        addedRow ??= row
-        break
-
-      case DiffRowType.Deleted:
-        deletedRow ??= row
-        break
-
-      case DiffRowType.Hunk:
-        hunkRow ??= row
-        break
-
-      case DiffRowType.Context:
-        contextRow ??= row
-        break
-    }
-  }
-
-  if (addedRow !== null && deletedRow !== null) {
-    return {
-      type: DiffRowType.Modified,
-      beforeData: deletedRow.data,
-      afterData: addedRow.data,
-      hunkStartLine: Math.min(addedRow.hunkStartLine, deletedRow.hunkStartLine),
-    }
-  }
-
-  return addedRow ?? deletedRow ?? hunkRow ?? contextRow
-}
+const MinimapPadding = 6
+const MinimapColumnGap = 4
+const MinimapLanePadding = 1
+const KeyboardScrollStep = 48
+const MinimapContentSelector = '.ReactVirtualized__Grid__innerScrollContainer'
+const MinViewportHeight = 14
+const MinMergedChangeRunRows = 2
+const DefaultLineHeight = 20
 
 export class DiffMinimap extends React.PureComponent<IDiffMinimapProps> {
   private readonly containerRef = React.createRef<HTMLButtonElement>()
@@ -223,10 +118,14 @@ export class DiffMinimap extends React.PureComponent<IDiffMinimapProps> {
   private needsViewportUpdate = false
   private dragOffset = 0
   private dragContainerTop = 0
-  private dragViewport: IViewportGeometry | null = null
+  private dragViewport: IGeometry | null = null
   private pendingDragTrackTop: number | null = null
   private pendingWheelDelta = 0
   private viewportRenderState: IViewportRenderState | null = null
+  // True when the minimap content is taller than the canvas. In that mode
+  // a diff scroll shifts the rendered pixels, not just the thumb, so the
+  // canvas needs a full redraw on scroll.
+  private minimapContentScrolls = false
   private readonly lineMetricsCache = new Map<string, ILineMetrics>()
 
   public componentDidMount() {
@@ -256,20 +155,12 @@ export class DiffMinimap extends React.PureComponent<IDiffMinimapProps> {
   }
 
   public componentWillUnmount() {
-    if (this.frameHandle !== null) {
-      window.cancelAnimationFrame(this.frameHandle)
-      this.frameHandle = null
-    }
-
-    if (this.dragScrollFrameHandle !== null) {
-      window.cancelAnimationFrame(this.dragScrollFrameHandle)
-      this.dragScrollFrameHandle = null
-    }
-
-    if (this.wheelScrollFrameHandle !== null) {
-      window.cancelAnimationFrame(this.wheelScrollFrameHandle)
-      this.wheelScrollFrameHandle = null
-    }
+    this.cancelFrame(this.frameHandle)
+    this.cancelFrame(this.dragScrollFrameHandle)
+    this.cancelFrame(this.wheelScrollFrameHandle)
+    this.frameHandle = null
+    this.dragScrollFrameHandle = null
+    this.wheelScrollFrameHandle = null
 
     this.detachWheelListener()
     this.detachScrollContainer()
@@ -297,6 +188,12 @@ export class DiffMinimap extends React.PureComponent<IDiffMinimapProps> {
         />
       </button>
     )
+  }
+
+  private cancelFrame(handle: number | null) {
+    if (handle !== null) {
+      window.cancelAnimationFrame(handle)
+    }
   }
 
   private syncScrollContainer() {
@@ -354,11 +251,9 @@ export class DiffMinimap extends React.PureComponent<IDiffMinimapProps> {
     }
 
     const observer = new ResizeObserver(this.onResize)
-
     this.observeNode(observer, this.containerRef.current)
     this.observeNode(observer, this.scrollContainer)
     this.observeNode(observer, this.getContentContainerNode())
-
     this.resizeObserver = observer
   }
 
@@ -400,7 +295,11 @@ export class DiffMinimap extends React.PureComponent<IDiffMinimapProps> {
   }
 
   private onScroll = () => {
-    this.scheduleViewportUpdate()
+    if (this.minimapContentScrolls) {
+      this.scheduleRedraw()
+    } else {
+      this.scheduleViewportUpdate()
+    }
   }
 
   private onBodyClassChanged = () => {
@@ -418,7 +317,6 @@ export class DiffMinimap extends React.PureComponent<IDiffMinimapProps> {
     const themeClass = [...document.body.classList].find(c =>
       c.startsWith('theme-')
     )
-
     return themeClass ?? ''
   }
 
@@ -461,13 +359,18 @@ export class DiffMinimap extends React.PureComponent<IDiffMinimapProps> {
     }
 
     const width = Math.max(1, Math.floor(container.clientWidth))
-    const height = Math.max(1, Math.floor(container.clientHeight))
+    const containerHeight = Math.max(1, Math.floor(container.clientHeight))
     const dpr = window.devicePixelRatio || 1
 
+    const geometry = this.getMinimapGeometry()
+    const canvasHeight = geometry?.canvasHeight ?? containerHeight
+    this.minimapContentScrolls =
+      geometry !== null && geometry.minimapTotalHeight > geometry.canvasHeight
+
     canvas.width = Math.max(1, Math.floor(width * dpr))
-    canvas.height = Math.max(1, Math.floor(height * dpr))
+    canvas.height = Math.max(1, Math.floor(canvasHeight * dpr))
     canvas.style.width = `${width}px`
-    canvas.style.height = `${height}px`
+    canvas.style.height = `${canvasHeight}px`
 
     const context = canvas.getContext('2d')
     if (context === null) {
@@ -479,155 +382,89 @@ export class DiffMinimap extends React.PureComponent<IDiffMinimapProps> {
     const palette = this.getPalette(container)
     const rows = this.props.rows
 
-    context.clearRect(0, 0, width, height)
     context.fillStyle = palette.background
-    context.fillRect(0, 0, width, height)
+    context.fillRect(0, 0, width, canvasHeight)
 
-    if (rows.length === 0) {
+    if (rows.length === 0 || geometry === null) {
       context.fillStyle = palette.border
-      context.fillRect(0, 0, 1, height)
+      context.fillRect(0, 0, 1, canvasHeight)
       return
     }
 
-    const contentHeight = this.getContentHeight(height)
     const lanes = this.getLanes(width)
-    if (shouldCondenseMinimapRows(rows.length, contentHeight)) {
-      this.drawCondensedRows(
-        context,
-        rows,
-        palette,
-        width,
-        lanes,
-        contentHeight
-      )
-    } else {
-      const pixelsPerRow = contentHeight / rows.length
-      const rowGeometries = new Array<IRowGeometry>(rows.length)
-
-      for (let index = 0; index < rows.length; index++) {
-        const row = rows[index]
-        const top = Math.floor(index * pixelsPerRow)
-        const bottom = Math.max(top + 1, Math.ceil((index + 1) * pixelsPerRow))
-        const rowHeight = Math.max(1, bottom - top)
-        rowGeometries[index] = this.getRowGeometry(
-          row,
-          top,
-          rowHeight,
-          contentHeight
-        )
-      }
-
-      for (let index = 0; index < rows.length; index++) {
-        const row = rows[index]
-        const mergedRun = this.getMergedChangeRun(rows, rowGeometries, index)
-
-        if (mergedRun !== null) {
-          this.drawMergedChangeRun(
-            context,
-            rows,
-            rowGeometries,
-            mergedRun.row,
-            palette,
-            mergedRun.geometry,
-            mergedRun.startIndex,
-            mergedRun.endIndex,
-            width,
-            lanes
-          )
-          index = mergedRun.endIndex
-          continue
-        }
-
-        this.drawRow(context, row, palette, rowGeometries[index], width, lanes)
-      }
-    }
+    this.drawVisibleRows(context, rows, palette, geometry, width, lanes)
 
     if (this.props.showSideBySideDiff && lanes.gapWidth > 0) {
       const separatorX =
         lanes.before.x + lanes.before.width + Math.floor(lanes.gapWidth / 2)
       context.globalAlpha = 0.45
       context.fillStyle = palette.border
-      context.fillRect(separatorX, 0, 1, contentHeight)
+      context.fillRect(separatorX, 0, 1, canvasHeight)
       context.globalAlpha = 1
     }
 
     context.fillStyle = palette.border
-    context.fillRect(0, 0, 1, height)
+    context.fillRect(0, 0, 1, canvasHeight)
   }
 
-  private drawCondensedRows(
+  private drawVisibleRows(
     context: CanvasRenderingContext2D,
     rows: ReadonlyArray<SimplifiedDiffRow>,
     palette: IMinimapPalette,
-    width: number,
-    lanes: IMinimapLanes,
-    contentHeight: number
-  ) {
-    const bucketCount = Math.max(1, Math.min(rows.length, contentHeight))
-    const contextBuckets = new Array<ICondensedMinimapBucket>()
-    const hunkBuckets = new Array<ICondensedMinimapBucket>()
-    const changedBuckets = new Array<ICondensedMinimapBucket>()
-
-    for (let bucketIndex = 0; bucketIndex < bucketCount; bucketIndex++) {
-      const startIndex = Math.floor((bucketIndex * rows.length) / bucketCount)
-      const endIndex = Math.max(
-        startIndex + 1,
-        Math.floor(((bucketIndex + 1) * rows.length) / bucketCount)
-      )
-      const row = getCondensedMinimapBucketRow(rows, startIndex, endIndex)
-
-      if (row === null) {
-        continue
-      }
-
-      const top = Math.floor((bucketIndex * contentHeight) / bucketCount)
-      const bottom = Math.max(
-        top + 1,
-        Math.ceil(((bucketIndex + 1) * contentHeight) / bucketCount)
-      )
-      const geometry = this.getRowGeometry(
-        row,
-        top,
-        Math.max(1, bottom - top),
-        contentHeight
-      )
-      const bucket = { row, geometry }
-
-      if (isRowChanged(row)) {
-        changedBuckets.push(bucket)
-      } else if (row.type === DiffRowType.Hunk) {
-        hunkBuckets.push(bucket)
-      } else {
-        contextBuckets.push(bucket)
-      }
-    }
-
-    this.drawCondensedBucketLayer(
-      context,
-      contextBuckets,
-      palette,
-      width,
-      lanes
-    )
-    this.drawCondensedBucketLayer(context, hunkBuckets, palette, width, lanes)
-    this.drawCondensedBucketLayer(
-      context,
-      changedBuckets,
-      palette,
-      width,
-      lanes
-    )
-  }
-
-  private drawCondensedBucketLayer(
-    context: CanvasRenderingContext2D,
-    buckets: ReadonlyArray<ICondensedMinimapBucket>,
-    palette: IMinimapPalette,
+    geometry: IMinimapGeometry,
     width: number,
     lanes: IMinimapLanes
   ) {
-    for (const bucket of buckets) {
-      this.drawRow(context, bucket.row, palette, bucket.geometry, width, lanes)
+    const { minimapRowHeight, scrollOffset, canvasHeight } = geometry
+
+    // Iterate only the rows that intersect the canvas. Walk back into a
+    // merged change run if we'd start in the middle of one, since the run
+    // renders as a single block and the visible portion has to look
+    // continuous.
+    let startIndex = Math.max(0, Math.floor(scrollOffset / minimapRowHeight))
+    while (
+      startIndex > 0 &&
+      isMergeableChange(rows[startIndex]) &&
+      rows[startIndex - 1].type === rows[startIndex].type
+    ) {
+      startIndex--
+    }
+    const endIndex = Math.min(
+      rows.length - 1,
+      Math.ceil((scrollOffset + canvasHeight) / minimapRowHeight)
+    )
+
+    for (let index = startIndex; index <= endIndex; index++) {
+      const mergedRun = this.getMergedChangeRun(rows, index, geometry)
+      if (mergedRun !== null) {
+        this.drawMergedChangeRun(
+          context,
+          rows,
+          palette,
+          mergedRun,
+          width,
+          lanes,
+          geometry
+        )
+        index = mergedRun.endIndex
+      } else {
+        const rowGeometry = this.getRowGeometry(index, geometry)
+        this.drawRow(context, rows[index], palette, rowGeometry, width, lanes)
+      }
+    }
+  }
+
+  /** Tile rows so adjacent rows abut without gaps at fractional row heights. */
+  private getRowGeometry(index: number, geometry: IMinimapGeometry): IGeometry {
+    const { minimapRowHeight, scrollOffset } = geometry
+    const absTop = Math.floor(index * minimapRowHeight)
+    const absBottom = Math.max(
+      absTop + 1,
+      Math.ceil((index + 1) * minimapRowHeight)
+    )
+    return {
+      top: absTop - scrollOffset,
+      height: Math.max(1, absBottom - absTop),
     }
   }
 
@@ -648,16 +485,11 @@ export class DiffMinimap extends React.PureComponent<IDiffMinimapProps> {
   }
 
   /**
-   * Queries the rendered children of the virtualized list to determine
-   * which parts of the row index space are currently visible in the
-   * scroll container.
-   *
-   * This is more accurate than deriving visibility from scroll metrics
-   * because react-virtualized uses estimated heights for unmeasured rows,
-   * causing scrollHeight to change as rows are scrolled into view.
-   *
-   * The returned bounds are fractional row indices so the viewport can move
-   * smoothly while still staying aligned to the minimap's uniform row layout.
+   * Returns fractional row indices for the rows currently visible in the
+   * scroll container, derived from the rendered DOM rather than scroll
+   * metrics. react-virtualized estimates heights for unmeasured rows so
+   * scrollHeight drifts as rows scroll into view; reading the actual
+   * rendered row positions stays accurate during that refinement.
    */
   private getVisibleRowBounds(): IVisibleRowBounds | null {
     const contentContainer = this.getContentContainerNode()
@@ -713,9 +545,8 @@ export class DiffMinimap extends React.PureComponent<IDiffMinimapProps> {
         }
 
         if (fromStart ? bottom > scrollTop : top < scrollBottom) {
-          // Each rendered row wrapper carries the diff row index in
-          // aria-rowindex, which lets the minimap map measured DOM rows back to
-          // the full logical row space without depending on child order alone.
+          // Rows are virtualized so DOM order doesn't match logical index;
+          // aria-rowindex carries the diff row index.
           const index = Number(el.getAttribute('aria-rowindex'))
           if (!Number.isNaN(index)) {
             const visibleOffset = fromStart
@@ -732,27 +563,67 @@ export class DiffMinimap extends React.PureComponent<IDiffMinimapProps> {
     return null
   }
 
-  private getContentHeight(trackHeight: number): number {
+  private getMinimapGeometry(): IMinimapGeometry | null {
+    const container = this.containerRef.current
     const scrollContainer = this.scrollContainer
-
-    if (scrollContainer === null) {
-      return trackHeight
+    if (container === null || scrollContainer === null) {
+      return null
     }
 
-    const visibleHeight = scrollContainer.clientHeight
-    const contentHeight =
-      this.getContentContainerNode()?.getBoundingClientRect().height ??
-      scrollContainer.scrollHeight
+    const containerHeight = container.clientHeight
+    const minimapWidth = container.clientWidth
+    const viewportWidth = scrollContainer.clientWidth
+    const numRows = this.props.rows.length
 
-    if (trackHeight === 0 || visibleHeight === 0 || contentHeight === 0) {
-      return trackHeight
+    if (
+      containerHeight <= 0 ||
+      minimapWidth <= 0 ||
+      viewportWidth <= 0 ||
+      numRows === 0
+    ) {
+      return null
     }
 
-    const scaledHeight = Math.round(
-      trackHeight * Math.min(1, contentHeight / visibleHeight)
+    // Floor at 1 px so individual rows stay visible on extra-wide
+    // viewports where lineHeight × scale could otherwise drop below 1.
+    const scale = minimapWidth / viewportWidth
+    const minimapRowHeight = Math.max(1, this.getDiffLineHeight() * scale)
+    const minimapTotalHeight = numRows * minimapRowHeight
+    const canvasHeight = Math.min(
+      containerHeight,
+      Math.max(1, Math.ceil(minimapTotalHeight))
     )
 
-    return Math.max(1, Math.min(trackHeight, scaledHeight))
+    const overflow = Math.max(0, minimapTotalHeight - canvasHeight)
+    const maxScrollTop = this.getMaxScrollTop()
+    const ratio =
+      maxScrollTop > 0 ? scrollContainer.scrollTop / maxScrollTop : 0
+    const scrollOffset = Math.round(overflow * ratio)
+
+    return { minimapRowHeight, minimapTotalHeight, canvasHeight, scrollOffset }
+  }
+
+  private getMaxScrollTop(): number {
+    const sc = this.scrollContainer
+    return sc === null ? 0 : Math.max(0, sc.scrollHeight - sc.clientHeight)
+  }
+
+  private getDiffLineHeight(): number {
+    const container = this.containerRef.current ?? this.scrollContainer
+    if (container === null) {
+      return DefaultLineHeight
+    }
+    const styles = window.getComputedStyle(container)
+    const cssLineHeight = Number.parseFloat(
+      styles.getPropertyValue('--diff-line-height')
+    )
+    if (Number.isFinite(cssLineHeight) && cssLineHeight > 0) {
+      return cssLineHeight
+    }
+    const lineHeight = Number.parseFloat(styles.lineHeight)
+    return Number.isFinite(lineHeight) && lineHeight > 0
+      ? lineHeight
+      : DefaultLineHeight
   }
 
   private getLanes(width: number): IMinimapLanes {
@@ -782,7 +653,7 @@ export class DiffMinimap extends React.PureComponent<IDiffMinimapProps> {
     context: CanvasRenderingContext2D,
     row: SimplifiedDiffRow,
     palette: IMinimapPalette,
-    geometry: IRowGeometry,
+    geometry: IGeometry,
     width: number,
     lanes: IMinimapLanes
   ) {
@@ -791,7 +662,6 @@ export class DiffMinimap extends React.PureComponent<IDiffMinimapProps> {
     } else {
       this.drawUnifiedRow(context, row, palette, geometry, width, lanes)
     }
-
     context.globalAlpha = 1
   }
 
@@ -799,7 +669,7 @@ export class DiffMinimap extends React.PureComponent<IDiffMinimapProps> {
     context: CanvasRenderingContext2D,
     row: SimplifiedDiffRow,
     palette: IMinimapPalette,
-    geometry: IRowGeometry,
+    geometry: IGeometry,
     width: number,
     lanes: IMinimapLanes
   ) {
@@ -905,7 +775,7 @@ export class DiffMinimap extends React.PureComponent<IDiffMinimapProps> {
     context: CanvasRenderingContext2D,
     row: SimplifiedDiffRow,
     palette: IMinimapPalette,
-    geometry: IRowGeometry,
+    geometry: IGeometry,
     lanes: IMinimapLanes
   ) {
     const { top, height: rowHeight } = geometry
@@ -1054,11 +924,11 @@ export class DiffMinimap extends React.PureComponent<IDiffMinimapProps> {
 
   private getMergedChangeRun(
     rows: ReadonlyArray<SimplifiedDiffRow>,
-    rowGeometries: ReadonlyArray<IRowGeometry>,
-    startIndex: number
+    startIndex: number,
+    geometry: IMinimapGeometry
   ): IMergedChangeRun | null {
     const row = rows[startIndex]
-    if (!this.canMergeChangeRun(row)) {
+    if (!isMergeableChange(row)) {
       return null
     }
 
@@ -1071,8 +941,8 @@ export class DiffMinimap extends React.PureComponent<IDiffMinimapProps> {
       return null
     }
 
-    const startGeometry = rowGeometries[startIndex]
-    const endGeometry = rowGeometries[endIndex]
+    const startGeometry = this.getRowGeometry(startIndex, geometry)
+    const endGeometry = this.getRowGeometry(endIndex, geometry)
 
     return {
       row,
@@ -1088,66 +958,51 @@ export class DiffMinimap extends React.PureComponent<IDiffMinimapProps> {
     }
   }
 
-  private canMergeChangeRun(row: SimplifiedDiffRow) {
-    return row.type === DiffRowType.Added || row.type === DiffRowType.Deleted
-  }
-
   private drawMergedChangeRun(
     context: CanvasRenderingContext2D,
     rows: ReadonlyArray<SimplifiedDiffRow>,
-    rowGeometries: ReadonlyArray<IRowGeometry>,
-    row: SimplifiedDiffRow,
     palette: IMinimapPalette,
-    geometry: IRowGeometry,
-    startIndex: number,
-    endIndex: number,
+    mergedRun: IMergedChangeRun,
     width: number,
-    lanes: IMinimapLanes
+    lanes: IMinimapLanes,
+    geometry: IMinimapGeometry
   ) {
     if (this.props.showSideBySideDiff) {
       this.drawMergedSplitChangeRun(
         context,
         rows,
-        rowGeometries,
-        row,
         palette,
-        geometry,
-        startIndex,
-        endIndex,
-        lanes
+        mergedRun,
+        lanes,
+        geometry
       )
     } else {
       this.drawMergedUnifiedChangeRun(
         context,
         rows,
-        rowGeometries,
-        row,
         palette,
-        geometry,
-        startIndex,
-        endIndex,
+        mergedRun,
         width,
-        lanes
+        lanes,
+        geometry
       )
     }
-
     context.globalAlpha = 1
   }
 
   private drawMergedUnifiedChangeRun(
     context: CanvasRenderingContext2D,
     rows: ReadonlyArray<SimplifiedDiffRow>,
-    rowGeometries: ReadonlyArray<IRowGeometry>,
-    row: SimplifiedDiffRow,
     palette: IMinimapPalette,
-    geometry: IRowGeometry,
-    startIndex: number,
-    endIndex: number,
+    mergedRun: IMergedChangeRun,
     width: number,
-    lanes: IMinimapLanes
+    lanes: IMinimapLanes,
+    geometry: IMinimapGeometry
   ) {
+    const { row, startIndex, endIndex, geometry: runGeometry } = mergedRun
+
     if (row.type !== DiffRowType.Added && row.type !== DiffRowType.Deleted) {
-      this.drawRow(context, row, palette, geometry, width, lanes)
+      this.drawRow(context, row, palette, runGeometry, width, lanes)
       return
     }
 
@@ -1156,72 +1011,57 @@ export class DiffMinimap extends React.PureComponent<IDiffMinimapProps> {
       row.type === DiffRowType.Added
         ? palette.addedBackground
         : palette.deletedBackground
-    context.fillRect(0, geometry.top, width, Math.max(1, geometry.height))
+    context.fillRect(0, runGeometry.top, width, Math.max(1, runGeometry.height))
 
     this.drawMergedLineSlices(
       context,
       rows,
-      rowGeometries,
       startIndex,
       endIndex,
       lanes.before,
-      row.type === DiffRowType.Added ? palette.added : palette.deleted
+      row.type === DiffRowType.Added ? palette.added : palette.deleted,
+      geometry
     )
   }
 
   private drawMergedSplitChangeRun(
     context: CanvasRenderingContext2D,
     rows: ReadonlyArray<SimplifiedDiffRow>,
-    rowGeometries: ReadonlyArray<IRowGeometry>,
-    row: SimplifiedDiffRow,
     palette: IMinimapPalette,
-    geometry: IRowGeometry,
-    startIndex: number,
-    endIndex: number,
-    lanes: IMinimapLanes
+    mergedRun: IMergedChangeRun,
+    lanes: IMinimapLanes,
+    geometry: IMinimapGeometry
   ) {
-    if (row.type === DiffRowType.Added) {
-      this.drawMergedLaneBackground(
-        context,
-        lanes.after,
-        geometry,
-        palette.addedBackground
-      )
-      this.drawMergedLineSlices(
-        context,
-        rows,
-        rowGeometries,
-        startIndex,
-        endIndex,
-        lanes.after,
-        palette.added
-      )
+    const { row, startIndex, endIndex, geometry: runGeometry } = mergedRun
+
+    const isAdded = row.type === DiffRowType.Added
+    const isDeleted = row.type === DiffRowType.Deleted
+    if (!isAdded && !isDeleted) {
       return
     }
 
-    if (row.type === DiffRowType.Deleted) {
-      this.drawMergedLaneBackground(
-        context,
-        lanes.before,
-        geometry,
-        palette.deletedBackground
-      )
-      this.drawMergedLineSlices(
-        context,
-        rows,
-        rowGeometries,
-        startIndex,
-        endIndex,
-        lanes.before,
-        palette.deleted
-      )
-    }
+    const lane = isAdded ? lanes.after : lanes.before
+    const background = isAdded
+      ? palette.addedBackground
+      : palette.deletedBackground
+    const color = isAdded ? palette.added : palette.deleted
+
+    this.drawMergedLaneBackground(context, lane, runGeometry, background)
+    this.drawMergedLineSlices(
+      context,
+      rows,
+      startIndex,
+      endIndex,
+      lane,
+      color,
+      geometry
+    )
   }
 
   private drawMergedLaneBackground(
     context: CanvasRenderingContext2D,
     lane: IMinimapLane,
-    geometry: IRowGeometry,
+    geometry: IGeometry,
     backgroundColor: string
   ) {
     context.globalAlpha = 0.34
@@ -1237,28 +1077,28 @@ export class DiffMinimap extends React.PureComponent<IDiffMinimapProps> {
   private drawMergedLineSlices(
     context: CanvasRenderingContext2D,
     rows: ReadonlyArray<SimplifiedDiffRow>,
-    rowGeometries: ReadonlyArray<IRowGeometry>,
     startIndex: number,
     endIndex: number,
     lane: IMinimapLane,
-    color: string
+    color: string,
+    geometry: IMinimapGeometry
   ) {
     context.fillStyle = color
 
     for (let index = startIndex; index <= endIndex; index++) {
-      const content = this.getMergedRunRowContent(rows[index])
-      if (content === null) {
+      const row = rows[index]
+      if (row.type !== DiffRowType.Added && row.type !== DiffRowType.Deleted) {
         continue
       }
 
-      const geometry = rowGeometries[index]
-      const layout = this.getLineBarLayout(content, lane, true)
-      const sliceHeight = Math.max(1, geometry.height)
+      const rowGeometry = this.getRowGeometry(index, geometry)
+      const layout = this.getLineBarLayout(row.data.content, lane, true)
+      const sliceHeight = Math.max(1, rowGeometry.height)
 
       context.globalAlpha = 0.82
       context.fillRect(
         layout.startX,
-        geometry.top,
+        rowGeometry.top,
         layout.primaryWidth,
         sliceHeight
       )
@@ -1267,21 +1107,11 @@ export class DiffMinimap extends React.PureComponent<IDiffMinimapProps> {
         context.globalAlpha = 0.5
         context.fillRect(
           layout.trailingX,
-          geometry.top,
+          rowGeometry.top,
           layout.trailingWidth,
           sliceHeight
         )
       }
-    }
-  }
-
-  private getMergedRunRowContent(row: SimplifiedDiffRow) {
-    switch (row.type) {
-      case DiffRowType.Added:
-      case DiffRowType.Deleted:
-        return row.data.content
-      default:
-        return null
     }
   }
 
@@ -1309,12 +1139,7 @@ export class DiffMinimap extends React.PureComponent<IDiffMinimapProps> {
     )
 
     if (trimmedLength <= 24 || availableWidth <= 8) {
-      return {
-        startX,
-        primaryWidth,
-        trailingX: null,
-        trailingWidth: 0,
-      }
+      return { startX, primaryWidth, trailingX: null, trailingWidth: 0 }
     }
 
     const trailingWidth = Math.max(
@@ -1329,43 +1154,12 @@ export class DiffMinimap extends React.PureComponent<IDiffMinimapProps> {
     return { startX, primaryWidth, trailingX, trailingWidth }
   }
 
-  private getRowGeometry(
-    row: SimplifiedDiffRow,
-    top: number,
-    rowHeight: number,
-    contentHeight: number
-  ): IRowGeometry {
-    const minHeight =
-      row.type === DiffRowType.Context
-        ? 1
-        : row.type === DiffRowType.Hunk
-        ? MinHunkRowHeight
-        : getScaledChangedRowHeight(this.props.rows.length, contentHeight)
-
-    if (rowHeight >= minHeight) {
-      return { top, height: rowHeight }
-    }
-
-    const height = Math.min(contentHeight, minHeight)
-    const centeredTop = Math.round(top + rowHeight / 2 - height / 2)
-
-    return {
-      top: clamp(centeredTop, 0, Math.max(0, contentHeight - height)),
-      height,
-    }
-  }
-
   private getLineBarHeight(rowHeight: number, emphasize: boolean) {
-    if (!emphasize) {
-      return Math.max(
-        1,
-        Math.min(MaxContextBarHeight, Math.round(rowHeight * 0.7))
-      )
-    }
-
-    const minHeight = Math.min(2, Math.max(1, Math.ceil(rowHeight)))
-
-    return clamp(Math.round(rowHeight * 0.55), minHeight, MaxChangedBarHeight)
+    // No upper cap: rowHeight already comes from aspect-ratio-preserving
+    // geometry, so the bar scales naturally with the minimap.
+    return emphasize
+      ? Math.max(2, Math.round(rowHeight * 0.55))
+      : Math.max(1, Math.round(rowHeight * 0.7))
   }
 
   private getLineMetrics(content: string): ILineMetrics {
@@ -1405,20 +1199,15 @@ export class DiffMinimap extends React.PureComponent<IDiffMinimapProps> {
 
   private updateViewport() {
     const viewport = this.viewportRef.current
-    const metrics = this.getViewportMetrics()
-
     if (viewport === null) {
       return
     }
 
+    const geometry = this.getViewportGeometry()
     const nextState: IViewportRenderState =
-      metrics === null
+      geometry === null
         ? { visible: false, top: 0, height: 0 }
-        : {
-            visible: metrics.maxScrollTop > 0,
-            top: metrics.top,
-            height: metrics.height,
-          }
+        : { visible: true, top: geometry.top, height: geometry.height }
 
     const prevState = this.viewportRenderState
     if (
@@ -1447,142 +1236,63 @@ export class DiffMinimap extends React.PureComponent<IDiffMinimapProps> {
     this.viewportRenderState = nextState
   }
 
-  private getScrollMetrics(): IScrollMetrics | null {
-    const container = this.containerRef.current
+  private getViewportGeometry(): IGeometry | null {
+    const geometry = this.getMinimapGeometry()
     const scrollContainer = this.scrollContainer
-
-    if (container === null || scrollContainer === null) {
+    if (geometry === null || scrollContainer === null) {
       return null
     }
 
-    const trackHeight = container.clientHeight
-    const { clientHeight, scrollHeight, scrollTop } = scrollContainer
-
-    if (trackHeight === 0 || scrollHeight === 0) {
+    const maxScrollTop = this.getMaxScrollTop()
+    if (maxScrollTop === 0) {
       return null
     }
 
-    return {
-      trackHeight,
-      clientHeight,
-      scrollHeight,
-      scrollTop,
-      maxScrollTop: Math.max(0, scrollHeight - clientHeight),
-    }
-  }
+    const { minimapRowHeight, canvasHeight, scrollOffset, minimapTotalHeight } =
+      geometry
 
-  private getViewportMetrics(
-    scrollMetrics = this.getScrollMetrics()
-  ): IViewportMetrics | null {
-    if (scrollMetrics === null) {
-      return null
-    }
-
-    const geometry = this.getViewportGeometry(scrollMetrics)
-
-    return {
-      top: geometry.top,
-      height: geometry.height,
-      maxScrollTop: scrollMetrics.maxScrollTop,
-    }
-  }
-
-  private getViewportGeometry(
-    scrollMetrics: IScrollMetrics
-  ): IViewportGeometry {
-    const baseGeometry =
-      this.getAlignedViewportGeometry(scrollMetrics) ??
-      this.getFallbackViewportGeometry(scrollMetrics)
-
-    if (this.dragViewport === null) {
-      return baseGeometry
-    }
-
-    // Keep the dragged thumb under the pointer, but let its height continue to
-    // track the aligned viewport geometry so releasing the mouse does not cause
-    // a separate height snap.
-    return {
-      top: clamp(
-        this.dragViewport.top,
-        0,
-        scrollMetrics.trackHeight - baseGeometry.height
-      ),
-      height: baseGeometry.height,
-    }
-  }
-
-  private getAlignedViewportGeometry(
-    scrollMetrics: IScrollMetrics
-  ): IViewportGeometry | null {
-    const numRows = this.props.rows.length
-    const minHeight = getMinimumViewportHeight(
-      numRows,
-      this.getContentHeight(scrollMetrics.trackHeight)
-    )
-
-    if (numRows === 0 || scrollMetrics.maxScrollTop === 0) {
-      return null
-    }
+    let thumbAbsTop: number
+    let thumbAbsHeight: number
 
     const visibleBounds = this.getVisibleRowBounds()
-    if (visibleBounds === null) {
-      return null
+    if (visibleBounds !== null) {
+      thumbAbsTop = visibleBounds.start * minimapRowHeight
+      thumbAbsHeight =
+        (visibleBounds.end - visibleBounds.start) * minimapRowHeight
+    } else {
+      // Fallback used until react-virtualized renders the first rows.
+      const ratio = clamp(scrollContainer.scrollTop / maxScrollTop, 0, 1)
+      const numRows = this.props.rows.length
+      const visibleRows =
+        scrollContainer.scrollHeight > 0
+          ? (scrollContainer.clientHeight / scrollContainer.scrollHeight) *
+            numRows
+          : numRows
+      thumbAbsHeight = visibleRows * minimapRowHeight
+      thumbAbsTop = ratio * Math.max(0, minimapTotalHeight - thumbAbsHeight)
     }
 
-    // Project the visible logical row span back onto the minimap's uniform row
-    // space. This keeps the viewport aligned even while react-virtualized is
-    // still refining measured row heights in the scroll container.
-    const idealTop = (visibleBounds.start / numRows) * scrollMetrics.trackHeight
-    const idealBottom =
-      (visibleBounds.end / numRows) * scrollMetrics.trackHeight
-    const idealHeight = idealBottom - idealTop
-    const height = Math.min(
-      scrollMetrics.trackHeight,
-      Math.max(minHeight, idealHeight)
-    )
-    const center = (idealTop + idealBottom) / 2
-    return {
-      top: clamp(center - height / 2, 0, scrollMetrics.trackHeight - height),
-      height,
-    }
-  }
+    const thumbHeight = clamp(thumbAbsHeight, MinViewportHeight, canvasHeight)
+    const maxTop = Math.max(0, canvasHeight - thumbHeight)
 
-  private getFallbackViewportGeometry(
-    scrollMetrics: IScrollMetrics
-  ): IViewportGeometry {
-    const minHeight = getMinimumViewportHeight(
-      this.props.rows.length,
-      this.getContentHeight(scrollMetrics.trackHeight)
-    )
-    const height = Math.min(
-      scrollMetrics.trackHeight,
-      Math.max(
-        minHeight,
-        scrollMetrics.maxScrollTop === 0
-          ? scrollMetrics.trackHeight
-          : scrollMetrics.trackHeight *
-              (scrollMetrics.clientHeight / scrollMetrics.scrollHeight)
-      )
-    )
-    const maxTrackTop = Math.max(0, scrollMetrics.trackHeight - height)
+    // While dragging, peg the thumb under the pointer but keep its height
+    // tracking the natural geometry so releasing doesn't snap a height change.
     const top =
-      scrollMetrics.maxScrollTop === 0
-        ? 0
-        : (scrollMetrics.scrollTop / scrollMetrics.maxScrollTop) * maxTrackTop
+      this.dragViewport !== null
+        ? clamp(this.dragViewport.top, 0, maxTop)
+        : clamp(thumbAbsTop - scrollOffset, 0, maxTop)
 
-    return { top, height }
+    return { top, height: thumbHeight }
   }
 
   private onMouseDown = (event: React.MouseEvent<HTMLButtonElement>) => {
-    const container = this.containerRef.current
-    const scrollMetrics = this.getScrollMetrics()
-    const metrics = this.getViewportMetrics(scrollMetrics)
-
     if (event.button !== 0) {
       return
     }
 
-    if (container === null || metrics === null) {
+    const container = this.containerRef.current
+    const viewport = this.getViewportGeometry()
+    if (container === null || viewport === null) {
       return
     }
 
@@ -1590,38 +1300,86 @@ export class DiffMinimap extends React.PureComponent<IDiffMinimapProps> {
     container.focus()
 
     const bounds = container.getBoundingClientRect()
-    this.dragContainerTop = bounds.top
     const offsetY = event.clientY - bounds.top
-    const viewportBottom = metrics.top + metrics.height
+    const onThumb =
+      offsetY >= viewport.top && offsetY <= viewport.top + viewport.height
 
-    if (offsetY >= metrics.top && offsetY <= viewportBottom) {
-      this.dragOffset = offsetY - metrics.top
+    if (onThumb) {
+      // Click on the thumb: start a drag. The drag mapping below keeps the
+      // cursor at the same relative point on the thumb.
+      this.dragContainerTop = bounds.top
+      this.dragOffset = offsetY - viewport.top
+      this.dragViewport = { top: viewport.top, height: viewport.height }
+      this.scheduleViewportUpdate()
+
+      window.addEventListener('mousemove', this.onMouseMove)
+      window.addEventListener('mouseup', this.onMouseUp)
     } else {
-      this.dragOffset = metrics.height / 2
+      // Click off the thumb: jump to the clicked row and don't attach drag
+      // listeners, so accidental movement after a click can't drag.
+      const targetScrollTop = this.computeClickJump(offsetY)
+      if (targetScrollTop !== null) {
+        this.props.onScrollToPosition(targetScrollTop)
+      }
+    }
+  }
+
+  /**
+   * Returns the scrollTop that centers the row at `clickCanvasY` in the
+   * diff viewport, or null when the diff doesn't need to scroll.
+   */
+  private computeClickJump(clickCanvasY: number): number | null {
+    const geometry = this.getMinimapGeometry()
+    if (geometry === null || geometry.minimapRowHeight <= 0) {
+      return null
+    }
+    if (this.getMaxScrollTop() === 0) {
+      return null
     }
 
-    this.dragViewport = { top: metrics.top, height: metrics.height }
-    this.scheduleViewportUpdate()
+    const absMinimapY = clickCanvasY + geometry.scrollOffset
+    const rowIndex = absMinimapY / geometry.minimapRowHeight
+    return this.getScrollTopForRow(rowIndex, 'center')
+  }
 
-    if (offsetY < metrics.top || offsetY > viewportBottom) {
-      this.scrollFromTrackPosition(offsetY - this.dragOffset)
+  /**
+   * Returns the scrollTop that aligns the given row to the top (or
+   * center) of the diff viewport, summing the actual rendered heights of
+   * the preceding rows. Pixel-ratio mapping (`canvasY/canvasHeight ×
+   * scrollHeight`) misfires when rows have variable heights — e.g.
+   * wrapped long lines or modified rows — so we walk the cache instead.
+   */
+  private getScrollTopForRow(
+    rowIndex: number,
+    alignment: 'start' | 'center'
+  ): number {
+    const scrollContainer = this.scrollContainer
+    const numRows = this.props.rows.length
+    if (scrollContainer === null || numRows === 0) {
+      return 0
     }
 
-    window.addEventListener('mousemove', this.onMouseMove)
-    window.addEventListener('mouseup', this.onMouseUp)
+    const targetIndex = clamp(Math.floor(rowIndex), 0, numRows - 1)
+    let offset = 0
+    for (let i = 0; i < targetIndex; i++) {
+      offset += this.props.getRowHeight(i)
+    }
+
+    const scrollTop =
+      alignment === 'center'
+        ? offset +
+          this.props.getRowHeight(targetIndex) / 2 -
+          scrollContainer.clientHeight / 2
+        : offset
+
+    return clamp(scrollTop, 0, this.getMaxScrollTop())
   }
 
   private onMouseMove = (event: MouseEvent) => {
-    if (this.dragViewport === null) {
+    if (this.dragViewport === null || this.containerRef.current === null) {
       return
     }
-
-    if (this.containerRef.current === null) {
-      return
-    }
-
     const offsetY = event.clientY - this.dragContainerTop
-
     this.queueDragScroll(offsetY - this.dragOffset)
   }
 
@@ -1674,81 +1432,42 @@ export class DiffMinimap extends React.PureComponent<IDiffMinimapProps> {
   }
 
   private scrollFromTrackPosition(trackTop: number) {
-    const scrollMetrics = this.getScrollMetrics()
-    const metrics = this.getViewportMetrics(scrollMetrics)
-    const scrollContainer = this.scrollContainer
+    const geometry = this.getMinimapGeometry()
+    const viewport = this.getViewportGeometry()
 
-    if (
-      scrollMetrics === null ||
-      metrics === null ||
-      scrollContainer === null
-    ) {
+    if (geometry === null || viewport === null) {
       return
     }
 
-    const maxTrackTop = Math.max(0, scrollMetrics.trackHeight - metrics.height)
+    const maxScrollTop = this.getMaxScrollTop()
+    if (maxScrollTop === 0 || geometry.minimapRowHeight <= 0) {
+      return
+    }
+
+    const maxTrackTop = Math.max(0, geometry.canvasHeight - viewport.height)
     const clampedTop = clamp(trackTop, 0, maxTrackTop)
 
     if (this.dragViewport !== null) {
-      this.dragViewport = { top: clampedTop, height: metrics.height }
+      this.dragViewport = { top: clampedTop, height: viewport.height }
       this.scheduleViewportUpdate()
-
-      const targetScrollTop = this.getDragScrollTop(
-        clampedTop,
-        maxTrackTop,
-        metrics,
-        scrollMetrics,
-        scrollContainer
-      )
-      if (targetScrollTop !== null) {
-        this.props.onScrollToPosition(targetScrollTop)
-        return
-      }
     }
 
-    const ratio = maxTrackTop === 0 ? 0 : clampedTop / maxTrackTop
-    this.props.onScrollToPosition(ratio * scrollMetrics.maxScrollTop)
-  }
-
-  private getDragScrollTop(
-    trackTop: number,
-    maxTrackTop: number,
-    viewportMetrics: IViewportMetrics,
-    scrollMetrics: IScrollMetrics,
-    scrollContainer: HTMLElement
-  ): number | null {
-    if (trackTop <= 0) {
-      return 0
+    // Track position → row index → scrollTop via real row heights, same
+    // reasoning as in computeClickJump. The edge clamps make sure dragging
+    // to the canvas extremes always reaches scrollTop 0 / max even when
+    // the row-iteration would only converge asymptotically.
+    let scrollTop: number
+    if (clampedTop <= 0) {
+      scrollTop = 0
+    } else if (clampedTop >= maxTrackTop) {
+      scrollTop = maxScrollTop
+    } else {
+      const absMinimapY = clampedTop + geometry.scrollOffset
+      const rowIndex = absMinimapY / geometry.minimapRowHeight
+      scrollTop = this.getScrollTopForRow(rowIndex, 'start')
     }
 
-    if (trackTop >= maxTrackTop) {
-      return scrollMetrics.maxScrollTop
-    }
-
-    const visibleBounds = this.getVisibleRowBounds()
-    const visibleRowSpan =
-      visibleBounds === null ? 0 : visibleBounds.end - visibleBounds.start
-    const numRows = this.props.rows.length
-
-    if (visibleBounds === null || visibleRowSpan <= 0 || numRows === 0) {
-      return null
-    }
-
-    // During drag we align the diff by logical row center rather than by raw
-    // scrollHeight ratio. That avoids the thumb "slipping" when measured row
-    // heights and estimated row heights differ.
-    const desiredCenterRow =
-      ((trackTop + viewportMetrics.height / 2) / scrollMetrics.trackHeight) *
-      numRows
-    const currentCenterRow = (visibleBounds.start + visibleBounds.end) / 2
-    const pixelsPerRow = scrollContainer.clientHeight / visibleRowSpan
-
-    return clamp(
-      scrollContainer.scrollTop +
-        (desiredCenterRow - currentCenterRow) * pixelsPerRow,
-      0,
-      scrollMetrics.maxScrollTop
-    )
+    this.props.onScrollToPosition(scrollTop)
   }
 
   private onKeyDown = (event: React.KeyboardEvent<HTMLButtonElement>) => {
@@ -1757,10 +1476,7 @@ export class DiffMinimap extends React.PureComponent<IDiffMinimapProps> {
       return
     }
 
-    const maxScrollTop = Math.max(
-      0,
-      scrollContainer.scrollHeight - scrollContainer.clientHeight
-    )
+    const maxScrollTop = this.getMaxScrollTop()
     const pageSize = Math.max(
       KeyboardScrollStep,
       Math.floor(scrollContainer.clientHeight * 0.9)
@@ -1797,15 +1513,7 @@ export class DiffMinimap extends React.PureComponent<IDiffMinimapProps> {
 
   private onWheel = (event: WheelEvent) => {
     const scrollContainer = this.scrollContainer
-    if (scrollContainer === null) {
-      return
-    }
-
-    const maxScrollTop = Math.max(
-      0,
-      scrollContainer.scrollHeight - scrollContainer.clientHeight
-    )
-    if (maxScrollTop === 0) {
+    if (scrollContainer === null || this.getMaxScrollTop() === 0) {
       return
     }
 
@@ -1835,20 +1543,9 @@ export class DiffMinimap extends React.PureComponent<IDiffMinimapProps> {
     const delta = this.pendingWheelDelta
     this.pendingWheelDelta = 0
 
-    if (delta === 0) {
-      return
-    }
-
     const scrollContainer = this.scrollContainer
-    if (scrollContainer === null) {
-      return
-    }
-
-    const maxScrollTop = Math.max(
-      0,
-      scrollContainer.scrollHeight - scrollContainer.clientHeight
-    )
-    if (maxScrollTop === 0) {
+    const maxScrollTop = this.getMaxScrollTop()
+    if (delta === 0 || scrollContainer === null || maxScrollTop === 0) {
       return
     }
 
@@ -1862,7 +1559,7 @@ export class DiffMinimap extends React.PureComponent<IDiffMinimapProps> {
   private getWheelScrollDelta(event: WheelEvent, scrollContainer: HTMLElement) {
     switch (event.deltaMode) {
       case 1:
-        return event.deltaY * this.getWheelLineHeight(scrollContainer)
+        return event.deltaY * this.getDiffLineHeight()
       case 2:
         return (
           event.deltaY *
@@ -1873,49 +1570,26 @@ export class DiffMinimap extends React.PureComponent<IDiffMinimapProps> {
     }
   }
 
-  private getWheelLineHeight(scrollContainer: HTMLElement) {
-    const container = this.containerRef.current ?? scrollContainer
-    const styles = window.getComputedStyle(container)
-
-    const diffLineHeight = Number.parseFloat(
-      styles.getPropertyValue('--diff-line-height')
-    )
-    if (Number.isFinite(diffLineHeight)) {
-      return diffLineHeight
-    }
-
-    const lineHeight = Number.parseFloat(styles.lineHeight)
-    return Number.isFinite(lineHeight) ? lineHeight : 20
-  }
-
   private getPalette(container: HTMLElement): IMinimapPalette {
     const styles = window.getComputedStyle(container)
+    const read = (name: string, fallback: string) =>
+      styles.getPropertyValue(name).trim() || fallback
     return {
-      background:
-        styles.getPropertyValue('--box-alt-background-color').trim() ||
-        '#f6f8fa',
-      border:
-        styles.getPropertyValue('--diff-border-color').trim() || '#d0d7de',
-      context: styles.getPropertyValue('--diff-text-color').trim() || '#24292f',
-      added:
-        styles.getPropertyValue('--diff-add-inner-background-color').trim() ||
-        '#2da44e',
-      deleted:
-        styles
-          .getPropertyValue('--diff-delete-inner-background-color')
-          .trim() || '#cf222e',
-      hunk:
-        styles.getPropertyValue('--diff-hunk-text-color').trim() || '#57606a',
-      addedBackground:
-        styles.getPropertyValue('--diff-add-border-color').trim() || '#dafbe1',
-      deletedBackground:
-        styles.getPropertyValue('--diff-delete-border-color').trim() ||
-        '#ffebe9',
-      hunkBackground:
-        styles.getPropertyValue('--diff-hunk-background-color').trim() ||
-        '#ddf4ff',
+      background: read('--box-alt-background-color', '#f6f8fa'),
+      border: read('--diff-border-color', '#d0d7de'),
+      context: read('--diff-text-color', '#24292f'),
+      added: read('--diff-add-inner-background-color', '#2da44e'),
+      deleted: read('--diff-delete-inner-background-color', '#cf222e'),
+      hunk: read('--diff-hunk-text-color', '#57606a'),
+      addedBackground: read('--diff-add-border-color', '#dafbe1'),
+      deletedBackground: read('--diff-delete-border-color', '#ffebe9'),
+      hunkBackground: read('--diff-hunk-background-color', '#ddf4ff'),
     }
   }
+}
+
+function isMergeableChange(row: SimplifiedDiffRow) {
+  return row.type === DiffRowType.Added || row.type === DiffRowType.Deleted
 }
 
 function clamp(value: number, min: number, max: number) {

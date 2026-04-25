@@ -807,6 +807,7 @@ export class SideBySideDiff extends React.Component<
                 showSideBySideDiff={this.props.showSideBySideDiff}
                 getScrollableNode={this.getScrollContainerNode}
                 onScrollToPosition={this.onMinimapScrollToPosition}
+                getRowHeight={this.getMinimapRowHeight}
               />
             )}
           </div>
@@ -1143,6 +1144,10 @@ export class SideBySideDiff extends React.Component<
 
   private getRowHeight = (row: { index: number }) => {
     return listRowsHeightCache.rowHeight(row) ?? DefaultRowHeight
+  }
+
+  private getMinimapRowHeight = (index: number): number => {
+    return listRowsHeightCache.getHeight(index, 0) ?? DefaultRowHeight
   }
 
   private clearListRowsHeightCache = () => {
