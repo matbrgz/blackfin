@@ -121,10 +121,10 @@ class TrampolineUIHelper {
   public async getLoginForRepositoryPath(path: string): Promise<string | null> {
     const repo = await this.dispatcher.getRepositoryForPath(path)
     if (repo) {
-      // Fire-and-forget: avoid blocking the credential handler with git operations.
-      // Awaiting this caused "git: 'credential-desktop' is not a git command" on Windows.
+      // Ugly hack to avoid infinite loading in Windows (https://github.com/pol-rivero/github-desktop-plus/issues/119)
+      // Additionally, don't await this call, as it could fail and we don't want to show an error to the user in that case (https://github.com/pol-rivero/github-desktop-plus/issues/146)
       this.dispatcher.loadStatusLight(repo).catch(e => {
-        log.error('Failed to load status in credential handler', e)
+        log.error(`Trampoline loadStatusLight failed (${repo.path})`, e)
       })
     }
     return repo?.login ?? null
