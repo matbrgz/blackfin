@@ -247,8 +247,7 @@ export class SideBySideDiff extends React.Component<
   private static getDiffStyleKey(root: HTMLElement): string {
     const fontSize = root.style.getPropertyValue('--diff-font-size')
     const fontFamily = root.style.getPropertyValue('--diff-font-family')
-    const lineHeight = root.style.getPropertyValue('--diff-line-height')
-    return `${fontSize}|${fontFamily}|${lineHeight}`
+    return `${fontSize}|${fontFamily}`
   }
 
   private virtualListRef = React.createRef<List>()
