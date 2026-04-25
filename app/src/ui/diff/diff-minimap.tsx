@@ -91,13 +91,6 @@ interface IMinimapPalette {
   readonly hunkBackground: string
 }
 
-interface IRGBColor {
-  readonly red: number
-  readonly green: number
-  readonly blue: number
-  readonly alpha: number
-}
-
 const MinViewportHeight = 28
 const MinCondensedViewportHeight = 14
 const MinimapPadding = 6
@@ -111,8 +104,6 @@ const MinMergedChangeRunRows = 2
 const MaxContextBarHeight = 4
 const MaxChangedBarHeight = 10
 const MaxChangedRowHeight = 10
-const MinimapChangeColorBrightnessDark = 0.3
-const MinimapChangeColorBrightnessLight = 0.0
 
 interface IMinimapLane {
   readonly x: number
@@ -1899,20 +1890,6 @@ export class DiffMinimap extends React.PureComponent<IDiffMinimapProps> {
 
   private getPalette(container: HTMLElement): IMinimapPalette {
     const styles = window.getComputedStyle(container)
-    const changeColorBrightness =
-      this.getThemeClassName() === 'theme-dark'
-        ? MinimapChangeColorBrightnessDark
-        : MinimapChangeColorBrightnessLight
-    const added =
-      styles.getPropertyValue('--diff-add-border-color').trim() || '#2da44e'
-    const deleted =
-      styles.getPropertyValue('--diff-delete-border-color').trim() || '#cf222e'
-    const addedBackground =
-      styles.getPropertyValue('--diff-add-background-color').trim() || '#dafbe1'
-    const deletedBackground =
-      styles.getPropertyValue('--diff-delete-background-color').trim() ||
-      '#ffebe9'
-
     return {
       background:
         styles.getPropertyValue('--box-alt-background-color').trim() ||
@@ -1920,15 +1897,20 @@ export class DiffMinimap extends React.PureComponent<IDiffMinimapProps> {
       border:
         styles.getPropertyValue('--diff-border-color').trim() || '#d0d7de',
       context: styles.getPropertyValue('--diff-text-color').trim() || '#24292f',
-      added: brightenColor(added, changeColorBrightness),
-      deleted: brightenColor(deleted, changeColorBrightness),
+      added:
+        styles.getPropertyValue('--diff-add-inner-background-color').trim() ||
+        '#2da44e',
+      deleted:
+        styles
+          .getPropertyValue('--diff-delete-inner-background-color')
+          .trim() || '#cf222e',
       hunk:
         styles.getPropertyValue('--diff-hunk-text-color').trim() || '#57606a',
-      addedBackground: brightenColor(addedBackground, changeColorBrightness),
-      deletedBackground: brightenColor(
-        deletedBackground,
-        changeColorBrightness
-      ),
+      addedBackground:
+        styles.getPropertyValue('--diff-add-border-color').trim() || '#dafbe1',
+      deletedBackground:
+        styles.getPropertyValue('--diff-delete-border-color').trim() ||
+        '#ffebe9',
       hunkBackground:
         styles.getPropertyValue('--diff-hunk-background-color').trim() ||
         '#ddf4ff',
@@ -1938,101 +1920,4 @@ export class DiffMinimap extends React.PureComponent<IDiffMinimapProps> {
 
 function clamp(value: number, min: number, max: number) {
   return Math.min(Math.max(value, min), max)
-}
-
-function brightenColor(color: string, amount: number) {
-  const parsedColor = parseColor(color)
-  if (parsedColor === null) {
-    return color
-  }
-
-  const brightenChannel = (channel: number) =>
-    Math.round(channel + (255 - channel) * amount)
-
-  const red = brightenChannel(parsedColor.red)
-  const green = brightenChannel(parsedColor.green)
-  const blue = brightenChannel(parsedColor.blue)
-
-  return parsedColor.alpha >= 1
-    ? `rgb(${red}, ${green}, ${blue})`
-    : `rgba(${red}, ${green}, ${blue}, ${parsedColor.alpha})`
-}
-
-function parseColor(color: string): IRGBColor | null {
-  return parseHexColor(color) ?? parseRgbColor(color)
-}
-
-function parseHexColor(color: string): IRGBColor | null {
-  if (!color.startsWith('#')) {
-    return null
-  }
-
-  let hex = color.slice(1)
-
-  if (hex.length === 3 || hex.length === 4) {
-    hex = hex
-      .split('')
-      .map(component => component + component)
-      .join('')
-  }
-
-  if (hex.length !== 6 && hex.length !== 8) {
-    return null
-  }
-
-  const red = Number.parseInt(hex.slice(0, 2), 16)
-  const green = Number.parseInt(hex.slice(2, 4), 16)
-  const blue = Number.parseInt(hex.slice(4, 6), 16)
-  const alpha =
-    hex.length === 8 ? Number.parseInt(hex.slice(6, 8), 16) / 255 : 1
-
-  if ([red, green, blue, alpha].some(component => Number.isNaN(component))) {
-    return null
-  }
-
-  return { red, green, blue, alpha }
-}
-
-function parseRgbColor(color: string): IRGBColor | null {
-  const match = color.match(/^rgba?\((.+)\)$/i)
-  if (match === null) {
-    return null
-  }
-
-  const parts = match[1].split(',').map(part => part.trim())
-  if (parts.length < 3 || parts.length > 4) {
-    return null
-  }
-
-  const red = parseRgbChannel(parts[0])
-  const green = parseRgbChannel(parts[1])
-  const blue = parseRgbChannel(parts[2])
-  const alpha = parts.length === 4 ? parseAlphaChannel(parts[3]) : 1
-
-  if (red === null || green === null || blue === null || alpha === null) {
-    return null
-  }
-
-  return {
-    red,
-    green,
-    blue,
-    alpha,
-  }
-}
-
-function parseRgbChannel(value: string): number | null {
-  const parsed = value.endsWith('%')
-    ? (Number.parseFloat(value) / 100) * 255
-    : Number.parseFloat(value)
-
-  return Number.isFinite(parsed) ? clamp(Math.round(parsed), 0, 255) : null
-}
-
-function parseAlphaChannel(value: string): number | null {
-  const parsed = value.endsWith('%')
-    ? Number.parseFloat(value) / 100
-    : Number.parseFloat(value)
-
-  return Number.isFinite(parsed) ? clamp(parsed, 0, 1) : null
 }
