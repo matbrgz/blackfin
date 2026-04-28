@@ -595,10 +595,32 @@ export class DiffMinimap extends React.PureComponent<IDiffMinimapProps> {
     )
 
     const overflow = Math.max(0, minimapTotalHeight - canvasHeight)
-    const maxScrollTop = this.getMaxScrollTop()
-    const ratio =
-      maxScrollTop > 0 ? scrollContainer.scrollTop / maxScrollTop : 0
-    const scrollOffset = Math.round(overflow * ratio)
+
+    // Derive scrollOffset from the row index of the first visible row rather
+    // than from scrollTop/scrollHeight. scrollHeight drifts while
+    // react-virtualized refines estimated heights for unrendered rows, causing
+    // a ratio mismatch when row heights are non-uniform. Reading the DOM row
+    // positions (via getVisibleRowBounds) gives a stable row index that lives
+    // in the same uniform-row coordinate system the minimap uses for drawing.
+    const visibleBounds = this.getVisibleRowBounds()
+    let scrollOffset: number
+    if (visibleBounds !== null) {
+      const thumbAbsTop = visibleBounds.start * minimapRowHeight
+      const thumbAbsHeight =
+        (visibleBounds.end - visibleBounds.start) * minimapRowHeight
+      const maxThumbTop = Math.max(0, minimapTotalHeight - thumbAbsHeight)
+      scrollOffset =
+        maxThumbTop > 0
+          ? Math.min(overflow, Math.round((overflow * thumbAbsTop) / maxThumbTop))
+          : 0
+    } else {
+      // Fallback before react-virtualized has rendered any rows.
+      const maxScrollTop = this.getMaxScrollTop()
+      scrollOffset =
+        maxScrollTop > 0
+          ? Math.round((overflow * scrollContainer.scrollTop) / maxScrollTop)
+          : 0
+    }
 
     return { minimapRowHeight, minimapTotalHeight, canvasHeight, scrollOffset }
   }
@@ -1462,8 +1484,13 @@ export class DiffMinimap extends React.PureComponent<IDiffMinimapProps> {
     } else if (clampedTop >= maxTrackTop) {
       scrollTop = maxScrollTop
     } else {
-      const absMinimapY = clampedTop + geometry.scrollOffset
-      const rowIndex = absMinimapY / geometry.minimapRowHeight
+      // Invert the parallax formula: top = thumbAbsTop * maxTop / maxThumbTop,
+      // so thumbAbsTop = clampedTop * maxThumbTop / maxTop. Using scrollOffset
+      // here would create a feedback loop because scrollOffset itself depends
+      // on the scroll position we're trying to set.
+      const maxThumbTop = Math.max(0, geometry.minimapTotalHeight - viewport.height)
+      const thumbAbsTop = (clampedTop / maxTrackTop) * maxThumbTop
+      const rowIndex = thumbAbsTop / geometry.minimapRowHeight
       scrollTop = this.getScrollTopForRow(rowIndex, 'start')
     }
 
