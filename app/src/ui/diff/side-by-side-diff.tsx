@@ -77,10 +77,10 @@ import { getNumber, setNumber } from '../../lib/local-storage'
 
 const DefaultRowHeight = 20
 
-const minimapWidthKey = 'diff-minimap-width'
-const DefaultMinimapWidth = 88
-const MinMinimapWidth = 40
-const MaxMinimapWidth = 200
+const minimapWidthKey = 'diff-minimap-width-percent'
+const DefaultMinimapWidth = 7.5
+const MinMinimapWidth = 4
+const MaxMinimapWidth = 20
 
 let oldWidth = 0
 let oldHeight = 0
@@ -1180,11 +1180,14 @@ export class SideBySideDiff extends React.Component<
   // doesn't re-render on every mousemove. The minimap reads its own
   // clientWidth, so a CSS-var update is enough — the ResizeObserver in
   // DiffMinimap picks up the change and reschedules a redraw.
-  private applyMinimapWidth(width: number) {
-    const clamped = Math.min(MaxMinimapWidth, Math.max(MinMinimapWidth, width))
+  private applyMinimapWidth(percent: number) {
+    const clamped = Math.min(
+      MaxMinimapWidth,
+      Math.max(MinMinimapWidth, percent)
+    )
     this.containerRef.current?.style.setProperty(
       '--diff-minimap-width',
-      `${clamped}px`
+      `${clamped}%`
     )
   }
 
@@ -1212,9 +1215,19 @@ export class SideBySideDiff extends React.Component<
   }
 
   private onMinimapResizeMove = (event: MouseEvent) => {
+    const container = this.containerRef.current
+    if (container === null) {
+      return
+    }
+    const containerWidth = container.clientWidth
+    if (containerWidth === 0) {
+      return
+    }
     // Handle is at the minimap's left edge: dragging left widens.
+    // Convert pixel delta to percentage of the container width.
     const dx = this.minimapResizeStartX - event.clientX
-    this.applyMinimapWidth(this.minimapResizeStartWidth + dx)
+    const dPct = (dx / containerWidth) * 100
+    this.applyMinimapWidth(this.minimapResizeStartWidth + dPct)
   }
 
   private onMinimapResizeEnd = () => {
