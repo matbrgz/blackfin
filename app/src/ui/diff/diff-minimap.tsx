@@ -611,7 +611,10 @@ export class DiffMinimap extends React.PureComponent<IDiffMinimapProps> {
       const maxThumbTop = Math.max(0, minimapTotalHeight - thumbAbsHeight)
       scrollOffset =
         maxThumbTop > 0
-          ? Math.min(overflow, Math.round((overflow * thumbAbsTop) / maxThumbTop))
+          ? Math.min(
+              overflow,
+              Math.round((overflow * thumbAbsTop) / maxThumbTop)
+            )
           : 0
     } else {
       // Fallback before react-virtualized has rendered any rows.
@@ -1488,7 +1491,10 @@ export class DiffMinimap extends React.PureComponent<IDiffMinimapProps> {
       // so thumbAbsTop = clampedTop * maxThumbTop / maxTop. Using scrollOffset
       // here would create a feedback loop because scrollOffset itself depends
       // on the scroll position we're trying to set.
-      const maxThumbTop = Math.max(0, geometry.minimapTotalHeight - viewport.height)
+      const maxThumbTop = Math.max(
+        0,
+        geometry.minimapTotalHeight - viewport.height
+      )
       const thumbAbsTop = (clampedTop / maxTrackTop) * maxThumbTop
       const rowIndex = thumbAbsTop / geometry.minimapRowHeight
       scrollTop = this.getScrollTopForRow(rowIndex, 'start')
