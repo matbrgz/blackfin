@@ -62,6 +62,11 @@ export abstract class BaseMultiCommitOperation extends React.Component<IMultiCom
   protected abstract renderChooseBranch: () => JSX.Element | null
   protected abstract renderCreateBranch: () => JSX.Element | null
 
+  /** Initiate Copilot conflict resolution for the current operation. */
+  protected onResolveWithCopilot = () => {
+    log.info('[BaseMultiCommitOperation] Resolve with Copilot clicked')
+  }
+
   protected onFlowEnded = () => {
     this.props.dispatcher.closePopup(PopupType.MultiCommitOperation)
     this.props.dispatcher.endMultiCommitOperation(this.props.repository)
@@ -214,6 +219,7 @@ export abstract class BaseMultiCommitOperation extends React.Component<IMultiCom
             openFileInExternalEditor={openFileInExternalEditor}
             openRepositoryInShell={openRepositoryInShell}
             someConflictsHaveBeenResolved={this.setConflictsHaveBeenResolved}
+            onResolveWithCopilot={this.onResolveWithCopilot}
           />
         )
       }
