@@ -20,7 +20,7 @@ import {
 
 export type RepositoryListGroup = (
   | {
-      kind: 'recent' | 'other'
+      kind: 'recent' | 'other' | 'pins'
     }
   | {
       kind: 'dotcom'
@@ -41,6 +41,8 @@ export type RepositoryListGroup = (
 export const getGroupKey = (group: RepositoryListGroup) => {
   const { kind, displayName } = group
   switch (kind) {
+    case 'pins':
+      return `-1:pins`
     case 'recent':
       return `0:recent`
     case 'dotcom':
@@ -205,4 +207,60 @@ const toSortedListItems = (
     storedRepositoryPaths,
     showWorktreesInSidebar,
   })
+}
+
+/**
+ * Extracts pinned items from existing groups and returns a Pins group, or null
+ * if none of the pinned IDs are found in the groups.
+ */
+export function buildPinnedGroup(
+  pinnedIds: ReadonlyArray<number>,
+  allGroups: ReadonlyArray<
+    IFilterListGroup<IRepositoryListItem, RepositoryListGroup>
+  >
+): IFilterListGroup<IRepositoryListItem, RepositoryListGroup> | null {
+  if (pinnedIds.length === 0) {
+    return null
+  }
+
+  const idToItem = new Map<number, IRepositoryListItem>()
+  for (const group of allGroups) {
+    for (const item of group.items) {
+      if (item.repository.id > 0 && !idToItem.has(item.repository.id)) {
+        idToItem.set(item.repository.id, item)
+      }
+    }
+  }
+
+  const items = pinnedIds
+    .map(id => idToItem.get(id))
+    .filter((item): item is IRepositoryListItem => item !== undefined)
+
+  if (items.length === 0) {
+    return null
+  }
+
+  return { identifier: { kind: 'pins', displayName: null }, items }
+}
+
+/**
+ * Returns groups with pinned items removed so they only appear in the Pins group.
+ */
+export function filterPinnedFromGroups(
+  pinnedIds: ReadonlyArray<number>,
+  groups: ReadonlyArray<
+    IFilterListGroup<IRepositoryListItem, RepositoryListGroup>
+  >
+): ReadonlyArray<IFilterListGroup<IRepositoryListItem, RepositoryListGroup>> {
+  if (pinnedIds.length === 0) {
+    return groups
+  }
+
+  const pinnedIdSet = new Set(pinnedIds)
+  return groups
+    .map(group => ({
+      ...group,
+      items: group.items.filter(item => !pinnedIdSet.has(item.repository.id)),
+    }))
+    .filter(group => group.items.length > 0)
 }
