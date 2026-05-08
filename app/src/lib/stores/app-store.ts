@@ -705,7 +705,6 @@ export class AppStore extends TypedBaseStore<IAppState> {
   private readonly lastSidebarWorktreeRefreshAt = new Map<string, number>()
   private showCompareTab: boolean = showCompareTabDefault
   private hideWindowOnQuit: boolean = __DARWIN__
-  private autoHideMenuBar: boolean = false
 
   private useWindowsOpenSSH: boolean = false
 
@@ -1318,7 +1317,6 @@ export class AppStore extends TypedBaseStore<IAppState> {
       currentOnboardingTutorialStep: this.currentOnboardingTutorialStep,
       repositoryIndicatorsEnabled: this.repositoryIndicatorsEnabled,
       hideWindowOnQuit: this.hideWindowOnQuit,
-      autoHideMenuBar: this.autoHideMenuBar,
       commitSpellcheckEnabled: this.commitSpellcheckEnabled,
       showCommitAuthorInfo: this.showCommitAuthorInfo,
       currentDragElement: this.currentDragElement,
@@ -2759,7 +2757,6 @@ export class AppStore extends TypedBaseStore<IAppState> {
     const mainProcessConfig = await getMainProcessConfig()
     this.titleBarStyle = mainProcessConfig.titleBarStyle
     this.hideWindowOnQuit = mainProcessConfig.hideWindowOnQuit
-    this.autoHideMenuBar = mainProcessConfig.autoHideMenuBar
 
     this.lastThankYou = getObject<ILastThankYou>(lastThankYouKey)
 
@@ -8430,15 +8427,6 @@ export class AppStore extends TypedBaseStore<IAppState> {
     this.hideWindowOnQuit = hideWindowOnQuit
     this.emitUpdate()
     return updateMainProcessConfig({ hideWindowOnQuit })
-  }
-
-  public _setAutoHideMenuBar(autoHideMenuBar: boolean) {
-    if (this.autoHideMenuBar === autoHideMenuBar) {
-      return
-    }
-    this.autoHideMenuBar = autoHideMenuBar
-    this.emitUpdate()
-    return updateMainProcessConfig({ autoHideMenuBar })
   }
 
   public async _resolveCurrentEditor() {

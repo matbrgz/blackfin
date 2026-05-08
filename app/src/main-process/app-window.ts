@@ -79,11 +79,13 @@ export class AppWindow {
     } else if (__WIN32__) {
       windowOptions.frame = false
     } else if (__LINUX__) {
-      if (readMainProcessConfig().titleBarStyle === 'custom') {
+      const config = readMainProcessConfig()
+      if (config.titleBarStyle === 'custom') {
         windowOptions.frame = false
       }
       windowOptions.icon = join(__dirname, 'static', 'logos', '512x512.png')
-      windowOptions.autoHideMenuBar = readMainProcessConfig().autoHideMenuBar
+      windowOptions.autoHideMenuBar =
+        config.titleBarStyle === 'native-without-menu-bar'
 
       // relax restriction here for users trying to run app at a small
       // resolution and any other side-effects of dropping this restriction are

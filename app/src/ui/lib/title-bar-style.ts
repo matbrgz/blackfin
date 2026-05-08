@@ -14,4 +14,4 @@
  *  - macOS uses the native title bar
  *  - Windows uses the custom title bar
  */
-export type TitleBarStyle = 'native' | 'custom'
+export type TitleBarStyle = 'native' | 'custom' | 'native-without-menu-bar'

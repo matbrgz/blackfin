@@ -131,7 +131,6 @@ interface IPreferencesProps {
   readonly showBranchNameInRepoList: ShowBranchNameInRepoListSetting
   readonly branchSortOrder: BranchSortOrder
   readonly hideWindowOnQuit: boolean
-  readonly autoHideMenuBar: boolean
   readonly onEditGlobalGitConfig: () => void
   readonly underlineLinks: boolean
   readonly showDiffCheckMarks: boolean
@@ -194,7 +193,6 @@ interface IPreferencesState {
   readonly showBranchNameInRepoList: ShowBranchNameInRepoListSetting
   readonly branchSortOrder: BranchSortOrder
   readonly hideWindowOnQuit: boolean
-  readonly autoHideMenuBar: boolean
 
   readonly initiallySelectedTheme: ApplicationTheme
   readonly initiallySelectedTabSize: number
@@ -285,7 +283,6 @@ export class Preferences extends React.Component<
       showBranchNameInRepoList: this.props.showBranchNameInRepoList,
       branchSortOrder: this.props.branchSortOrder,
       hideWindowOnQuit: this.props.hideWindowOnQuit,
-      autoHideMenuBar: this.props.autoHideMenuBar,
       initiallySelectedTheme: this.props.selectedTheme,
       initiallySelectedTabSize: this.props.selectedTabSize,
       initiallySelectedDiffFontSize: this.props.selectedDiffFontSize,
@@ -784,7 +781,6 @@ export class Preferences extends React.Component<
             useExternalCredentialHelper={this.state.useExternalCredentialHelper}
             repositoryIndicatorsEnabled={this.state.repositoryIndicatorsEnabled}
             hideWindowOnQuit={this.state.hideWindowOnQuit}
-            autoHideMenuBar={this.state.autoHideMenuBar}
             onUseWindowsOpenSSHChanged={this.onUseWindowsOpenSSHChanged}
             onOptOutofReportingChanged={this.onOptOutofReportingChanged}
             onUseExternalCredentialHelperChanged={
@@ -794,7 +790,6 @@ export class Preferences extends React.Component<
               this.onRepositoryIndicatorsEnabledChanged
             }
             onHideWindowOnQuitChanged={this.onHideWindowOnQuitChanged}
-            onAutoHideMenuBarChanged={this.onAutoHideMenuBarChanged}
           />
         )
         break
@@ -832,10 +827,6 @@ export class Preferences extends React.Component<
 
   private onHideWindowOnQuitChanged = (hideWindowOnQuit: boolean) => {
     this.setState({ hideWindowOnQuit })
-  }
-
-  private onAutoHideMenuBarChanged = (autoHideMenuBar: boolean) => {
-    this.setState({ autoHideMenuBar })
   }
 
   private onLockFileDeleted = () => {
@@ -1183,10 +1174,6 @@ export class Preferences extends React.Component<
 
       if (this.state.hideWindowOnQuit !== this.props.hideWindowOnQuit) {
         dispatcher.setHideWindowOnQuit(this.state.hideWindowOnQuit)
-      }
-
-      if (this.state.autoHideMenuBar !== this.props.autoHideMenuBar) {
-        dispatcher.setAutoHideMenuBar(this.state.autoHideMenuBar)
       }
 
       if (this.state.hooksPreferencesDirty) {

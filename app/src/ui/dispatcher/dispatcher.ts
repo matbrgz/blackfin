@@ -3011,10 +3011,6 @@ export class Dispatcher {
     this.appStore._setHideWindowOnQuit(hideWindowOnQuit)
   }
 
-  public setAutoHideMenuBar(autoHideMenuBar: boolean) {
-    this.appStore._setAutoHideMenuBar(autoHideMenuBar)
-  }
-
   public setCommitSpellcheckEnabled(commitSpellcheckEnabled: boolean) {
     this.appStore._setCommitSpellcheckEnabled(commitSpellcheckEnabled)
   }

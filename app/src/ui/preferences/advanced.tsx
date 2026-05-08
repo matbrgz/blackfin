@@ -11,13 +11,11 @@ interface IAdvancedPreferencesProps {
   readonly useExternalCredentialHelper: boolean
   readonly repositoryIndicatorsEnabled: boolean
   readonly hideWindowOnQuit: boolean
-  readonly autoHideMenuBar: boolean
   readonly onUseWindowsOpenSSHChanged: (checked: boolean) => void
   readonly onOptOutofReportingChanged: (checked: boolean) => void
   readonly onUseExternalCredentialHelperChanged: (checked: boolean) => void
   readonly onRepositoryIndicatorsEnabledChanged: (enabled: boolean) => void
   readonly onHideWindowOnQuitChanged: (enabled: boolean) => void
-  readonly onAutoHideMenuBarChanged: (enabled: boolean) => void
 }
 
 interface IAdvancedPreferencesState {
@@ -84,12 +82,6 @@ export class Advanced extends React.Component<
     this.props.onHideWindowOnQuitChanged(event.currentTarget.checked)
   }
 
-  private onAutoHideMenuBarChanged = (
-    event: React.FormEvent<HTMLInputElement>
-  ) => {
-    this.props.onAutoHideMenuBarChanged(event.currentTarget.checked)
-  }
-
   private reportDesktopUsageLabel() {
     return (
       <span>
@@ -101,7 +93,7 @@ export class Advanced extends React.Component<
 
   public render() {
     return (
-      <DialogContent className="advanced-tab">
+      <DialogContent>
         {!__DARWIN__ && this.renderAppSettings()}
         <div className="advanced-section">
           <h2>Background updates</h2>
@@ -209,25 +201,6 @@ export class Advanced extends React.Component<
             background. Use Ctrl+Q to completely quit the app.
           </p>
         </div>
-        {!__DARWIN__ && (
-          <div style={{ marginTop: 'var(--spacing)' }}>
-            <Checkbox
-              label="Auto-hide menu bar"
-              value={
-                this.props.autoHideMenuBar
-                  ? CheckboxValue.On
-                  : CheckboxValue.Off
-              }
-              onChange={this.onAutoHideMenuBarChanged}
-            />
-            <div className="git-settings-description">
-              <p>
-                Hide the menu bar and show it temporarily when Alt is pressed.
-                Takes effect after restarting the app.
-              </p>
-            </div>
-          </div>
-        )}
       </div>
     )
   }

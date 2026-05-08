@@ -375,12 +375,6 @@ export interface IAppState {
   readonly hideWindowOnQuit: boolean
 
   /**
-   * Whether or not the menu bar should be hidden until the user presses Alt.
-   * Only applicable on Linux.
-   */
-  readonly autoHideMenuBar: boolean
-
-  /**
    * Whether or not the app should use spell check on commit summary and description
    */
   readonly commitSpellcheckEnabled: boolean

@@ -1745,7 +1745,6 @@ export class App extends React.Component<IAppProps, IAppState> {
             showCompareTab={this.state.showCompareTab}
             repositoryIndicatorsEnabled={this.state.repositoryIndicatorsEnabled}
             hideWindowOnQuit={this.state.hideWindowOnQuit}
-            autoHideMenuBar={this.state.autoHideMenuBar}
             onEditGlobalGitConfig={this.editGlobalGitConfig}
             underlineLinks={this.state.underlineLinks}
             showDiffCheckMarks={this.state.showDiffCheckMarks}
