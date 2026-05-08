@@ -22,8 +22,7 @@ interface IWorktreeListItem extends IFilterListItem {
 interface IWorktreeListProps {
   readonly worktrees: ReadonlyArray<WorktreeEntry>
   readonly currentWorktree: WorktreeEntry | null
-  readonly selectedWorktree: WorktreeEntry | null
-  readonly onWorktreeSelected: (worktree: WorktreeEntry) => void
+
   readonly onWorktreeClick?: (
     worktree: WorktreeEntry,
     source: ClickSource
@@ -119,12 +118,6 @@ export class WorktreeList extends React.Component<IWorktreeListProps> {
     }
   }
 
-  private onSelectionChanged = (item: IWorktreeListItem | null) => {
-    if (item) {
-      this.props.onWorktreeSelected(item.worktree)
-    }
-  }
-
   private onItemContextMenu = (
     item: IWorktreeListItem,
     event: React.MouseEvent<HTMLDivElement>
@@ -136,11 +129,6 @@ export class WorktreeList extends React.Component<IWorktreeListProps> {
 
   public render() {
     const groups = this.getGroups(this.props.worktrees)
-    const selectedItem =
-      groups
-        .flatMap(g => g.items)
-        .find(i => i.worktree.path === this.props.selectedWorktree?.path) ||
-      null
 
     return (
       <SectionFilterList<IWorktreeListItem, WorktreeGroupIdentifier>
@@ -148,11 +136,10 @@ export class WorktreeList extends React.Component<IWorktreeListProps> {
         rowHeight={RowHeight}
         filterText={this.props.filterText}
         onFilterTextChanged={this.props.onFilterTextChanged}
-        selectedItem={selectedItem}
+        selectedItem={null}
         renderItem={this.renderItem}
         renderGroupHeader={this.renderGroupHeader}
         onItemClick={this.onItemClick}
-        onSelectionChanged={this.onSelectionChanged}
         groups={groups}
         invalidationProps={this.props.worktrees}
         renderPostFilter={this.onRenderNewButton}
