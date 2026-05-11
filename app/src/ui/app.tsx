@@ -2695,15 +2695,12 @@ export class App extends React.Component<IAppProps, IAppState> {
         )
       }
       case PopupType.DeleteWorktree: {
-        const repo = popup.repository
-        const wtPath = popup.worktreePath
         return (
           <DeleteWorktreeDialog
             key="delete-worktree"
-            worktreePath={wtPath}
-            onDeleteWorktree={() =>
-              this.props.dispatcher.deleteWorktree(repo, wtPath)
-            }
+            repository={popup.repository}
+            worktreePath={popup.worktreePath}
+            onDeleteWorktree={this.onDeleteWorkTree}
             onDismissed={onPopupDismissedFn}
           />
         )
@@ -2711,6 +2708,10 @@ export class App extends React.Component<IAppProps, IAppState> {
       default:
         return assertNever(popup, `Unknown popup type: ${popup}`)
     }
+  }
+
+  private onDeleteWorkTree = (repository: Repository, worktreePath: string) => {
+    return this.props.dispatcher.deleteWorktree(repository, worktreePath)
   }
 
   private onUpdateCommitOptions = (
@@ -3474,7 +3475,6 @@ export class App extends React.Component<IAppProps, IAppState> {
         isOpen={isOpen}
         onDropDownStateChanged={this.onWorktreeDropdownStateChanged}
         enableFocusTrap={enableFocusTrap}
-        repositories={this.state.repositories}
         worktreeDropdownWidth={this.state.worktreeDropdownWidth}
       />
     )

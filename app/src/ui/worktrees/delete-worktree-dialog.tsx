@@ -4,10 +4,15 @@ import * as Path from 'path'
 import { Dialog, DialogContent, DialogFooter } from '../dialog'
 import { Ref } from '../lib/ref'
 import { OkCancelButtonGroup } from '../dialog/ok-cancel-button-group'
+import { Repository } from '../../models/repository'
 
 interface IDeleteWorktreeDialogProps {
+  readonly repository: Repository
   readonly worktreePath: string
-  readonly onDeleteWorktree: () => Promise<void>
+  readonly onDeleteWorktree: (
+    repository: Repository,
+    worktreePath: string
+  ) => Promise<void>
   readonly onDismissed: () => void
 }
 
@@ -56,7 +61,10 @@ export class DeleteWorktreeDialog extends React.Component<
 
   private onSubmit = async () => {
     this.setState({ isDeleting: true })
-    await this.props.onDeleteWorktree()
+    await this.props.onDeleteWorktree(
+      this.props.repository,
+      this.props.worktreePath
+    )
     this.props.onDismissed()
   }
 }
