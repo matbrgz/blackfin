@@ -79,22 +79,9 @@ export class DeleteWorktreeDialog extends React.Component<
         // Switch the existing repository record to the main worktree path,
         // preserving the id, alias, and other settings.
         await dispatcher.switchWorktree(repository, mainPath)
-        // removeWorktree needs to run from a path other than the one being
-        // deleted. The repository object is immutable and still holds the old
-        // path so we construct a copy pointing at the main worktree.
-        const mainRepo = new Repository(
-          mainPath,
-          repository.id,
-          repository.gitHubRepository,
-          repository.missing,
-          repository.alias,
-          repository.workflowPreferences,
-          repository.isTutorialRepository,
-          repository.mainWorktreePath
-        )
-        await removeWorktree(mainRepo, worktreePath)
+        await removeWorktree(mainPath, worktreePath)
       } else {
-        await removeWorktree(repository, worktreePath)
+        await removeWorktree(repository.path, worktreePath)
       }
     } catch (e) {
       dispatcher.postError(e)
