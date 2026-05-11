@@ -3459,6 +3459,13 @@ export class App extends React.Component<IAppProps, IAppState> {
       return null
     }
 
+    const { worktrees } = selection.state
+
+    // Only show the worktree dropdown when there are linked worktrees
+    if (worktrees.length <= 1) {
+      return null
+    }
+
     const currentFoldout = this.state.currentFoldout
 
     const isOpen =
@@ -3472,7 +3479,7 @@ export class App extends React.Component<IAppProps, IAppState> {
       <WorktreeDropdown
         dispatcher={this.props.dispatcher}
         repository={repository}
-        worktrees={selection.state.worktrees}
+        worktrees={worktrees}
         isOpen={isOpen}
         onDropDownStateChanged={this.onWorktreeDropdownStateChanged}
         enableFocusTrap={enableFocusTrap}
