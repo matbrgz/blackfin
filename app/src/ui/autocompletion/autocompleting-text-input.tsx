@@ -96,6 +96,12 @@ interface IAutocompletingTextInputProps<ElementType, AutocompleteItemType> {
 
   /** Called when the input field receives focus. */
   readonly onFocus?: (event: React.FocusEvent<ElementType>) => void
+
+  /** The aria-labelledby attribute for the input element. */
+  readonly ariaLabelledBy?: string
+
+  /** The aria-describedby attribute for the input element. */
+  readonly ariaDescribedBy?: string
 }
 
 interface IAutocompletionState<T> {
@@ -439,6 +445,8 @@ export abstract class AutocompletingTextInput<
       'aria-controls': this.state.autocompleteContainerId,
       'aria-owns': this.state.autocompleteContainerId,
       'aria-activedescendant': this.getActiveAutocompleteItemId(),
+      'aria-labelledby': this.props.ariaLabelledBy,
+      'aria-describedby': this.props.ariaDescribedBy,
     }
 
     return React.createElement<React.HTMLAttributes<ElementType>, ElementType>(
