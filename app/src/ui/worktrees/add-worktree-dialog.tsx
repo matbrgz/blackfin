@@ -146,7 +146,7 @@ export class AddWorktreeDialog extends React.Component<
 
     return (
       <div id="add-worktree-path-msg">
-        The worktree will be created at <Ref>{fullPath}</Ref>.
+        Worktree will be created at <Ref>{fullPath}</Ref>.
       </div>
     )
   }

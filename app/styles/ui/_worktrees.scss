@@ -85,4 +85,9 @@
   .ref-name-text-box {
     margin-bottom: 0;
   }
+
+  #add-worktree-path-msg {
+    margin-bottom: var(--spacing);
+    margin-top: calc(-1 * var(--spacing));
+  }
 }
