@@ -114,7 +114,7 @@ const allMenuIds: ReadonlyArray<MenuIDs> = [
   'compare-to-branch',
   'merge-branch',
   'rebase-branch',
-  'view-repository-in-browser',
+  'view-repository-on-github',
   'compare-on-github',
   'branch-on-github',
   'open-in-shell',
@@ -299,7 +299,7 @@ function getRepositoryMenuBuilder(state: IAppState): MenuStateBuilder {
     )
 
     menuStateBuilder.setEnabled(
-      'view-repository-in-browser',
+      'view-repository-on-github',
       isHostedOnGitHub || hasRemoteUrl
     )
     menuStateBuilder.setEnabled(
@@ -359,7 +359,7 @@ function getRepositoryMenuBuilder(state: IAppState): MenuStateBuilder {
       menuStateBuilder.disable(id)
     }
 
-    menuStateBuilder.disable('view-repository-in-browser')
+    menuStateBuilder.disable('view-repository-on-github')
     menuStateBuilder.disable('create-pull-request')
     menuStateBuilder.disable('preview-pull-request')
     if (
@@ -367,7 +367,7 @@ function getRepositoryMenuBuilder(state: IAppState): MenuStateBuilder {
       selectedState.type === SelectionType.MissingRepository
     ) {
       if (selectedState.repository.gitHubRepository) {
-        menuStateBuilder.enable('view-repository-in-browser')
+        menuStateBuilder.enable('view-repository-on-github')
       }
       menuStateBuilder.enable('remove-repository')
     }

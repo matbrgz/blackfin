@@ -67,7 +67,7 @@ interface IRepositoriesListProps {
   readonly onShowRepository: (repository: Repositoryish) => void
 
   /** Called when the repository should be opened in the default web browser. */
-  readonly onViewInBrowser: (repository: Repositoryish) => void
+  readonly onViewOnGitHub: (repository: Repositoryish) => void
 
   /** Called when the repository should be shown in the shell. */
   readonly onOpenInShell: (repository: Repositoryish) => void
@@ -512,7 +512,7 @@ export class RepositoriesList extends React.Component<
       onRemoveRepositoryAlias: this.onRemoveRepositoryAlias,
       onChangeRepositoryGroupName: this.onChangeRepositoryGroupName,
       onRemoveRepositoryGroupName: this.onRemoveRepositoryGroupName,
-      onViewInBrowser: this.props.onViewInBrowser,
+      onViewOnGitHub: this.props.onViewOnGitHub,
       repository: item.repository,
       shellLabel: this.props.shellLabel,
       onCopyRepoPath: path => this.props.dispatcher.copyPathToClipboard(path),

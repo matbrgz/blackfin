@@ -28,7 +28,7 @@ describe('repository list item context menu', () => {
       externalEditorLabel: undefined,
       askForConfirmationOnRemoveRepository: true,
       showWorktreesInSidebar: false,
-      onViewInBrowser: () => {},
+      onViewOnGitHub: () => {},
       onOpenInNewWindow: () => {},
       onOpenInShell: () => {},
       onShowRepository: () => {},

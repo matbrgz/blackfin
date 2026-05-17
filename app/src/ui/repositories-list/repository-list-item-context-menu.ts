@@ -22,7 +22,7 @@ interface IRepositoryListItemContextMenuConfig {
   readonly isLinkedWorktreeRow?: boolean
   readonly isVirtualLinkedWorktreeRow?: boolean
   readonly isPrunableWorktreeRow?: boolean
-  onViewInBrowser: (repository: Repositoryish) => void
+  onViewOnGitHub: (repository: Repositoryish) => void
   onOpenInNewWindow?: (repository: Repositoryish) => void
   onOpenInShell: (repository: Repositoryish) => void
   onShowRepository: (repository: Repositoryish) => void
@@ -85,7 +85,7 @@ export const generateRepositoryListContextMenu = (
       label: getViewOnBrowserLabel(
         isGitHub ? repository.gitHubRepository.type : null
       ),
-      action: () => config.onViewInBrowser(repository),
+      action: () => config.onViewOnGitHub(repository),
       enabled: isGitHub || hasOriginUrl,
     },
     ...(config.onOpenInNewWindow && canOpenInNewWindow

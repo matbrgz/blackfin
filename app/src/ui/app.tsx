@@ -529,8 +529,8 @@ export class App extends React.Component<IAppProps, IAppState> {
         return this.showRebaseDialog()
       case 'show-repository-settings':
         return this.showRepositorySettings()
-      case 'view-repository-in-browser':
-        return this.viewRepositoryInBrowser()
+      case 'view-repository-on-github':
+        return this.viewRepositoryOnGitHub()
       case 'compare-on-github':
         return this.openBranchOnGitHub('compare')
       case 'branch-on-github':
@@ -1386,10 +1386,10 @@ export class App extends React.Component<IAppProps, IAppState> {
     }
   }
 
-  private viewRepositoryInBrowser() {
+  private viewRepositoryOnGitHub() {
     const repository = this.getRepository()
 
-    this.viewInBrowser(repository)
+    this.viewOnGitHub(repository)
   }
 
   /** Returns the URL to the current repository if hosted on GitHub */
@@ -3205,7 +3205,7 @@ export class App extends React.Component<IAppProps, IAppState> {
           this.state.askForConfirmationOnRepositoryRemoval
         }
         onRemoveRepository={this.removeRepository}
-        onViewInBrowser={this.viewInBrowser}
+        onViewOnGitHub={this.viewOnGitHub}
         onOpenInNewWindow={this.openRepositoryInNewWindow}
         onOpenInShell={this.openInShell}
         onShowRepository={this.showRepository}
@@ -3219,7 +3219,7 @@ export class App extends React.Component<IAppProps, IAppState> {
     )
   }
 
-  private viewInBrowser = (
+  private viewOnGitHub = (
     repository: Repository | CloningRepository | null
   ) => {
     if (!(repository instanceof Repository)) {
@@ -3466,7 +3466,7 @@ export class App extends React.Component<IAppProps, IAppState> {
       onRemoveRepositoryAlias: onRemoveRepositoryAlias,
       onChangeRepositoryGroupName: onChangeRepositoryGroupName,
       onRemoveRepositoryGroupName: onRemoveRepositoryGroupName,
-      onViewInBrowser: this.viewInBrowser,
+      onViewOnGitHub: this.viewOnGitHub,
       repository: repository,
       shellLabel: this.state.useCustomShell
         ? undefined

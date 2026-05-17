@@ -237,7 +237,7 @@ export interface IDailyMeasures {
    * The number of times the user has opened their repository on GitHub from the
    * suggested next steps view
    */
-  readonly suggestedStepViewInBrowser: number
+  readonly suggestedStepViewOnGitHub: number
 
   /**
    * The number of times the user has used the publish repository action from the

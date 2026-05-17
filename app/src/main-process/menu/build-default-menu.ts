@@ -363,12 +363,12 @@ export function buildDefaultMenu({
       },
       separator,
       {
-        id: 'view-repository-in-browser',
+        id: 'view-repository-on-github',
         label:
           (__DARWIN__ ? 'View ' : '&View ') +
           onGithubLabel(gitHubRepositoryType),
         accelerator: 'CmdOrCtrl+Shift+G',
-        click: emit('view-repository-in-browser'),
+        click: emit('view-repository-on-github'),
       },
       {
         label: __DARWIN__
