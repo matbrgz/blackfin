@@ -378,6 +378,7 @@
     border-radius: 8px;
     color: var(--list-item-badge-color);
     background: var(--list-item-badge-background-color);
+    padding: 0 var(--spacing-half);
   }
 
   .list-item.selected:not(.in-keyboard-insertion-mode) {
