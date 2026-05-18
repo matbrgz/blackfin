@@ -201,7 +201,7 @@ export function buildDefaultMenu({
       {
         label: __DARWIN__ ? 'Show Worktrees List' : '&Worktrees list',
         id: 'show-worktrees-list',
-        accelerator: 'CmdOrCtrl+E',
+        accelerator: 'CmdOrCtrl+Alt+W',
         click: emit('show-worktrees'),
       },
       separator,
