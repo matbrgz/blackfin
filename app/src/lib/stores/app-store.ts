@@ -382,7 +382,6 @@ import {
 } from '../custom-integration'
 import { updateStore } from '../../ui/lib/update-store'
 import { BypassReasonType } from '../../ui/secret-scanning/bypass-push-protection-dialog'
-import { getRepoHooks } from '../hooks/get-repo-hooks'
 import {
   ICopilotConflictResolutionResponse,
   IConflictResolutionProgress,
@@ -3736,7 +3735,6 @@ export class AppStore extends TypedBaseStore<IAppState> {
       gitStore.updateLastFetched(),
       gitStore.loadStashEntries(),
       this._refreshAuthor(repository),
-      this._refreshHasCommitHooks(repository),
       refreshSectionPromise,
     ])
 
@@ -4003,21 +4001,6 @@ export class AppStore extends TypedBaseStore<IAppState> {
       ...commitOptions,
     }))
     this.emitUpdate()
-  }
-
-  private async _refreshHasCommitHooks(repository: Repository): Promise<void> {
-    const hooks = ['pre-commit', 'commit-msg']
-    // Break early if we find either one of the hooks
-    for await (const {} of getRepoHooks(
-      repository.path,
-      repository.resolvedGitDir,
-      hooks
-    )) {
-      const hasCommitHooks = true
-      this.repositoryStateCache.update(repository, () => ({ hasCommitHooks }))
-      this.emitUpdate()
-      return
-    }
   }
 
   /** This shouldn't be called directly. See `Dispatcher`. */

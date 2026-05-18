@@ -51,17 +51,17 @@ const git = (args: string[], path: string) =>
         )
   })
 
-const getGitDir = async (path: string) =>
+const getHooksPath = async (path: string) =>
   resolve(
     path,
-    (await git(['rev-parse', '--git-dir'], path)).replace(/\r?\n$/, '')
+    (await git(['rev-parse', '--git-path', 'hooks'], path)).replace(
+      /\r?\n$/,
+      ''
+    )
   )
 
-const getConfigValue = async (path: string, key: string) =>
-  resolve(
-    path,
-    (await git(['config', '-z', '--get', key], path)).split('\0')[0]
-  )
+const getConfigValue = (path: string, key: string) =>
+  git(['config', '-z', '--get', key], path).then(x => x.split('\0')[0])
 
 /**
  * Returns the names of executable Git hooks found in the given repository.
@@ -73,14 +73,10 @@ const getConfigValue = async (path: string, key: string) =>
  * @param filter An optional array of hook names to filter the results.
  *               Including '*' will return all hooks.
  */
-export async function* getRepoHooks(
-  path: string,
-  gitDir: string | undefined,
-  filter?: string[]
-) {
-  const hooksPath = await getConfigValue(path, 'core.hooksPath').catch(
-    async () => resolve(gitDir ?? (await getGitDir(path)), 'hooks')
-  )
+export async function* getRepoHooks(path: string, filter?: string[]) {
+  const hooksPath = await getConfigValue(path, 'core.hooksPath')
+    .catch(() => getHooksPath(path))
+    .then(p => resolve(path, p))
 
   const files = await readdir(hooksPath, { withFileTypes: true })
     .then(entries => entries.filter(x => x.isFile()))

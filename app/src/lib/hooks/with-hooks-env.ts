@@ -35,9 +35,7 @@ export async function withHooksEnv<T>(
     return fn(opts?.env)
   }
 
-  const hooks = await Array.fromAsync(
-    getRepoHooks(path, undefined, opts.interceptHooks)
-  )
+  const hooks = await Array.fromAsync(getRepoHooks(path, opts.interceptHooks))
 
   if (hooks.length === 0) {
     return fn(opts?.env)
