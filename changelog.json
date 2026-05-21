@@ -1,7 +1,6 @@
 {
   "releases": {
     "3.5.9": [
-      "[Added] Add date, time, and number formatting preferences to the Appearance settings - #21836",
       "[Fixed] Skip branches checked out in linked worktrees during pruning - #8043. Thanks @KRRT7!",
       "[Fixed] Fix styling of buttons in the commit message area - #22075",
       "[Fixed] Fix rendering long lists of changed files - #21630",
