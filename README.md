@@ -202,6 +202,31 @@ sudo dnf install github-desktop-plus
 
 </details>
 
+### OpenSUSE (RPM)
+
+<details>
+<summary>Click to expand</summary>
+<br>
+
+Create the repository file:
+
+```bash
+sudo rpm --import https://gpg.polrivero.com/public.key
+echo -e "[github-desktop-plus]\nname=GitHub Desktop Plus\nbaseurl=https://rpm.github-desktop.polrivero.com/\nenabled=1\ngpgcheck=1\nrepo_gpgcheck=1\ngpgkey=https://gpg.polrivero.com/public.key" | sudo tee /etc/zypp/repos.d/github-desktop-plus.repo
+```
+
+Update the package list and install:
+
+```bash
+sudo zypper refresh
+sudo zypper install github-desktop-plus
+```
+
+---
+
+</details>
+
+
 ### Arch Linux / Manjaro (AUR)
 
 <details>
