@@ -1926,6 +1926,14 @@ export class Dispatcher {
     return this.appStore._relocateRepository(repository)
   }
 
+  /** Update the repository's path. */
+  public async updateRepositoryPath(
+    repository: Repository,
+    path: string
+  ): Promise<void> {
+    await this.appStore._updateRepositoryPath(repository, path)
+  }
+
   /**
    * Change the workflow preferences for the specified repository.
    *
