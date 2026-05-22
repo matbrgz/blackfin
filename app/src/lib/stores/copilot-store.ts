@@ -861,16 +861,16 @@ export class CopilotStore extends BaseStore {
       return this.modelsInFlight
     }
 
-    try {
-      this.modelsInFlight = this.fetchModels()
-      return await this.modelsInFlight
-    } catch (e) {
+    this.modelsInFlight = this.fetchModels().catch(e => {
       log.warn('CopilotStore: Failed to fetch and cache models', e)
+      return null
+    })
+
+    try {
+      return await this.modelsInFlight
     } finally {
       this.modelsInFlight = null
     }
-
-    return null
   }
 
   private async fetchModels(): Promise<ReadonlyArray<ModelInfo> | null> {
