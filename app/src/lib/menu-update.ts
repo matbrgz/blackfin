@@ -141,6 +141,7 @@ const allMenuIds: ReadonlyArray<MenuIDs> = [
   'squash-and-merge-branch',
   'toggle-stashed-changes',
   'create-worktree',
+  'show-worktrees-list',
 ]
 
 function getAllMenusDisabledBuilder(): MenuStateBuilder {
@@ -245,6 +246,7 @@ function getRepositoryMenuBuilder(state: IAppState): MenuStateBuilder {
     'show-changes',
     'show-history',
     'show-branches-list',
+    'show-worktrees-list',
     'open-external-editor',
     'open-with-external-editor',
     'compare-to-branch',
