@@ -456,6 +456,8 @@ export class SideBySideDiffRow extends React.Component<
             <Octicon
               symbol={narrowNoNewlineSymbol}
               title="No newline at end of file"
+              focusable={true}
+              role="presentation"
             />
           )}
         </div>
