@@ -70,21 +70,18 @@ findYarnVersion(path => {
     process.exit(result.status || 1)
   }
 
+  // Electron >= 42 no longer downloads its prebuilt binary in its own
+  // postinstall; do it eagerly so scripts that read node_modules/electron/dist
+  // (e.g. validate-macos-version) keep working without first requiring electron.
+  const electronInstallScript = require.resolve('electron/install.js')
+  result = spawnSync(process.execPath, [electronInstallScript], options)
+
+  if (result.status !== 0) {
+    console.error('Failed to install app dependencies. Code:', result.status)
+    process.exit(result.status || 1)
+  }
+
   if (!isOffline()) {
-    // Electron >= 42 no longer downloads its prebuilt binary in its own
-    // postinstall; do it eagerly so scripts that read node_modules/electron/dist
-    // (e.g. validate-macos-version) keep working without first requiring electron.
-    // In offline/flatpak builds, electron-packager finds the binary via the
-    // @electron/get cache (XDG_CACHE_HOME/electron) pre-populated by
-    // generated-sources.json, so running install.js is not necessary.
-    const electronInstallScript = require.resolve('electron/install.js')
-    result = spawnSync(process.execPath, [electronInstallScript], options)
-
-    if (result.status !== 0) {
-      console.error('Failed to install app dependencies. Code:', result.status)
-      process.exit(result.status || 1)
-    }
-
     result = spawnSync(
       'git',
       ['submodule', 'update', '--recursive', '--init'],
