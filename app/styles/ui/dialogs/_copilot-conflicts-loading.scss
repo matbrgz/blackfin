@@ -24,6 +24,22 @@ dialog#copilot-conflicts-loading {
     align-items: center;
     justify-content: space-between;
     width: 100%;
+
+    .copilot-conflicts-loading-stop {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--spacing-half);
+      // The icon-plus-label is much narrower than the dialog's default
+      // 120px footer button width, which left a lot of dead space to
+      // the right of the label. Let it size to its content instead.
+      min-width: 0;
+
+      .copilot-conflicts-loading-stop-icon {
+        color: var(--error-color);
+        width: 12px;
+        height: 12px;
+      }
+    }
   }
 
   .copilot-conflicts-loading-content {

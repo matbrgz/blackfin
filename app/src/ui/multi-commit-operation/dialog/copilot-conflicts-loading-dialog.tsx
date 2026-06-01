@@ -179,6 +179,8 @@ function cleanReasoningSnippet(snippet: string): string | null {
   return trimmed.replace(/\*\*/g, '').replace(/`/g, '')
 }
 
+const CopilotConflictsLoadingDialogId = 'Dialog_Copilot_Conflicts_Loading'
+
 /**
  * A loading interstitial shown while Copilot is resolving conflicts.
  *
@@ -381,10 +383,12 @@ export class CopilotConflictsLoadingDialog extends React.Component<
     return (
       <Dialog
         id="copilot-conflicts-loading"
+        titleId={CopilotConflictsLoadingDialogId}
         onDismissed={this.props.onDismissed}
       >
         <DialogHeader
           title={`Resolving conflicts for ${operationKind.toLowerCase()}`}
+          titleId={CopilotConflictsLoadingDialogId}
           showCloseButton={true}
           onCloseButtonClick={this.props.onDismissed}
         >
@@ -426,7 +430,16 @@ export class CopilotConflictsLoadingDialog extends React.Component<
         </DialogContent>
         <DialogFooter>
           <div className="copilot-conflicts-loading-footer">
-            <Button onClick={this.onCancel}>Switch to manual</Button>
+            <Button
+              className="copilot-conflicts-loading-stop"
+              onClick={this.onCancel}
+            >
+              <Octicon
+                className="copilot-conflicts-loading-stop-icon"
+                symbol={octicons.squareFill}
+              />
+              Stop
+            </Button>
             <Button onClick={this.props.onAbort}>
               Abort {operationKind.toLowerCase()}
             </Button>
