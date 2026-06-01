@@ -3,6 +3,7 @@ import { PublishRepository } from './publish-repository'
 import { Dispatcher } from '../dispatcher'
 import {
   Account,
+  accountEquals,
   isDotComAccount,
   isEnterpriseAccount,
 } from '../../models/account'
@@ -40,6 +41,8 @@ interface IDotcomTabState {
    * related to the current step.
    */
   readonly error: Error | null
+
+  readonly selectedAccount: Account | null
 }
 
 interface IEnterpriseTabState {
@@ -116,6 +119,7 @@ export class Publish extends React.Component<IPublishProps, IPublishState> {
         org: null,
       },
       error: null,
+      selectedAccount: null,
     }
 
     const enterpriseTabState: IEnterpriseTabState = {
@@ -194,10 +198,7 @@ export class Publish extends React.Component<IPublishProps, IPublishState> {
     const tab = this.state.currentTab
     const currentTabState = this.getCurrentTabState()
     const accounts = this.getAccountsForTab(tab, this.props.accounts)
-    const account =
-      (currentTabState.kind === 'enterprise'
-        ? currentTabState.selectedAccount
-        : undefined) ?? accounts.at(0)
+    const account = currentTabState.selectedAccount ?? accounts.at(0)
 
     if (account) {
       return (
@@ -215,14 +216,10 @@ export class Publish extends React.Component<IPublishProps, IPublishState> {
   }
 
   private onSelectedAccountChanged = (account: Account | null) => {
-    const tabState = this.getCurrentTabState()
-    if (tabState.kind === 'enterprise') {
-      const enterpriseTabState = {
-        ...this.state.enterpriseTabState,
-        selectedAccount: account,
-      }
-      this.setTabState(enterpriseTabState)
-    }
+    this.setTabState({
+      ...this.getCurrentTabState(),
+      selectedAccount: account,
+    })
   }
 
   private onSettingsChanged = (settings: RepositoryPublicationSettings) => {
@@ -241,6 +238,8 @@ export class Publish extends React.Component<IPublishProps, IPublishState> {
         kind: 'dotcom',
         settings: settings,
         error: this.state.dotcomTabState.error,
+        selectedAccount:
+          current.kind === 'dotcom' ? current.selectedAccount : null,
       }
     }
 
@@ -261,9 +260,11 @@ export class Publish extends React.Component<IPublishProps, IPublishState> {
     const tabState = this.getTabState(tab)
     const tabAccounts = this.getAccountsForTab(tab, this.props.accounts)
     const selectedAccount =
-      (tabState.kind === 'enterprise'
+      (tabState.selectedAccount
         ? tabAccounts.find(
-            a => a.endpoint === tabState.selectedAccount?.endpoint
+            a =>
+              tabState.selectedAccount &&
+              accountEquals(a, tabState.selectedAccount)
           )
         : undefined) ?? tabAccounts.at(0)
 
