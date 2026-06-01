@@ -1,7 +1,18 @@
-GitHub Desktop Plus v3.5.11
+GitHub Desktop Plus v3.5.12
 
-Upstream: [GitHub Desktop 3.5.11 release notes](https://github.com/desktop/desktop/releases/tag/release-3.5.11)
+Upstream:
+- [GitHub Desktop 3.5.12-beta1 release notes](https://github.com/desktop/desktop/releases/tag/release-3.5.12-beta1)
+- [GitHub Desktop 3.5.12-beta2 release notes](https://github.com/desktop/desktop/releases/tag/release-3.5.12-beta2)
+- [GitHub Desktop 3.5.12 release notes](https://github.com/desktop/desktop/releases/tag/release-3.5.12)
 
-> [!NOTE]
-> This release does not include any user-facing changes, since the upstream release was a patch to fix a bug that was already fixed in our fork.  
-> This release simply removes our fork-specific patch in favor of the upstream fix.
+---
+
+## **Changes and improvements:**
+
+- [#167] Implemented a new feature to allow managing a repository's remotes from the app.  
+  Select "Repository" > "Manage Remotes..." from the app's menu to view and manage the configured remotes.
+
+
+## **Fixes:**
+
+- Fixed multiaccount support when publishing a newly created repository to GitHub.
