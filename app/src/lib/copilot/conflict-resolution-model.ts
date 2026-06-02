@@ -58,10 +58,11 @@ export function getConflictResolutionModelDisplay(
   }
 
   // Metadata unavailable (list not loaded, or selection no longer offered):
-  // mirror the engine's fallback to the requested id or the default model.
+  // mirror the engine — fall back to the requested id or default model, and
+  // omit the effort since we can't confirm the model supports it.
   return {
     modelName: requestedModelId ?? DefaultCopilotModelName,
-    reasoningEffort: DefaultConflictResolutionReasoningEffort,
+    reasoningEffort: undefined,
   }
 }
 

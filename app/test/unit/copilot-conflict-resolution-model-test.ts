@@ -53,11 +53,11 @@ describe('getConflictResolutionModelDisplay', () => {
     })
   })
 
-  it('uses a friendly fallback when the model list has not loaded', () => {
+  it('omits the effort when the model list has not loaded', () => {
     const result = getConflictResolutionModelDisplay(null, null, [])
     assert.deepStrictEqual(result, {
       modelName: 'GPT-5 mini',
-      reasoningEffort: 'medium',
+      reasoningEffort: undefined,
     })
   })
 
@@ -116,7 +116,20 @@ describe('getConflictResolutionModelDisplay', () => {
     const result = getConflictResolutionModelDisplay(selection, null, [])
     assert.deepStrictEqual(result, {
       modelName: 'claude-opus',
-      reasoningEffort: 'medium',
+      reasoningEffort: undefined,
+    })
+  })
+
+  it('omits the effort when the selected built-in model is not in the list', () => {
+    const selection = encodeModelKey({ kind: 'copilot', modelId: 'gone' })
+    const result = getConflictResolutionModelDisplay(
+      selection,
+      copilotModels,
+      []
+    )
+    assert.deepStrictEqual(result, {
+      modelName: 'gone',
+      reasoningEffort: undefined,
     })
   })
 

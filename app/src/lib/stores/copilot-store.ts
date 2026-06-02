@@ -699,12 +699,16 @@ export class CopilotStore extends BaseStore {
 
     return {
       modelId: resolvedModel?.id ?? requestedModelId ?? DefaultCopilotModel,
+      // When the model isn't in the list we have no capability metadata, so we
+      // can't confirm it supports reasoning effort. Omit it rather than send an
+      // unsupported value — the SDK only accepts reasoningEffort for models
+      // where it's supported.
       reasoningEffort: resolvedModel
         ? getSupportedReasoningEffort(
             resolvedModel,
             DefaultConflictResolutionReasoningEffort
           )
-        : DefaultConflictResolutionReasoningEffort,
+        : undefined,
       provider: undefined,
       timeoutMs: undefined,
     }
