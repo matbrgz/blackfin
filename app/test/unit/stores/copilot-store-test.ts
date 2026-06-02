@@ -5,6 +5,7 @@ import {
   DefaultCopilotModel,
   getLowestReasoningEffort,
   getPreferredDefaultModel,
+  getSupportedReasoningEffort,
 } from '../../../src/lib/stores/copilot-store'
 
 function makeModel(
@@ -68,6 +69,31 @@ describe('getLowestReasoningEffort', () => {
       supportedReasoningEfforts: ['xhigh'],
     })
     assert.strictEqual(getLowestReasoningEffort(model), 'xhigh')
+  })
+})
+
+describe('getSupportedReasoningEffort', () => {
+  it('returns undefined when the model supports no reasoning efforts', () => {
+    const model = makeModel({ id: 'a', name: 'A' })
+    assert.strictEqual(getSupportedReasoningEffort(model, 'medium'), undefined)
+  })
+
+  it('returns the preferred effort when the model supports it', () => {
+    const model = makeModel({
+      id: 'a',
+      name: 'A',
+      supportedReasoningEfforts: ['low', 'medium', 'high'],
+    })
+    assert.strictEqual(getSupportedReasoningEffort(model, 'medium'), 'medium')
+  })
+
+  it('falls back to the lowest supported effort when preferred is unsupported', () => {
+    const model = makeModel({
+      id: 'a',
+      name: 'A',
+      supportedReasoningEfforts: ['high', 'xhigh'],
+    })
+    assert.strictEqual(getSupportedReasoningEffort(model, 'medium'), 'high')
   })
 })
 

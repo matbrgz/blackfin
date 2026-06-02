@@ -331,6 +331,28 @@ export function getLowestReasoningEffort(
 }
 
 /**
+ * Resolves the reasoning effort to send for a given model, preferring
+ * `preferred` when the model supports it. Falls back to the model's lowest
+ * supported effort, or `undefined` when the model doesn't support reasoning
+ * effort at all (so we don't forward an unsupported value to the SDK).
+ */
+export function getSupportedReasoningEffort(
+  model: ModelInfo,
+  preferred: ReasoningEffort
+): ReasoningEffort | undefined {
+  const supported = model.supportedReasoningEfforts as
+    | ReadonlyArray<ReasoningEffort>
+    | undefined
+  if (!supported || supported.length === 0) {
+    return undefined
+  }
+  if (supported.includes(preferred)) {
+    return preferred
+  }
+  return ReasoningEffortOrder.find(e => supported.includes(e))
+}
+
+/**
  * Selects the model to use for commit message generation. Prefers
  * `DefaultCopilotModel` if it is in the list; otherwise falls back to the
  * cheapest available model by billing multiplier.
@@ -632,12 +654,15 @@ export class CopilotStore extends BaseStore {
 
   /**
    * Resolves a {@link CopilotModelRequest} into the concrete session model
-   * configuration (model id, reasoning effort and optional BYOK provider)
-   * forwarded to the Copilot SDK's `createSession`.
+   * configuration (model id, reasoning effort, optional BYOK provider and
+   * per-request timeout) forwarded to the Copilot SDK's `createSession`.
    *
    * When no model is requested (or the requested built-in model can't be
    * found) it falls back to {@link DefaultCopilotModel} and the supplied
-   * `defaultReasoningEffort`.
+   * `defaultReasoningEffort`. For built-in models the effort is clamped to one
+   * the model actually supports so we never forward an unsupported value; for
+   * BYOK requests the caller-provided effort (which may be `undefined`) and
+   * timeout are passed through unchanged.
    */
   private async resolveSessionModelConfig(
     request: CopilotModelRequest | null | undefined,
@@ -646,12 +671,14 @@ export class CopilotStore extends BaseStore {
     modelId: string
     reasoningEffort: ReasoningEffort | undefined
     provider: CopilotProviderConfig | undefined
+    timeoutMs: number | undefined
   }> {
     if (request && request.kind === 'byok') {
       return {
         modelId: request.modelId,
-        reasoningEffort: request.reasoningEffort ?? defaultReasoningEffort,
+        reasoningEffort: request.reasoningEffort,
         provider: request.provider,
+        timeoutMs: request.timeoutMs,
       }
     }
 
@@ -664,8 +691,11 @@ export class CopilotStore extends BaseStore {
 
     return {
       modelId: resolvedModel?.id ?? requestedModelId ?? DefaultCopilotModel,
-      reasoningEffort: defaultReasoningEffort,
+      reasoningEffort: resolvedModel
+        ? getSupportedReasoningEffort(resolvedModel, defaultReasoningEffort)
+        : defaultReasoningEffort,
       provider: undefined,
+      timeoutMs: undefined,
     }
   }
 
@@ -824,6 +854,7 @@ export class CopilotStore extends BaseStore {
       modelId: string
       reasoningEffort: ReasoningEffort | undefined
       provider: CopilotProviderConfig | undefined
+      timeoutMs: number | undefined
     },
     onReasoningSnippet?: (snippet: string) => void
   ): Promise<ReadonlyArray<IFileResolution>> {
@@ -865,7 +896,7 @@ export class CopilotStore extends BaseStore {
           let firstDeltaLogged = false
           let resolved = false
           let reasoningBuffer = ''
-          const timeout = 600_000
+          const timeout = modelConfig.timeoutMs ?? 600_000
 
           // Match a sentence terminator (`.`, `!`, `?`, or newline) — when
           // we see one, flush the accumulated reasoning text as a single

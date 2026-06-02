@@ -162,10 +162,7 @@ export class CopilotPreferences extends React.Component<
           this.renderFeatureModelPicker(
             'conflict-resolution',
             __DARWIN__ ? 'Conflict Resolution' : 'Conflict resolution',
-            this.onConflictResolutionModelChanged,
-            <p className="settings-description">
-              The model used when resolving merge conflicts with Copilot.
-            </p>
+            this.onConflictResolutionModelChanged
           )}
       </>
     )
@@ -175,7 +172,7 @@ export class CopilotPreferences extends React.Component<
     feature: CopilotFeature,
     label: string,
     onChange: (event: React.FormEvent<HTMLSelectElement>) => void,
-    description: JSX.Element
+    description?: JSX.Element
   ): JSX.Element | null {
     const { copilotModels, byokProviders, selectedCopilotModels } = this.props
 
