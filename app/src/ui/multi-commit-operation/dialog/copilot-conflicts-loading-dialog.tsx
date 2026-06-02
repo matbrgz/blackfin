@@ -235,7 +235,10 @@ export class CopilotConflictsLoadingDialog extends React.Component<
     }
   }
 
-  public componentDidUpdate(prevProps: ICopilotConflictsLoadingDialogProps) {
+  public componentDidUpdate(
+    prevProps: ICopilotConflictsLoadingDialogProps,
+    prevState: ICopilotConflictsLoadingDialogState
+  ) {
     const prevSnippet = prevProps.progress?.reasoningSnippet
     const currentSnippet = this.props.progress?.reasoningSnippet
 
@@ -264,7 +267,12 @@ export class CopilotConflictsLoadingDialog extends React.Component<
       this.advanceToAnalyzing()
     }
 
-    this.trimOverflowingMessages()
+    // Only re-measure the (potentially expensive) DOM layout when the
+    // rendered messages actually changed — other state updates (e.g.
+    // incoming reasoning snippets) don't affect the log's height.
+    if (prevState.displayedMessages !== this.state.displayedMessages) {
+      this.trimOverflowingMessages()
+    }
   }
 
   /**
