@@ -395,7 +395,7 @@ export function buildDefaultMenuTemplate({
         accelerator: 'CmdOrCtrl+Shift+W',
         visible: enableWorktreeSupport(),
       },
-      separator,
+      ...(enableWorktreeSupport() ? [separator] : []),
       {
         label: __DARWIN__ ? 'Repository Settings…' : 'Repository &settings…',
         id: 'show-repository-settings',
