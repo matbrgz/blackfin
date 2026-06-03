@@ -370,13 +370,13 @@ const getTemporaryMockUsageBillingTokenPrice = (
   contextMinimum: number,
   contextMaximum: number
 ): ICopilotUsageBillingTokenPrice => ({
-  cache_price: getTemporaryMockUsageBillingNumber(1, 100),
-  context_max: getTemporaryMockUsageBillingNumber(
+  cachePrice: getTemporaryMockUsageBillingNumber(1, 100),
+  contentMax: getTemporaryMockUsageBillingNumber(
     contextMinimum,
     contextMaximum
   ),
-  input_price: getTemporaryMockUsageBillingNumber(100, 1_000),
-  output_price: getTemporaryMockUsageBillingNumber(1_000, 5_000),
+  inputPrice: getTemporaryMockUsageBillingNumber(100, 1_000),
+  outputPrice: getTemporaryMockUsageBillingNumber(1_000, 5_000),
 })
 
 /**
@@ -394,13 +394,10 @@ export function getCopilotModelWithTemporaryMockUsageBilling(
     ...model,
     billing: {
       kind: 'usage',
-      token_prices: {
-        batch_size: TemporaryMockUsageBillingBatchSize,
+      tokenPrices: {
+        batchSize: TemporaryMockUsageBillingBatchSize,
         default: getTemporaryMockUsageBillingTokenPrice(100_000, 300_000),
-        long_context: getTemporaryMockUsageBillingTokenPrice(
-          300_001,
-          1_000_000
-        ),
+        longContext: getTemporaryMockUsageBillingTokenPrice(300_001, 1_000_000),
       },
     },
   }

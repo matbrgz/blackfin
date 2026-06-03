@@ -162,13 +162,13 @@ describe('getPreferredDefaultModel', () => {
       name: 'Usage Billed',
       billing: {
         kind: 'usage',
-        token_prices: {
-          batch_size: 1000000,
+        tokenPrices: {
+          batchSize: 1000000,
           default: {
-            cache_price: 50,
-            context_max: 200000,
-            input_price: 500,
-            output_price: 2500,
+            cachePrice: 50,
+            contentMax: 200000,
+            inputPrice: 500,
+            outputPrice: 2500,
           },
         },
       },
@@ -196,15 +196,16 @@ describe('getCopilotModelWithTemporaryMockUsageBilling', () => {
     assert.ok(billing !== undefined)
     assert.strictEqual(billing.kind, 'usage')
 
-    const tokenPrices = billing.token_prices
-    assert.strictEqual(tokenPrices.batch_size, 1000000)
-    assert.ok(tokenPrices.long_context !== undefined)
+    const tokenPrices = billing.tokenPrices
+    assert.strictEqual(tokenPrices.batchSize, 1000000)
+    const longContext = tokenPrices.longContext
+    assert.ok(longContext !== undefined && longContext instanceof Object)
 
-    for (const tokenPrice of [tokenPrices.default, tokenPrices.long_context]) {
-      assert.ok(tokenPrice.cache_price > 0)
-      assert.ok(tokenPrice.context_max > 0)
-      assert.ok(tokenPrice.input_price > 0)
-      assert.ok(tokenPrice.output_price > 0)
+    for (const tokenPrice of [tokenPrices.default, longContext]) {
+      assert.ok(tokenPrice.cachePrice > 0)
+      assert.ok(tokenPrice.contentMax > 0)
+      assert.ok(tokenPrice.inputPrice > 0)
+      assert.ok(tokenPrice.outputPrice > 0)
     }
   })
 })
@@ -234,23 +235,37 @@ describe('normalizeCopilotModelBilling', () => {
             input_price: 500,
             output_price: 2500,
           },
+          turbo_context: {
+            cache_price: 75,
+            context_max: 1200000,
+            input_price: 750,
+            output_price: 3000,
+          },
         },
       }),
       {
         kind: 'usage',
-        token_prices: {
-          batch_size: 1000000,
-          default: {
-            cache_price: 50,
-            context_max: 200000,
-            input_price: 500,
-            output_price: 2500,
-          },
-          long_context: {
-            cache_price: 50,
-            context_max: 936000,
-            input_price: 500,
-            output_price: 2500,
+        tokenPrices: {
+          batchSize: 1000000,
+          tiers: {
+            default: {
+              cachePrice: 50,
+              contentMax: 200000,
+              inputPrice: 500,
+              outputPrice: 2500,
+            },
+            longContext: {
+              cachePrice: 50,
+              contentMax: 936000,
+              inputPrice: 500,
+              outputPrice: 2500,
+            },
+            turboContext: {
+              cachePrice: 75,
+              contentMax: 1200000,
+              inputPrice: 750,
+              outputPrice: 3000,
+            },
           },
         },
       }

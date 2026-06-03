@@ -42,13 +42,13 @@ const usageBilledModel = makeModel({
   name: 'Usage Billed Model',
   billing: {
     kind: 'usage',
-    token_prices: {
-      batch_size: 1000000,
+    tokenPrices: {
+      batchSize: 1000000,
       default: {
-        cache_price: 50,
-        context_max: 200000,
-        input_price: 500,
-        output_price: 2500,
+        cachePrice: 50,
+        contentMax: 200000,
+        inputPrice: 500,
+        outputPrice: 2500,
       },
     },
   },

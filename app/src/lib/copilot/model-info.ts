@@ -6,22 +6,21 @@ export interface ICopilotPremiumRequestsBilling {
 }
 
 export interface ICopilotUsageBillingTokenPrice {
-  readonly cache_price: number
-  readonly context_max: number
-  readonly input_price: number
-  readonly output_price: number
+  readonly cachePrice: number
+  readonly contentMax: number
+  readonly inputPrice: number
+  readonly outputPrice: number
 }
 
 export interface ICopilotUsageBillingTokenPrices {
-  readonly batch_size: number
+  readonly batchSize: number
   readonly default: ICopilotUsageBillingTokenPrice
-  readonly long_context?: ICopilotUsageBillingTokenPrice
-  readonly [key: string]: number | ICopilotUsageBillingTokenPrice | undefined
+  readonly longContext?: ICopilotUsageBillingTokenPrice
 }
 
 export interface ICopilotUsageBilling {
   readonly kind: 'usage'
-  readonly token_prices: ICopilotUsageBillingTokenPrices
+  readonly tokenPrices: ICopilotUsageBillingTokenPrices
 }
 
 export type CopilotModelBilling =
@@ -101,7 +100,7 @@ export function normalizeCopilotModelBilling(
   ) {
     return {
       kind: 'usage',
-      token_prices: tokenPrices,
+      tokenPrices: tokenPrices,
     }
   }
 

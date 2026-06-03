@@ -215,17 +215,17 @@ export class CopilotModelPicker extends React.Component<
       return null
     }
 
-    const tokenPrices = billing.token_prices.default
+    const tokenPrices = billing.tokenPrices.default
 
     return (
       <div className="copilot-model-billing">
         <div className="copilot-model-billing-heading">
-          AI credits per {formatTokenBatchSize(billing.token_prices.batch_size)}{' '}
+          AI credits per {formatTokenBatchSize(billing.tokenPrices.batchSize)}{' '}
           tokens
         </div>
-        {this.renderUsageBillingRow('Input', tokenPrices.input_price)}
-        {this.renderUsageBillingRow('Cached input', tokenPrices.cache_price)}
-        {this.renderUsageBillingRow('Output', tokenPrices.output_price)}
+        {this.renderUsageBillingRow('Input', tokenPrices.inputPrice)}
+        {this.renderUsageBillingRow('Cached input', tokenPrices.cachePrice)}
+        {this.renderUsageBillingRow('Output', tokenPrices.outputPrice)}
       </div>
     )
   }
@@ -261,12 +261,12 @@ export class CopilotModelPicker extends React.Component<
       return label
     }
 
-    const tokenPrices = billing.token_prices.default
+    const tokenPrices = billing.tokenPrices.default
     return `${label}, AI credits per ${formatTokenBatchSize(
-      billing.token_prices.batch_size
-    )} tokens, Input ${tokenPrices.input_price}, Cached input ${
-      tokenPrices.cache_price
-    }, Output ${tokenPrices.output_price}`
+      billing.tokenPrices.batchSize
+    )} tokens, Input ${tokenPrices.inputPrice}, Cached input ${
+      tokenPrices.cachePrice
+    }, Output ${tokenPrices.outputPrice}`
   }
 
   private getGroupAriaLabel = (group: number) => {
