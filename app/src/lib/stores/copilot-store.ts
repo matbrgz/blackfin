@@ -1,4 +1,8 @@
-import { CopilotClient, CopilotSession } from '@github/copilot-sdk'
+import {
+  CopilotClient,
+  CopilotSession,
+  RuntimeConnection,
+} from '@github/copilot-sdk'
 import type {
   AssistantMessageEvent,
   MessageOptions,
@@ -630,7 +634,7 @@ export async function runConflictResolutionTurn(
       })
     })
   } finally {
-    await session.destroy().catch(() => {})
+    await session.disconnect().catch(() => {})
   }
 }
 
@@ -728,14 +732,15 @@ export class CopilotStore extends BaseStore {
       : indexPath
 
     return new CopilotClient({
-      cliPath: await getCopilotCLIPath(),
-      cliArgs: ['--eval', `import '${importSpecifier}'`, '--'],
+      connection: RuntimeConnection.forStdio({
+        path: await getCopilotCLIPath(),
+        args: ['--eval', `import '${importSpecifier}'`, '--'],
+      }),
       env: {
         ELECTRON_RUN_AS_NODE: '1',
         COPILOT_RUN_APP: '1',
       },
-      cwd: repositoryPath,
-      autoStart: true,
+      workingDirectory: repositoryPath,
       gitHubToken: this.currentAccount.token,
     })
   }
@@ -900,7 +905,7 @@ export class CopilotStore extends BaseStore {
       throw e
     } finally {
       // Clean up the session
-      await session?.destroy().catch(() => {})
+      await session?.disconnect().catch(() => {})
 
       // Stop the client after use
       await this.stopClient(client)
@@ -1146,7 +1151,7 @@ export class CopilotStore extends BaseStore {
       // The user may have cancelled while the session was being created. Tear
       // it down immediately rather than starting a turn we're about to abandon.
       if (signal?.aborted) {
-        await session.destroy().catch(() => {})
+        await session.disconnect().catch(() => {})
         throw new CopilotConflictResolutionAbortError()
       }
 

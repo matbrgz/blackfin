@@ -313,13 +313,13 @@ describe('normalizeCopilotModelBilling', () => {
 /**
  * A minimal fake of the bits of `CopilotSession` that
  * `runConflictResolutionTurn` interacts with: event subscription (returning an
- * unsubscribe fn), `send`, and `destroy`. Lets us drive the streaming turn
+ * unsubscribe fn), `send`, and `disconnect`. Lets us drive the streaming turn
  * deterministically and assert teardown behaviour.
  */
 function createFakeSession() {
   const handlers: Record<string, Array<(event: unknown) => void>> = {}
   let unsubCalls = 0
-  let destroyCalls = 0
+  let disconnectCalls = 0
   let sendCalls = 0
 
   const session = {
@@ -339,8 +339,8 @@ function createFakeSession() {
       // Never settles on its own — the turn completes via emitted events.
       return new Promise<void>(() => {})
     },
-    destroy() {
-      destroyCalls++
+    disconnect() {
+      disconnectCalls++
       return Promise.resolve()
     },
   }
@@ -357,8 +357,8 @@ function createFakeSession() {
     get unsubCalls() {
       return unsubCalls
     },
-    get destroyCalls() {
-      return destroyCalls
+    get disconnectCalls() {
+      return disconnectCalls
     },
     get sendCalls() {
       return sendCalls
@@ -381,13 +381,13 @@ describe('runConflictResolutionTurn', () => {
     await assert.rejects(promise, (err: unknown) =>
       isCopilotConflictResolutionAbortError(err)
     )
-    // The in-flight turn is torn down: session destroyed once, all four event
+    // The in-flight turn is torn down: session disconnected once, all four event
     // listeners unsubscribed exactly once.
-    assert.strictEqual(fake.destroyCalls, 1)
+    assert.strictEqual(fake.disconnectCalls, 1)
     assert.strictEqual(fake.unsubCalls, 4)
   })
 
-  it('rejects and destroys the session for an already-aborted signal', async () => {
+  it('rejects and disconnects the session for an already-aborted signal', async () => {
     const fake = createFakeSession()
     const controller = new AbortController()
     controller.abort()
@@ -400,12 +400,12 @@ describe('runConflictResolutionTurn', () => {
       (err: unknown) => err instanceof CopilotConflictResolutionAbortError
     )
 
-    // The session is still destroyed even though we bailed before sending.
-    assert.strictEqual(fake.destroyCalls, 1)
+    // The session is still disconnected even though we bailed before sending.
+    assert.strictEqual(fake.disconnectCalls, 1)
     assert.strictEqual(fake.sendCalls, 0)
   })
 
-  it('resolves with the final message content and destroys the session once', async () => {
+  it('resolves with the final message content and disconnects the session once', async () => {
     const fake = createFakeSession()
     const controller = new AbortController()
 
@@ -417,11 +417,11 @@ describe('runConflictResolutionTurn', () => {
     fake.emit('assistant.message', { content: 'RESOLVED' })
 
     assert.strictEqual(await promise, 'RESOLVED')
-    assert.strictEqual(fake.destroyCalls, 1)
+    assert.strictEqual(fake.disconnectCalls, 1)
 
-    // A late abort after completion must not re-tear-down or double-destroy.
+    // A late abort after completion must not re-tear-down or double-disconnect.
     controller.abort()
-    assert.strictEqual(fake.destroyCalls, 1)
+    assert.strictEqual(fake.disconnectCalls, 1)
   })
 
   it('streams reasoning snippets sentence-by-sentence', async () => {
