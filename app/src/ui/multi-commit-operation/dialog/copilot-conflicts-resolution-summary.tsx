@@ -50,6 +50,38 @@ function getOperationPhrase(
 }
 
 /**
+ * Custom CSS injected into the SandboxedMarkdown iframe to make headings
+ * match the surrounding summary card rather than using full-size GFM styles.
+ */
+const summaryMarkdownCSS = `
+  .markdown-body h1,
+  .markdown-body h2,
+  .markdown-body h3,
+  .markdown-body h4,
+  .markdown-body h5,
+  .markdown-body h6 {
+    font-size: 1em;
+    margin-top: 0.75em;
+    margin-bottom: 0.25em;
+    padding-bottom: 0;
+    border-bottom: none;
+  }
+
+  .markdown-body h1:first-child,
+  .markdown-body h2:first-child,
+  .markdown-body h3:first-child,
+  .markdown-body h4:first-child,
+  .markdown-body h5:first-child,
+  .markdown-body h6:first-child {
+    margin-top: 0;
+  }
+
+  .markdown-body p:last-child {
+    margin-bottom: 0;
+  }
+`
+
+/**
  * The Copilot resolution summary card rendered at the top of the conflict
  * resolution dialog. Combines a deterministic title, the model-authored
  * markdown body, and a Desktop-rendered references block with real links
@@ -97,6 +129,7 @@ export class CopilotConflictsResolutionSummary extends React.Component<ICopilotC
           onMarkdownLinkClicked={this.props.onMarkdownLinkClicked}
           underlineLinks={true}
           ariaLabel="Copilot conflict resolution summary"
+          customCSS={summaryMarkdownCSS}
         />
       </div>
     )
