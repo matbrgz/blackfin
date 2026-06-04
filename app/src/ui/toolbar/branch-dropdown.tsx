@@ -118,7 +118,7 @@ export class BranchDropdown extends React.Component<IBranchDropdownProps> {
         branchSortOrder={this.props.branchSortOrder}
         emoji={this.props.emoji}
         onDeleteBranch={this.onDeleteBranch}
-        onPullRemoteBranch={this.onPullRemoteBranch}
+        onFetchRemoteBranch={this.onFetchRemoteBranch}
         onRenameBranch={this.onRenameBranch}
         onSetAsDefaultBranch={this.onSetAsDefaultBranch}
         underlineLinks={this.props.underlineLinks}
@@ -444,50 +444,18 @@ export class BranchDropdown extends React.Component<IBranchDropdownProps> {
     })
   }
 
-  private onPullRemoteBranch = async (branchName: string) => {
+  private onFetchRemoteBranch = (branchName: string) => {
     const branch = this.getBranchWithName(branchName)
     const { dispatcher, repository } = this.props
 
-    if (branch === undefined) {
+    if (!branch) {
       return
     }
 
-    // console.clear()
-    // console.log(repository, ' repository ')
-    // console.log(dispatcher, ' dispatcher ')
-    // console.log(branch, ' branch ')
-    // console.log(BranchType, ' BranchType ')
-
+    // Only fetch remote branch
     if (branch.type === BranchType.Remote) {
-      // dispatcher.showPopup({
-      //   type: PopupType.PullRemoteBranch,
-      //   repository,
-      //   branch,
-      //   existsOnRemote: true,
-      // })
-
-      dispatcher.pullRemoteBranch(repository, branch)
+      dispatcher.fetchRemoteBranch(repository, branch)
     }
-
-    // if (branch.type === BranchType.Remote) {
-    //   dispatcher.showPopup({
-    //     type: PopupType.DeleteRemoteBranch,
-    //     repository,
-    //     branch,
-    //   })
-    //   return
-    // }
-
-    // const aheadBehind = await dispatcher.getBranchAheadBehind(
-    //   repository,
-    //   branch
-    // )
-    // dispatcher.showPopup({
-    //   type: PopupType.DeleteBranch,
-    //   repository,
-    //   branch,
-    //   existsOnRemote: aheadBehind !== null,
-    // })
   }
 
   private onBadgeClick = () => {

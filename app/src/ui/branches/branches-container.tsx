@@ -53,7 +53,7 @@ interface IBranchesContainerProps {
   readonly onRenameBranch: (branchName: string) => void
   readonly onSetAsDefaultBranch: (branchName: string) => void
   readonly onDeleteBranch: (branchName: string) => void
-  readonly onPullRemoteBranch: (branchName: string) => void
+  readonly onFetchRemoteBranch: (branchName: string) => void
 
   readonly branchSortOrder: BranchSortOrder
 
@@ -294,7 +294,7 @@ export class BranchesContainer extends React.Component<
             onRenameBranch={this.props.onRenameBranch}
             onSetAsDefaultBranch={this.props.onSetAsDefaultBranch}
             onDeleteBranch={this.props.onDeleteBranch}
-            onPullRemoteBranch={this.props.onPullRemoteBranch}
+            onFetchRemoteBranch={this.props.onFetchRemoteBranch}
           />
         )
       case BranchesTab.PullRequests: {

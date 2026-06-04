@@ -5,6 +5,7 @@ import { assertNever } from '../../lib/fatal-error'
 
 interface IBranchContextMenuConfig {
   name: string
+  remoteName?: string | null
   nameWithoutRemote: string
   isLocal: boolean
   repoType: RepoType | undefined
@@ -14,7 +15,7 @@ interface IBranchContextMenuConfig {
   onViewPullRequestOnGitHub?: () => void
   onSetAsDefaultBranch?: (branchName: string) => void
   onDeleteBranch?: (branchName: string) => void
-  onPullRemoteBranch?: (branchName: string) => void
+  onFetchRemoteBranch?: (branchName: string) => void
 }
 
 export function generateBranchContextMenuItems(
@@ -23,6 +24,7 @@ export function generateBranchContextMenuItems(
   const {
     name,
     nameWithoutRemote,
+    remoteName,
     isLocal,
     repoType,
     isInUseByOtherWorktree,
@@ -31,7 +33,7 @@ export function generateBranchContextMenuItems(
     onViewPullRequestOnGitHub,
     onSetAsDefaultBranch,
     onDeleteBranch,
-    onPullRemoteBranch,
+    onFetchRemoteBranch,
   } = config
   const items = new Array<IMenuItem>()
 
@@ -43,11 +45,11 @@ export function generateBranchContextMenuItems(
     })
   }
 
-  if (onPullRemoteBranch !== undefined && !isLocal) {
+  if (!isLocal && onFetchRemoteBranch !== undefined) {
     items.push({
-      label: getRemotePullBranchLabel(),
-      action: () => onPullRemoteBranch(name),
-      enabled: true,
+      label: getRemoteFetchBranchLabel(),
+      action: () => onFetchRemoteBranch(name),
+      enabled: !!remoteName,
     })
   }
 
@@ -115,16 +117,6 @@ function getViewPullRequestLabel(repoType: RepoType): string {
   }
 }
 
-function getRemotePullBranchLabel(): string {
-  return 'Pull branch'
-  // switch (repoType) {
-  //   case 'github':
-  //     return 'Pull branch from Github'
-  //   case 'bitbucket':
-  //     return 'Pull branch from Bitbucket'
-  //   case 'gitlab':
-  //     return 'Pull branch from GitLab'
-  //   default:
-  //     return assertNever(repoType, `Unknown repo type: ${repoType}`)
-  // }
+function getRemoteFetchBranchLabel(): string {
+  return `Fetch branch`
 }

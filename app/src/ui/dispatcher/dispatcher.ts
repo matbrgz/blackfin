@@ -822,11 +822,11 @@ export class Dispatcher {
   }
 
   /** Pull remote branch by name */
-  public pullRemoteBranch(
+  public fetchRemoteBranch(
     repository: Repository,
     branch: Branch
   ): Promise<void> {
-    return this.appStore._pullRemoteBranch(repository, branch)
+    return this.appStore._fetchRemoteBranch(repository, branch)
   }
 
   public async pullAllRepositories(): Promise<void> {

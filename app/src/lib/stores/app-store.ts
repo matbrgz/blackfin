@@ -265,6 +265,7 @@ import {
   listWorktrees,
   unstageAll,
   git,
+  IGitStringExecutionOptions,
 } from '../git'
 import {
   installGlobalLFSFilters,
@@ -450,6 +451,8 @@ import {
   gatherCommitContext,
 } from '../copilot-conflict-context'
 import { resolveWithin } from '../path'
+import { executionOptionsWithProgress, FetchProgressParser } from '../progress'
+import { envForRemoteOperation } from '../git/environment'
 
 const LastSelectedRepositoryIDKey = 'last-selected-repository-id'
 
@@ -6074,20 +6077,25 @@ export class AppStore extends TypedBaseStore<IAppState> {
     })
   }
 
-  public async _pullRemoteBranch(
+  public async _fetchRemoteBranch(
     repository: Repository,
     branch: Branch
   ): Promise<void> {
     return this.withRefreshedGitHubRepository(repository, repo => {
-      return this.performPullRemoteBranch(repo, branch)
+      return this.performFetchRemoteBranch(repo, branch)
     })
   }
 
   /** This shouldn't be called directly. See `Dispatcher`. */
-  private async performPullRemoteBranch(
+  private async performFetchRemoteBranch(
     repository: Repository,
     branch: Branch
   ) {
+    const isRemote = branch.type === BranchType.Remote
+    if (!isRemote) {
+      return
+    }
+
     const remoteName = branch.remoteName
     const remoteBranchName = branch.nameWithoutRemote
 
@@ -6095,23 +6103,68 @@ export class AppStore extends TypedBaseStore<IAppState> {
       throw new Error('Remote name not found')
     }
 
-    // await git(
-    //   ['fetch', remoteName, remoteBranchName],
-    //   repository.path,
-    //   'pullRemoteBranch'
-    // )
-    const backgroundTask = false
+    const isBackgroundTask = false
     const gitStore = this.gitStoreCache.get(repository)
-    const remote = { name: remoteName, url: '' }
-    // const progressCallback = (progress: IFetchProgress) => {
-    //   console.log(progress, ' progress ')
-    // }
+
+    // repository.url
+    const remote = { name: remoteName, url: 'file://' }
+
+    const _fetchRemoteBranchProgressCallback = (progress: any) => {
+      console.log(progress, ' progress ')
+    }
+
+    const title = `Fetching ${remoteName}`
+    const kind = 'fetch'
+    let opts: IGitStringExecutionOptions = {
+      successExitCodes: new Set([0]),
+    }
+    if (remote.url) {
+      opts = {
+        ...opts,
+        env: await envForRemoteOperation(remote.url),
+      }
+    }
+
+    opts = await executionOptionsWithProgress(
+      { ...opts, trackLFSProgress: true, isBackgroundTask },
+      new FetchProgressParser(),
+      progress => {
+        // In addition to progress output from the remote end and from
+        // git itself, the stderr output from pull contains information
+        // about ref updates. We don't need to bring those into the progress
+        // stream so we'll just punt on anything we don't know about for now.
+        if (progress.kind === 'context') {
+          if (!progress.text.startsWith('remote: Counting objects')) {
+            return
+          }
+        }
+
+        const description =
+          progress.kind === 'progress' ? progress.details.text : progress.text
+        const value = progress.percent
+
+        _fetchRemoteBranchProgressCallback({
+          kind,
+          title,
+          description,
+          value,
+          remote: remote.name,
+        })
+      }
+    )
+
+    // Initial progress
+    _fetchRemoteBranchProgressCallback({
+      kind,
+      title,
+      value: 0,
+      remote: remote.name,
+    })
 
     const fetchFn = async () => {
       await git(
         [
           'fetch',
-          // ...(progressCallback ? ['--progress'] : []),
           '--progress',
           '--prune',
           '--recurse-submodules=on-demand',
@@ -6119,19 +6172,17 @@ export class AppStore extends TypedBaseStore<IAppState> {
           remoteBranchName,
         ],
         repository.path,
-        'pullRemoteBranch'
+        'fetchRemoteBranch',
+        opts
       )
       return true
     }
 
     const fetchSucceeded = await gitStore.performFailableOperation(fetchFn, {
-      backgroundTask,
+      backgroundTask: isBackgroundTask,
     })
 
     if (fetchSucceeded) {
-      await updateRemoteHEAD(repository, remote, backgroundTask).catch(e =>
-        log.error('Failed updating remote HEAD', e)
-      )
       await this._refreshRepository(repository)
     } else {
       console.error('Fetch did not succeed')
