@@ -6112,11 +6112,13 @@ export class AppStore extends TypedBaseStore<IAppState> {
     // repository.url
     const remote = { name: remoteName, url: 'file://' }
 
-    const progressCb = (progress: any) => {
-      console.log(progress, ' progress ')
+    const progressCb = (progress: IFetchProgress) => {
+      this.updatePushPullFetchProgress(repository, progress)
     }
 
-    const title = `Fetching ${remoteName}`
+    const progressTitle = isRemote
+      ? `Fetching ${branch.name}`
+      : `Fetching ${remoteBranchName}`
     const kind = 'fetch'
     let opts: IGitStringExecutionOptions = {
       successExitCodes: new Set([0]),
@@ -6132,11 +6134,11 @@ export class AppStore extends TypedBaseStore<IAppState> {
       { ...opts, trackLFSProgress: true, isBackgroundTask },
       new FetchProgressParser(),
       progress => {
+        console.log(progress, ' progress_log ')
         // In addition to progress output from the remote end and from
         // git itself, the stderr output from pull contains information
         // about ref updates. We don't need to bring those into the progress
         // stream so we'll just punt on anything we don't know about for now.
-        console.log(progress, ' progress ')
         if (progress.kind === 'context') {
           if (!progress.text.startsWith('remote: Counting objects')) {
             return
@@ -6149,22 +6151,13 @@ export class AppStore extends TypedBaseStore<IAppState> {
 
         progressCb({
           kind,
-          title,
+          title: progressTitle,
           description,
           value,
           remote: remote.name,
         })
       }
     )
-
-    // Initial progress
-    progressCb({
-      kind,
-      title,
-      value: 0,
-      remote: remote.name,
-    })
-    console.log(`[UI] Starting background update for: ${remoteBranchName}...`)
 
     const fetchFn = async (
       isRemote: boolean,
@@ -6202,6 +6195,13 @@ export class AppStore extends TypedBaseStore<IAppState> {
     }
 
     const execFetchFn = async () => {
+      // Initial progress
+      progressCb({
+        kind,
+        title: progressTitle,
+        value: 0,
+        remote: remote.name,
+      })
       await gitStore.performFailableOperation(
         async () => {
           const result = await fetchFn(isRemote, opts)
@@ -6232,7 +6232,7 @@ export class AppStore extends TypedBaseStore<IAppState> {
       })
       this.emitError(errorWithMetadata)
     } finally {
-      console.log(`[UI] Stopping spinner for ${remoteBranchName}.`)
+      this.updatePushPullFetchProgress(repository, null)
     }
   }
 
