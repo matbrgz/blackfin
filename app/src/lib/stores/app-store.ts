@@ -6036,13 +6036,12 @@ export class AppStore extends TypedBaseStore<IAppState> {
 
   private async withPushPullFetch(
     repository: Repository,
-    fn: () => Promise<void>,
-    onRequestAlreadyInProgress?: () => void
+    fn: () => Promise<void>
   ): Promise<void> {
     const state = this.repositoryStateCache.get(repository)
     // Don't allow concurrent network operations.
     if (state.isPushPullFetchInProgress) {
-      return onRequestAlreadyInProgress?.()
+      return
     }
 
     this.repositoryStateCache.update(repository, () => ({
@@ -6051,10 +6050,8 @@ export class AppStore extends TypedBaseStore<IAppState> {
     this.emitUpdate()
 
     try {
-      console.log('isPushPullFetchInProgress true')
       await fn()
     } finally {
-      console.log('isPushPullFetchInProgress false')
       this.repositoryStateCache.update(repository, () => ({
         isPushPullFetchInProgress: false,
       }))
@@ -6088,6 +6085,18 @@ export class AppStore extends TypedBaseStore<IAppState> {
     repository: Repository,
     branch: Branch
   ): Promise<void> {
+    const state = this.repositoryStateCache.get(repository)
+    // Don't allow concurrent network operations.
+    if (state.isPushPullFetchInProgress) {
+      this._showPopup({
+        type: PopupType.Error,
+        error: new Error(
+          'Another push/pull/fetch request is in progress.\nTry again after the ongoing request is finished'
+        ),
+      })
+      return
+    }
+
     return this.withRefreshedGitHubRepository(repository, repo => {
       return this.performFetchSingleBranch(repo, branch)
     })
@@ -6229,13 +6238,7 @@ export class AppStore extends TypedBaseStore<IAppState> {
     }
 
     try {
-      await this.withPushPullFetch(repository, execFetchFn, () => {
-        this.popupManager.addErrorPopup(
-          new Error(
-            'Another push/pull/fetch request is in progress.\nTry again after the ongoing request is finished'
-          )
-        )
-      })
+      await this.withPushPullFetch(repository, execFetchFn)
     } catch (error) {
       const errorWithMetadata = new ErrorWithMetadata(error, {
         repository,
