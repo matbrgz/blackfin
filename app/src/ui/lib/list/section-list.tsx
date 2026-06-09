@@ -999,7 +999,10 @@ export class SectionList extends React.Component<
 
     const rowHeight = this.getHeightForRowAtIndexPath(indexPath)
     const sectionOffset = this.getSectionScrollOffset(indexPath.section)
-    const rowOffsetInSection = this.getRowOffsetInSection(indexPath)
+    const rowOffsetInSection = getRowOffsetInSection(
+      this.props.rowHeight,
+      indexPath
+    )
 
     const grid = ReactDOM.findDOMNode(this.rootGrid)
     if (!(grid instanceof HTMLElement)) {
@@ -1393,10 +1396,6 @@ export class SectionList extends React.Component<
         />
       )
     }
-
-  private getRowOffsetInSection(indexPath: RowIndexPath) {
-    return getRowOffsetInSection(this.props.rowHeight, indexPath)
-  }
 
   private getSectionHeight(section: number) {
     if (typeof this.props.rowHeight === 'number') {
