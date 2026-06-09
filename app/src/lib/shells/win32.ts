@@ -1,6 +1,11 @@
 import { spawn, ChildProcess } from 'child_process'
 import * as Path from 'path'
-import { enumerateValues, HKEY, RegistryValue, RegistryValueType } from 'registry-js'
+import {
+  enumerateValues,
+  HKEY,
+  RegistryValue,
+  RegistryValueType,
+} from 'registry-js'
 import { assertNever } from '../fatal-error'
 import { enableWSLDetection } from '../feature-flag'
 import { findGitOnPath } from '../is-git-on-path'
@@ -302,7 +307,9 @@ async function findCygwin(): Promise<string | null> {
   return null
 }
 
-async function findOldWarp(warpRegistry: readonly RegistryValue[]): Promise<string | null> {
+async function findOldWarp(
+  warpRegistry: readonly RegistryValue[]
+): Promise<string | null> {
   if (!warpRegistry || warpRegistry.length === 0) {
     return null
   }
