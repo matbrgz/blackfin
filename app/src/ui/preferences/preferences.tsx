@@ -449,6 +449,10 @@ export class Preferences extends React.Component<
     this.props.dispatcher.showEnterpriseSignInDialog()
   }
 
+  private onCopilotSignIn = () => {
+    this.setState({ selectedIndex: PreferencesTab.Accounts })
+  }
+
   private onOpenCopilotPlans = () => {
     this.props.dispatcher.openInBrowser(
       'https://github.com/features/copilot/plans'
@@ -536,7 +540,7 @@ export class Preferences extends React.Component<
             accounts={this.props.accounts}
             byokProviders={this.props.byokProviders}
             showBYOKSettings={this.shouldShowBYOKSettings()}
-            onDotComSignIn={this.onDotComSignIn}
+            onSignIn={this.onCopilotSignIn}
             onOpenCopilotPlans={this.onOpenCopilotPlans}
             onOpenCopilotFeatureSettings={this.onOpenCopilotFeatureSettings}
             onSelectedCopilotModelChanged={this.onSelectedCopilotModelChanged}

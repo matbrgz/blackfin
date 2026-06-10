@@ -34,7 +34,7 @@ interface ICopilotPreferencesProps {
   readonly accounts: ReadonlyArray<Account>
   readonly byokProviders: ReadonlyArray<IBYOKProvider>
   readonly showBYOKSettings: boolean
-  readonly onDotComSignIn: () => void
+  readonly onSignIn: () => void
   readonly onOpenCopilotPlans: () => void
   readonly onOpenCopilotFeatureSettings: () => void
   readonly onSelectedCopilotModelChanged: (
@@ -185,9 +185,9 @@ export class CopilotPreferences extends React.Component<
     switch (accessState) {
       case 'signed-out':
         return this.renderAccessCallToAction(
-          'Sign in to your GitHub.com account to configure Copilot settings.',
-          __DARWIN__ ? 'Sign Into GitHub.com' : 'Sign into GitHub.com',
-          this.props.onDotComSignIn,
+          'Sign in to an account to configure Copilot settings.',
+          'Sign In',
+          this.props.onSignIn,
           DialogPreferredFocusClassName
         )
       case 'checking':

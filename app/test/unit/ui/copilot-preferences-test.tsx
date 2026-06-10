@@ -236,7 +236,7 @@ function defaults() {
     accounts: [makeAccount()],
     byokProviders: [],
     showBYOKSettings: false,
-    onDotComSignIn: () => {},
+    onSignIn: () => {},
     onOpenCopilotPlans: () => {},
     onOpenCopilotFeatureSettings: () => {},
     onSelectedCopilotModelChanged: () => {},
@@ -301,7 +301,7 @@ function getCostDetailsValue(container: HTMLElement, label: string): string {
 }
 
 describe('CopilotPreferences', () => {
-  it('shows sign-in call to action when no GitHub.com account is available', () => {
+  it('shows sign-in call to action when no account is available', () => {
     let called = 0
 
     render(
@@ -309,20 +309,18 @@ describe('CopilotPreferences', () => {
         {...defaults()}
         copilotModels={null}
         accounts={[]}
-        onDotComSignIn={() => {
+        onSignIn={() => {
           called += 1
         }}
       />
     )
 
     assert.ok(
-      screen.getByText(
-        'Sign in to your GitHub.com account to configure Copilot settings.'
-      )
+      screen.getByText('Sign in to an account to configure Copilot settings.')
     )
 
     const signInButton = screen.getByRole('button', {
-      name: __DARWIN__ ? 'Sign Into GitHub.com' : 'Sign into GitHub.com',
+      name: 'Sign In',
     })
     fireEvent.click(signInButton)
 
@@ -366,7 +364,7 @@ describe('CopilotPreferences', () => {
 
     assert.ok(
       screen.getByText(
-        'Copilot features in GitHub Desktop require access to GitHub Copilot.'
+        'Copilot features in GitHub Desktop require a GitHub Copilot license.'
       )
     )
 
@@ -395,7 +393,7 @@ describe('CopilotPreferences', () => {
 
     assert.ok(
       screen.getByText(
-        'Copilot is enabled for your account, but Copilot in GitHub Desktop is disabled in your Copilot feature settings.'
+        'A Copilot license is available for your account, but "Copilot in GitHub Desktop" is disabled in your Copilot feature settings.'
       )
     )
 
