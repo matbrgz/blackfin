@@ -1,5 +1,5 @@
 import type { CopilotSession } from '@github/copilot-sdk'
-import { Model } from '@github/copilot-sdk/dist/generated/rpc'
+import type { Model } from '@github/copilot-sdk/dist/generated/rpc'
 import assert from 'node:assert'
 import { describe, it } from 'node:test'
 import {
