@@ -116,6 +116,10 @@ export enum PopupType {
   AddWorktree = 'AddWorktree',
   RenameWorktree = 'RenameWorktree',
   DeleteWorktree = 'DeleteWorktree',
+  CantDeleteCurrentBranch = 'CantDeleteCurrentBranch',
+  CantDeleteMainBranch = 'CantDeleteMainBranch',
+  CantDeleteCurrentBranchUncommittedChanges = 'CantDeleteCurrentBranchUncommittedChanges',
+  CantDeleteWorktreeUncommittedChanges = 'CantDeleteWorktreeUncommittedChanges',
   EditCopilotBYOKProvider = 'EditCopilotBYOKProvider',
   EditCopilotBYOKModel = 'EditCopilotBYOKModel',
   ConfirmDeleteCopilotBYOKProvider = 'ConfirmDeleteCopilotBYOKProvider',
@@ -133,6 +137,22 @@ interface IBasePopup {
 
 export type PopupDetail =
   | { type: PopupType.RenameBranch; repository: Repository; branch: Branch }
+  | {
+      type: PopupType.CantDeleteCurrentBranch
+      repository: Repository
+      branchToDelete: Branch
+      blockedByBranch: Branch
+    }
+  | {
+      type: PopupType.CantDeleteMainBranch
+      repository: Repository
+      branchToDelete: Branch
+    }
+  | {
+      type: PopupType.CantDeleteCurrentBranchUncommittedChanges
+      repository: Repository
+      branchToDelete: Branch
+    }
   | {
       type: PopupType.DeleteBranch
       repository: Repository
@@ -534,6 +554,10 @@ export type PopupDetail =
   | {
       type: PopupType.DeleteWorktree
       repository: Repository
+      worktreePath: string
+    }
+  | {
+      type: PopupType.CantDeleteWorktreeUncommittedChanges
       worktreePath: string
     }
   | {
