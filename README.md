@@ -9,8 +9,8 @@ This is an **up-to-date** fork of [GitHub Desktop](https://desktop.github.com) w
 | <h4>Search commits by title, message, tag, or hash</h4> | <h4>Add multiple GitHub, Bitbucket & GitLab accounts</h4> |
 | :---: | :---: |
 | ![Commit search](docs/assets/github-desktop-plus-demo-search.webp) | ![Multiple accounts](docs/assets/github-desktop-plus-demo-multiaccount.webp) |
-| <h4>Create multiple stashes per branch</h4> | <h4>Native support for Git Worktrees</h4> |
-| ![Multiple stashes](docs/assets/github-desktop-plus-demo-stashes.webp) | ![Worktrees](docs/assets/github-desktop-plus-demo-worktrees.webp) |
+| <h4>Create multiple stashes per branch</h4> | <h4>Visualize the Commit Graph</h4> |
+| ![Multiple stashes](docs/assets/github-desktop-plus-demo-stashes.webp) | ![Commit Graph](docs/assets/github-desktop-plus-demo-commit-graph.webp) |
 | <h4>Buttons optimized for visual recognition</h4> | <h4>Quickly find unpushed branches</h4> |
 | ![Stash header](docs/assets/github-desktop-plus-demo-stash-header.webp) | ![Branch push indicator](docs/assets/github-desktop-plus-demo-push-indicator.webp) |
 
@@ -25,9 +25,6 @@ This is an **up-to-date** fork of [GitHub Desktop](https://desktop.github.com) w
 - Support for **multiple accounts** of the same endpoint (e.g. multiple GitHub accounts).  
   Simply add as many accounts as you want in the "Accounts" settings page. If a repository is using an incorrect account, you can change it in the repository settings.
 
-- Support for **Git Worktrees**: view and manage all your worktrees in the same repository, with the ability to easily switch between them.  
-  To view the worktrees dropdown, enable it in the app settings or press `Ctrl+E` / `Cmd+E`.
-
 - Support for **multiple windows**: open multiple repositories in separate windows, or the same repository in multiple windows (e.g. to view different files at the same time).  
   Select "File" > "Open new window" or press `Ctrl+Alt+N`/`Cmd+Alt+N`. You can also right-click on a repository in the list and select "Open repository in new window".
 
@@ -41,6 +38,8 @@ This is an **up-to-date** fork of [GitHub Desktop](https://desktop.github.com) w
   The integration is enabled automatically for the corresponding repositories if you are logged in to your account. 
 
 - Allow using a **different text editor for a given repo**, by overriding it in the repository settings.
+
+- Allow displaying **SVG files as an image** preview in the diff view.
 
 - Some similar-looking buttons now have distinct **icons** for faster visual recognition.
 
@@ -62,6 +61,8 @@ This is an **up-to-date** fork of [GitHub Desktop](https://desktop.github.com) w
 - Allow customizing the **repository groups** to better organize your repositories.  
   Right click on a repository and select "Change group name".
 
+- Allow **pinning** repositories to the top of the list.
+
 ### Branches list:
 
 - Added a warning indicator to **local-only branches** (branches that have not been pushed to the remote, or that have been deleted automatically after a PR).
@@ -74,6 +75,8 @@ This is an **up-to-date** fork of [GitHub Desktop](https://desktop.github.com) w
 ### History tab:
 
 - **Search commits** by title, message, tag, or hash.
+
+- Allow switching to a **Commit Graph** view to visualize the merge history.
 
 - Use a different font style for **merge commits** in order to make them visually distinct, since most of the time they are not as relevant.
 
