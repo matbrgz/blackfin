@@ -6659,6 +6659,22 @@ export class AppStore extends TypedBaseStore<IAppState> {
     return result.repository
   }
 
+  public async _switchWorktreeByPath(
+    repository: Repository,
+    worktreePath: string
+  ): Promise<Repository> {
+    const worktrees = await listWorktrees(repository)
+    const worktree = worktrees.find(w => w.path === worktreePath)
+
+    if (worktree === undefined) {
+      throw new Error(
+        `Could not find a worktree at '${worktreePath}' for repository '${repository.name}'.`
+      )
+    }
+
+    return this._switchWorktree(repository, worktree)
+  }
+
   /** This shouldn't be called directly. See 'Dispatcher'. */
   public _requestDeleteWorktree(
     repository: Repository,

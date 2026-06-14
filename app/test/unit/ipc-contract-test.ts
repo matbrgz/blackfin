@@ -70,6 +70,7 @@ describe('IPC channel contract', () => {
     'install-windows-cli',
     'uninstall-windows-cli',
     'open-repository-in-new-window',
+    'open-worktree-in-new-window',
     'set-window-title',
     'set-window-selected-repository',
     'restart-app',

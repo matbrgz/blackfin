@@ -179,6 +179,12 @@ export const openRepositoryInNewWindow = sendProxy(
   1
 )
 
+/** Tell the main process to open a worktree in a new application window */
+export const openWorktreeInNewWindow = sendProxy(
+  'open-worktree-in-new-window',
+  2
+)
+
 /** Tell the main process to update the current window title */
 export const setWindowTitle = sendProxy('set-window-title', 1)
 

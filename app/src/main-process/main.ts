@@ -659,6 +659,19 @@ app.on('ready', () => {
     })
   })
 
+  ipcMain.on(
+    'open-worktree-in-new-window',
+    (_, repositoryId: number, worktreePath: string) => {
+      createWindow(window => {
+        window.sendCLIAction({
+          kind: 'open-worktree',
+          repositoryId,
+          worktreePath,
+        })
+      })
+    }
+  )
+
   ipcMain.on('set-window-title', (event, title: string) =>
     getAppWindowFromWebContents(event.sender)?.setTitle(title)
   )

@@ -2276,6 +2276,22 @@ export class Dispatcher {
       } else {
         await this.showPopup({ type: PopupType.AddRepository, path })
       }
+    } else if (action.kind === 'open-worktree') {
+      const { repositories } = this.appStore.getState()
+      const repository = repositories.find(
+        (r): r is Repository =>
+          r instanceof Repository && r.id === action.repositoryId
+      )
+
+      if (repository !== undefined) {
+        await this.appStore
+          ._switchWorktreeByPath(repository, action.worktreePath)
+          .catch(e => this.postError(e))
+      } else {
+        log.warn(
+          `Could not find repository with id ${action.repositoryId} to open worktree`
+        )
+      }
     }
   }
 
