@@ -546,7 +546,7 @@ const diffFontFamilyKey = 'diff-font-family'
 const shellKey = 'shell'
 
 const showRecentRepositoriesKey = 'show-recent-repositories'
-const showWorktreesKey = 'show-worktrees'
+const showWorktreesKey = 'show-worktrees-foldout'
 const showCompareTabKey = 'show-compare-tab'
 const showCompareTabDefault = true
 const repositoryIndicatorsEnabledKey = 'enable-repository-indicators'
