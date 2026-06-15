@@ -674,8 +674,8 @@ export class CopilotStore extends BaseStore {
    * Tracks the active commit message generation session and client so that
    * we can abort an in-flight request when the user cancels.
    */
-  private activeSession: CopilotSession | null = null
-  private activeClient: CopilotClient | null = null
+  private generationActiveSession: CopilotSession | null = null
+  private generationActiveClient: CopilotClient | null = null
   private generationCancelled = false
 
   public constructor(private readonly accountsStore: AccountsStore) {
@@ -884,7 +884,7 @@ export class CopilotStore extends BaseStore {
     }
 
     const client = await this.createClient(account, repositoryPath)
-    this.activeClient = client
+    this.generationActiveClient = client
     let session: Awaited<ReturnType<CopilotClient['createSession']>> | null =
       null
 
@@ -912,7 +912,7 @@ export class CopilotStore extends BaseStore {
         }),
       })
 
-      this.activeSession = session
+      this.generationActiveSession = session
 
       // Send the diff (and any repo-rule constraints) and wait for response.
       // Both are wrapped in per-request tagged blocks so the model can
@@ -943,8 +943,8 @@ export class CopilotStore extends BaseStore {
       log.warn('CopilotStore: Failed to generate commit message', e)
       throw e
     } finally {
-      this.activeSession = null
-      this.activeClient = null
+      this.generationActiveSession = null
+      this.generationActiveClient = null
 
       // Clean up the session
       await session?.disconnect().catch(() => {})
@@ -962,18 +962,27 @@ export class CopilotStore extends BaseStore {
    * `CommitMessageGenerationCancelledError`.
    */
   public async cancelCommitMessageGeneration(): Promise<void> {
-    const session = this.activeSession
+    const client = this.generationActiveClient
+    const session = this.generationActiveSession
 
-    if (session === null) {
+    if (client === null && session === null) {
       return
     }
 
     this.generationCancelled = true
 
-    try {
-      await session.abort()
-    } catch (e) {
-      log.warn('CopilotStore: Error aborting session', e)
+    if (session !== null) {
+      try {
+        await session.abort()
+      } catch (e) {
+        log.warn('CopilotStore: Error aborting session', e)
+      }
+    } else if (client !== null) {
+      try {
+        await client.stop()
+      } catch (e) {
+        log.warn('CopilotStore: Error stopping client', e)
+      }
     }
   }
 
