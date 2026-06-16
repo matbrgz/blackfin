@@ -1,7 +1,7 @@
 import * as React from 'react'
 import * as Path from 'path'
 import { AppFileStatusKind, CommittedFileChange } from '../../../models/status'
-import { DiffType, IDiff, ImageDiffType } from '../../../models/diff'
+import { IDiff, ImageDiffType } from '../../../models/diff'
 import { WorkingDirectoryFileChange } from '../../../models/status'
 import { IFileResolution } from '../../../lib/copilot-conflict-resolution'
 import { FileList } from '../../history/file-list'
@@ -102,6 +102,8 @@ export class CopilotConflictsChanges extends React.Component<
   }
 
   private async loadDiffForFile(file: CommittedFileChange) {
+    const requestId = ++this.diffRequestId
+
     const resolution = this.props.copilotResolutions?.find(
       r => r.path === file.path
     )
@@ -111,7 +113,6 @@ export class CopilotConflictsChanges extends React.Component<
       return
     }
 
-    const requestId = ++this.diffRequestId
     this.setState({ isLoadingDiff: true })
 
     try {
@@ -200,27 +201,22 @@ export class CopilotConflictsChanges extends React.Component<
           {selectedFile !== null && isLoadingDiff && (
             <div className="copilot-changes-loading">Loading diff&hellip;</div>
           )}
-          {selectedFile !== null &&
-            !isLoadingDiff &&
-            diff !== null &&
-            diff.kind === DiffType.Text && (
-              <Diff
-                repository={this.props.repository}
-                readOnly={true}
-                file={selectedFile}
-                diff={diff}
-                fileContents={null}
-                imageDiffType={this.state.imageDiffType}
-                hideWhitespaceInDiff={hideWhitespaceInDiff}
-                showSideBySideDiff={showSideBySideDiff}
-                showDiffCheckMarks={false}
-                onOpenBinaryFile={this.onOpenBinaryFile}
-                onChangeImageDiffType={this.onChangeImageDiffType}
-                onHideWhitespaceInDiffChanged={
-                  this.onHideWhitespaceInDiffChanged
-                }
-              />
-            )}
+          {selectedFile !== null && !isLoadingDiff && diff !== null && (
+            <Diff
+              repository={this.props.repository}
+              readOnly={true}
+              file={selectedFile}
+              diff={diff}
+              fileContents={null}
+              imageDiffType={this.state.imageDiffType}
+              hideWhitespaceInDiff={hideWhitespaceInDiff}
+              showSideBySideDiff={showSideBySideDiff}
+              showDiffCheckMarks={false}
+              onOpenBinaryFile={this.onOpenBinaryFile}
+              onChangeImageDiffType={this.onChangeImageDiffType}
+              onHideWhitespaceInDiffChanged={this.onHideWhitespaceInDiffChanged}
+            />
+          )}
           {selectedFile !== null && !isLoadingDiff && diff === null && (
             <div className="copilot-changes-no-diff">
               Diff preview is only available for files resolved by Copilot.

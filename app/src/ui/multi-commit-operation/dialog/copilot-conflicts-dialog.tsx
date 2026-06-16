@@ -414,7 +414,7 @@ export class CopilotConflictsDialog extends React.Component<
     )
   }
 
-  private onTabSelected = (index: number) => {
+  private onTabSelected = (index: CopilotConflictsTab) => {
     this.setState({ selectedTab: index })
   }
 
