@@ -1,14 +1,7 @@
 import * as React from 'react'
 import * as Path from 'path'
-import {
-  AppFileStatusKind,
-  CommittedFileChange,
-} from '../../../models/status'
-import {
-  DiffType,
-  IDiff,
-  ImageDiffType,
-} from '../../../models/diff'
+import { AppFileStatusKind, CommittedFileChange } from '../../../models/status'
+import { DiffType, IDiff, ImageDiffType } from '../../../models/diff'
 import { WorkingDirectoryFileChange } from '../../../models/status'
 import { IFileResolution } from '../../../lib/copilot-conflict-resolution'
 import { FileList } from '../../history/file-list'
@@ -205,9 +198,7 @@ export class CopilotConflictsChanges extends React.Component<
             />
           </div>
           {selectedFile !== null && isLoadingDiff && (
-            <div className="copilot-changes-loading">
-              Loading diff&hellip;
-            </div>
+            <div className="copilot-changes-loading">Loading diff&hellip;</div>
           )}
           {selectedFile !== null &&
             !isLoadingDiff &&

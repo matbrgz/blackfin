@@ -426,10 +426,7 @@ export async function getResolutionDiff(
   } catch {
     // Not in a merge or file doesn't exist at stage 1 — fall back to
     // reading the on-disk file (which may have conflict markers).
-    baseContent = await readFile(
-      Path.join(repository.path, filePath),
-      'utf8'
-    )
+    baseContent = await readFile(Path.join(repository.path, filePath), 'utf8')
   }
 
   const tempBase = getTempFilePath('conflict-base')
