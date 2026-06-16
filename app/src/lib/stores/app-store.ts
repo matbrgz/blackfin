@@ -8786,30 +8786,6 @@ export class AppStore extends TypedBaseStore<IAppState> {
     }
   }
 
-  public async _updateRepositoryPath(
-    repository: Repository,
-    path: string
-  ): Promise<void> {
-    const rt = await getRepositoryType(path)
-
-    if (rt.kind === 'regular') {
-      await this.repositoriesStore.updateRepositoryPath(
-        repository,
-        rt.topLevelWorkingDirectory,
-        rt.gitDir
-      )
-    } else if (rt.kind === 'unsafe') {
-      await this.repositoriesStore.updateRepositoryPath(
-        repository,
-        path,
-        undefined,
-        true
-      )
-    } else {
-      this.emitError(new Error(this.getInvalidRepoPathsMessage([path])))
-    }
-  }
-
   public async _removeRepository(
     repository: Repository | CloningRepository,
     moveToTrash: boolean
