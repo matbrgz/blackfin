@@ -189,7 +189,7 @@ describe('CommitMessage', () => {
 
     const buttonProps = getCopilotButtonProps(component)
 
-    assert.equal(buttonProps.ariaLabel, 'Generate commit message with Copilot')
+    assert.equal(buttonProps.ariaLabel, 'Generating commit details…')
     assert.equal(buttonProps.disabled, true)
 
     await clickCopilotButton(component)

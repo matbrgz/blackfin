@@ -1005,15 +1005,16 @@ export class CommitMessage extends React.Component<
 
     const noFilesSelected = filesSelected.length === 0
     const noChangesAvailable = !commitToAmend && noFilesSelected
-    const showCancelGenerateCommitMessage =
-      isGeneratingCommitMessage === true && this.canCancelGenerateCommitMessage
 
-    const ariaLabel = showCancelGenerateCommitMessage
-      ? 'Cancel generating commit details'
-      : 'Generate commit message with Copilot' +
-        (noChangesAvailable
-          ? '. Files must be selected to generate a commit message.'
-          : '')
+    let ariaLabel = 'Generate commit message with Copilot'
+
+    if (!isGeneratingCommitMessage) {
+      ariaLabel += '. Files must be selected to generate a commit message.'
+    } else if (this.canCancelGenerateCommitMessage) {
+      ariaLabel = 'Cancel generating commit details'
+    } else {
+      ariaLabel = 'Generating commit details…'
+    }
 
     return (
       <>
@@ -1026,7 +1027,7 @@ export class CommitMessage extends React.Component<
           disabled={
             isCommitting === true ||
             (isGeneratingCommitMessage === true &&
-              !showCancelGenerateCommitMessage) ||
+              !this.canCancelGenerateCommitMessage) ||
             (!isGeneratingCommitMessage && noChangesAvailable)
           }
         >
