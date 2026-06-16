@@ -6770,7 +6770,6 @@ export class AppStore extends TypedBaseStore<IAppState> {
     force?: boolean
   ): Promise<void> {
     const isDeletingCurrentWorktree = repository.path === worktreePath
-    let path = repository.path
     let originalWorktree: WorktreeEntry | null = null
 
     if (isDeletingCurrentWorktree) {
@@ -6783,14 +6782,11 @@ export class AppStore extends TypedBaseStore<IAppState> {
         throw new Error('Could not find main worktree')
       }
 
-      await this._switchWorktree(repository, main)
-      // Run the delete worktree action with the main worktree path since the current
-      // worktree path will be deleted after the switch.
-      path = main.path
+      repository = await this._switchWorktree(repository, main)
     }
 
     try {
-      await removeWorktree(path, worktreePath, force)
+      await removeWorktree(repository.path, worktreePath, force)
     } catch (e) {
       this._closePopup(PopupType.DeleteWorktree)
       this._closePopup(PopupType.DeleteWorktreeFailed)
