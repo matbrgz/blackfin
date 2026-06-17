@@ -3567,7 +3567,10 @@ export class App extends React.Component<IAppProps, IAppState> {
     if (repository) {
       const alias = repository instanceof Repository ? repository.alias : null
       icon = iconForRepository(repository)
-      title = (alias ?? repository.name) + this.getWorktreeSuffix(repository)
+      title = alias ?? repository.name
+      if (selection?.type === SelectionType.Repository) {
+        title += this.getWorktreeSuffix(repository, selection.state.worktrees)
+      }
     } else if (this.state.repositories.length > 0) {
       icon = octicons.repo
       title = __DARWIN__ ? 'Select a Repository' : 'Select a repository'
@@ -3617,17 +3620,22 @@ export class App extends React.Component<IAppProps, IAppState> {
   }
 
   private getWorktreeSuffix(
-    repository: Repository | CloningRepository
+    repository: Repository | CloningRepository,
+    worktrees: readonly WorktreeEntry[]
   ): string {
     // If the worktrees dropdown is enabled, there is no need to add a suffix to the repository name
     if (this.state.showWorktrees || !(repository instanceof Repository)) {
       return ''
     }
-    const worktreeName = Path.basename(repository.path)
-    if (worktreeName === repository.name) {
+    const isMainWorktree = worktrees.some(
+      worktree => worktree.path === repository.path && worktree.type === 'main'
+    )
+    if (isMainWorktree) {
       return ''
+    } else {
+      const worktreeName = Path.basename(repository.path)
+      return ` (${worktreeName})`
     }
-    return ` (${worktreeName})`
   }
 
   private onRepositoryToolbarButtonContextMenu = () => {
