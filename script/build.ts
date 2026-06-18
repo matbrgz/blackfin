@@ -2,9 +2,7 @@
 /// <reference path="./globals.d.ts" />
 
 import * as cp from 'child_process'
-import { packager } from '@electron/packager'
-import { NotaryToolCredentials } from '@electron/notarize'
-
+import packager, { OsxNotarizeOptions } from 'electron-packager'
 import frontMatter from 'front-matter'
 import * as path from 'path'
 import { getPrintenvzPath } from 'printenvz'
@@ -631,7 +629,7 @@ ${licenseText}`
   rmSync(chooseALicense, { recursive: true, force: true })
 }
 
-function getNotarizationOptions(): NotaryToolCredentials | undefined {
+function getNotarizationOptions(): OsxNotarizeOptions | undefined {
   const {
     APPLE_ID: appleId,
     APPLE_ID_PASSWORD: appleIdPassword,
@@ -639,6 +637,6 @@ function getNotarizationOptions(): NotaryToolCredentials | undefined {
   } = process.env
 
   return appleId && appleIdPassword && teamId
-    ? { appleId, appleIdPassword, teamId }
+    ? { tool: 'notarytool', appleId, appleIdPassword, teamId }
     : undefined
 }
