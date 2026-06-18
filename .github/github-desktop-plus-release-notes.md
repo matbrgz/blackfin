@@ -14,5 +14,14 @@ Upstream: [GitHub Desktop 3.5.13-beta1 release notes](https://github.com/desktop
 
 ## **Changes and improvements:**
 
-- [#174] Added new "Open worktree in new window" context menu option when right-clicking on a worktree.
+- [#174] Added new **"Open worktree in new window"** context menu option when right-clicking on a worktree.
 
+- [#158] [#159] [#160] [#165] Improved the Git Worktrees UX by switching to the new upstream implementation.
+
+- Added new **"Delete unused local branches"** context menu option. This option shows up when right-clicking on a local-only branch, only if the repository has 3 or more local-only branches.  
+  This will delete *all* local-only branches that are not currently checked out. Use it with caution!
+
+## **Fixes:**
+
+- Building the app no longer hangs indefinitely when using Node.js 24.16.0 or some Node.js 26 versions. Ref: [nodejs/node#63487](https://github.com/nodejs/node/issues/63487)  
+  This mainly affects Arch Linux users installing `github-desktop-plus` or `github-desktop-plus-git` from the AUR.
