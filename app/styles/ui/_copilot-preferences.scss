@@ -99,6 +99,133 @@
     }
   }
 
+  .copilot-usage-section {
+    margin: var(--spacing) 0 var(--spacing-double);
+    min-width: 0;
+
+    h2 {
+      margin: 0 0 var(--spacing-half);
+      font-size: var(--font-size);
+      font-weight: var(--font-weight-semibold);
+    }
+  }
+
+  .copilot-usage-empty {
+    margin: 0;
+    color: var(--text-secondary-color);
+    font-size: var(--font-size-sm);
+  }
+
+  .copilot-snapshot-card-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing);
+    min-width: 0;
+
+    &:not(:last-child) {
+      margin-bottom: var(--spacing-half);
+    }
+  }
+
+  .copilot-snapshot-card {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    gap: var(--spacing);
+    padding: var(--spacing);
+    border: var(--base-border);
+    border-radius: var(--border-radius);
+    background: var(--box-alt-background-color);
+  }
+
+  .copilot-snapshot-account {
+    display: flex;
+    min-width: 0;
+    align-items: center;
+    gap: var(--spacing);
+
+    .avatar-container,
+    .avatar {
+      width: 32px;
+      height: 32px;
+      flex-shrink: 0;
+    }
+  }
+
+  .copilot-snapshot-account-info {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+  }
+
+  .copilot-snapshot-account-login {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-weight: var(--font-weight-semibold);
+  }
+
+  .copilot-snapshot-account-type {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--text-secondary-color);
+    font-size: var(--font-size-sm);
+  }
+
+  .copilot-snapshot-item {
+    display: flex;
+    flex: 1 1 180px;
+    min-width: 0;
+    flex-direction: column;
+    gap: var(--spacing-half);
+  }
+
+  .copilot-snapshot-header {
+    display: flex;
+    min-width: 0;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--spacing-half);
+  }
+
+  .copilot-snapshot-title {
+    display: flex;
+    min-width: 0;
+    align-items: baseline;
+    gap: var(--spacing-third);
+  }
+
+  .copilot-snapshot-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .copilot-snapshot-reset,
+  .copilot-snapshot-usage {
+    flex-shrink: 0;
+    color: var(--text-secondary-color);
+    font-size: var(--font-size-sm);
+  }
+
+  .copilot-snapshot-progress {
+    height: 6px;
+    overflow: hidden;
+    border-radius: 999px;
+    background: var(--box-selected-background-color);
+
+    &.disabled {
+      opacity: 0.5;
+    }
+  }
+
+  .copilot-snapshot-progress-value {
+    height: 100%;
+    border-radius: inherit;
+    background: var(--text-secondary-color);
+  }
+
   .copilot-access-call-to-action {
     .call-to-action {
       display: block;
