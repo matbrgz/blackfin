@@ -23,7 +23,10 @@ import {
   type IBYOKProvider,
 } from '../../../src/lib/copilot/byok'
 import { Account } from '../../../src/models/account'
-import type { Model } from '@github/copilot-sdk/dist/generated/rpc'
+import type {
+  AccountQuotaSnapshot,
+  Model,
+} from '@github/copilot-sdk/dist/generated/rpc'
 import { setNumberFormatPreference } from '../../../src/models/formatting-preferences'
 
 interface IAccountOptions {
@@ -32,6 +35,8 @@ interface IAccountOptions {
   readonly endpoint?: string
   readonly id?: number
   readonly login?: string
+  readonly avatarURL?: string
+  readonly name?: string
 }
 
 function makeAccount(options: IAccountOptions = {}): Account {
@@ -49,9 +54,9 @@ function makeAccount(options: IAccountOptions = {}): Account {
     options.endpoint ?? 'https://api.github.com',
     'token',
     [],
-    '',
+    options.avatarURL ?? 'https://avatars.githubusercontent.com/u/1',
     options.id ?? 1,
-    'Mona Lisa',
+    options.name ?? 'Mona Lisa',
     'free',
     'https://copilot-proxy.githubusercontent.com',
     isCopilotDesktopEnabled,
@@ -136,6 +141,33 @@ const models: ReadonlyArray<Model> = [
   otherModel,
   usageBilledModel,
 ]
+
+function makeQuotaSnapshot(
+  overrides: Partial<AccountQuotaSnapshot> = {}
+): AccountQuotaSnapshot {
+  return {
+    isUnlimitedEntitlement: false,
+    entitlementRequests: 100,
+    usedRequests: 25,
+    usageAllowedWithExhaustedQuota: false,
+    remainingPercentage: 75,
+    overage: 0,
+    overageAllowedWithExhaustedQuota: false,
+    ...overrides,
+  }
+}
+
+const quotaSnapshots = new Map<string, AccountQuotaSnapshot>([
+  ['chat', makeQuotaSnapshot()],
+  [
+    'premium_interactions',
+    makeQuotaSnapshot({
+      entitlementRequests: 300,
+      usedRequests: 90,
+      remainingPercentage: 70,
+    }),
+  ],
+])
 
 const ollamaProvider: IBYOKProvider = {
   id: 'ollama-id',
@@ -233,6 +265,7 @@ function defaults() {
   return {
     selectedCopilotModels: {},
     copilotModels: models,
+    copilotQuotaSnapshots: quotaSnapshots,
     accounts: [makeAccount()],
     byokProviders: [],
     showBYOKSettings: false,
@@ -474,6 +507,9 @@ describe('CopilotPreferences', () => {
     )
 
     assert.ok(screen.getByRole('button', { name: /GPT-5 mini/ }))
+    assert.ok(screen.getByText('@octo'))
+    assert.ok(screen.getByText('GitHub Enterprise · octocorp.ghe.com'))
+    assert.strictEqual(screen.queryByText('@mona'), null)
     assert.strictEqual(screen.queryByText('View Copilot plans'), null)
   })
 
@@ -511,6 +547,87 @@ describe('CopilotPreferences', () => {
   it('shows no-models message when fetch completed with empty result', () => {
     render(<CopilotPreferences {...defaults()} copilotModels={[]} />)
     assert.ok(screen.getByText('No Copilot models available.'))
+  })
+
+  it('shows a loading message when quota snapshots have not been fetched', () => {
+    render(<CopilotPreferences {...defaults()} copilotQuotaSnapshots={null} />)
+
+    assert.ok(screen.getByText('Loading Copilot usage…'))
+  })
+
+  it('renders Copilot quota snapshot cards', () => {
+    const view = render(<CopilotPreferences {...defaults()} />)
+
+    assert.ok(screen.getByText('Usage'))
+    assert.ok(screen.getByAltText('Avatar for Mona Lisa'))
+    assert.ok(screen.getByText('@mona'))
+    assert.ok(screen.getByText('GitHub.com account'))
+    assert.ok(screen.getByText('Chat messages'))
+    assert.ok(screen.getByText('Premium requests'))
+
+    const modelPicker = view.container.querySelector('.copilot-model-picker')
+    const usageSection = view.container.querySelector('.copilot-usage-section')
+    assert.ok(modelPicker instanceof HTMLElement)
+    assert.ok(usageSection instanceof HTMLElement)
+    assert.strictEqual(
+      modelPicker.compareDocumentPosition(usageSection) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+      Node.DOCUMENT_POSITION_FOLLOWING
+    )
+
+    const progressBars = screen.getAllByRole('progressbar')
+    assert.strictEqual(progressBars.length, 2)
+    assert.strictEqual(progressBars[0].getAttribute('aria-valuenow'), '25')
+    assert.strictEqual(
+      progressBars[0].getAttribute('aria-label'),
+      '25% quota used'
+    )
+    assert.strictEqual(progressBars[1].getAttribute('aria-valuenow'), '30')
+    assert.ok(screen.getByText('25%'))
+    assert.ok(screen.getByText('30%'))
+  })
+
+  it('renders token-based billing quota snapshots as AI credits', () => {
+    render(
+      <CopilotPreferences
+        {...defaults()}
+        copilotQuotaSnapshots={
+          new Map<string, AccountQuotaSnapshot>([
+            [
+              'chat',
+              makeQuotaSnapshot({
+                isUnlimitedEntitlement: true,
+                entitlementRequests: -1,
+                usedRequests: 0,
+                remainingPercentage: 100,
+              }),
+            ],
+            [
+              'completions',
+              makeQuotaSnapshot({
+                isUnlimitedEntitlement: true,
+                entitlementRequests: -1,
+                usedRequests: 0,
+                remainingPercentage: 100,
+              }),
+            ],
+            [
+              'premium_interactions',
+              makeQuotaSnapshot({
+                entitlementRequests: 12.5,
+                usedRequests: 2.5,
+                remainingPercentage: 80,
+              }),
+            ],
+          ])
+        }
+      />
+    )
+
+    assert.ok(screen.getByText('AI credits'))
+    assert.ok(screen.getByText('(resets monthly)'))
+    assert.strictEqual(screen.queryByText('Chat messages'), null)
+    assert.ok(screen.getByText('20%'))
   })
 
   it('renders a Copilot group with the available models', async () => {

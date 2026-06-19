@@ -46,6 +46,7 @@ import { CopilotPreferences } from './copilot'
 import type {
   CopilotFeature,
   CopilotModelSelections,
+  CopilotQuotaSnapshots,
 } from '../../lib/stores/copilot-store'
 import type { IBYOKProvider } from '../../lib/copilot/byok'
 import { PopupType } from '../../models/popup'
@@ -116,6 +117,7 @@ interface IPreferencesProps {
   readonly showDiffCheckMarks: boolean
   readonly selectedCopilotModels: CopilotModelSelections
   readonly copilotModels: ReadonlyArray<Model> | null
+  readonly copilotQuotaSnapshots: CopilotQuotaSnapshots | null
   readonly byokProviders: ReadonlyArray<IBYOKProvider>
   readonly alwaysUseCopilotForConflictResolution: boolean
 }
@@ -293,6 +295,7 @@ export class Preferences extends React.Component<
     // Kick off Copilot model list fetch (non-blocking)
     if (this.isCopilotSdkEnabled) {
       this.props.dispatcher.fetchCopilotModels()
+      this.props.dispatcher.fetchCopilotQuotaSnapshots()
     }
 
     const availableEditors = editors.map(e => e.editor) ?? null
@@ -541,6 +544,7 @@ export class Preferences extends React.Component<
           <CopilotPreferences
             selectedCopilotModels={this.state.selectedCopilotModels}
             copilotModels={this.props.copilotModels}
+            copilotQuotaSnapshots={this.props.copilotQuotaSnapshots}
             accounts={this.props.accounts}
             byokProviders={this.props.byokProviders}
             showBYOKSettings={this.shouldShowBYOKSettings()}

@@ -13,7 +13,11 @@ import {
   SignInStore,
   UpstreamRemoteName,
 } from '.'
-import type { CopilotFeature, CopilotModelSelections } from './copilot-store'
+import type {
+  CopilotFeature,
+  CopilotModelSelections,
+  CopilotQuotaSnapshots,
+} from './copilot-store'
 import { CommitMessageGenerationCancelledError } from './copilot-store'
 import {
   IBYOKProvider,
@@ -546,6 +550,7 @@ const alwaysUseCopilotForConflictResolutionKey =
 export const showChangesFilterKey = 'show-changes-filter'
 
 const selectedCopilotModelsKey = 'selected-copilot-models'
+const CopilotLicenseTypeNoAccess = 'NO_ACCESS'
 export const showChangesFilterDefault = true
 
 export class AppStore extends TypedBaseStore<IAppState> {
@@ -716,6 +721,7 @@ export class AppStore extends TypedBaseStore<IAppState> {
 
   private selectedCopilotModels: CopilotModelSelections = {}
   private copilotModels: ReadonlyArray<Model> | null = null
+  private copilotQuotaSnapshots: CopilotQuotaSnapshots | null = null
   private byokProviders: ReadonlyArray<IBYOKProvider> = []
 
   public constructor(
@@ -1003,7 +1009,9 @@ export class AppStore extends TypedBaseStore<IAppState> {
     this.accountsStore.onDidUpdate(accounts => {
       this.accounts = accounts
       this.syncCopilotModelsFromCache()
+      this.syncCopilotQuotaSnapshotsFromCache()
       this.updateCopilotModelsForCurrentAccount()
+      this.updateCopilotQuotaSnapshotsForCurrentAccount()
       const endpointTokens = accounts.map<EndpointToken>(
         ({ endpoint, token }) => ({ endpoint, token })
       )
@@ -1043,17 +1051,28 @@ export class AppStore extends TypedBaseStore<IAppState> {
 
     this.copilotStore.onDidUpdate(() => {
       this.syncCopilotModelsFromCache()
+      this.syncCopilotQuotaSnapshotsFromCache()
       this.emitUpdate()
     })
   }
 
-  private getCopilotModelsAccount(): Account | undefined {
+  private getCopilotSettingsAccount(): Account | undefined {
     return this.accounts.find(
       account =>
         !isGHES(account.endpoint) &&
         enableCopilotSdkCommitMessageGeneration(account) &&
-        account.isCopilotDesktopEnabled
+        account.isCopilotDesktopEnabled === true &&
+        account.copilotLicenseType !== undefined &&
+        account.copilotLicenseType !== CopilotLicenseTypeNoAccess
     )
+  }
+
+  private getCopilotModelsAccount(): Account | undefined {
+    return this.getCopilotSettingsAccount()
+  }
+
+  private getCopilotQuotaSnapshotsAccount(): Account | undefined {
+    return this.getCopilotSettingsAccount()
   }
 
   private syncCopilotModelsFromCache(): void {
@@ -1065,6 +1084,18 @@ export class AppStore extends TypedBaseStore<IAppState> {
     }
 
     this.copilotModels = this.copilotStore.getCachedModelList(account)
+  }
+
+  private syncCopilotQuotaSnapshotsFromCache(): void {
+    const account = this.getCopilotQuotaSnapshotsAccount()
+
+    if (account === undefined) {
+      this.copilotQuotaSnapshots = null
+      return
+    }
+
+    this.copilotQuotaSnapshots =
+      this.copilotStore.getCachedQuotaSnapshots(account)
   }
 
   private updateCopilotModelsForCurrentAccount(): void {
@@ -1080,6 +1111,24 @@ export class AppStore extends TypedBaseStore<IAppState> {
     this.fetchCopilotModelsForCurrentAccount().catch(e => {
       log.warn(
         'AppStore: Failed to fetch Copilot models after account update',
+        e
+      )
+    })
+  }
+
+  private updateCopilotQuotaSnapshotsForCurrentAccount(): void {
+    const account = this.getCopilotQuotaSnapshotsAccount()
+
+    if (
+      account === undefined ||
+      this.copilotStore.getCachedQuotaSnapshots(account) !== null
+    ) {
+      return
+    }
+
+    this.fetchCopilotQuotaSnapshotsForCurrentAccount().catch(e => {
+      log.warn(
+        'AppStore: Failed to fetch Copilot quota snapshots after account update',
         e
       )
     })
@@ -1276,6 +1325,7 @@ export class AppStore extends TypedBaseStore<IAppState> {
       showChangesFilter: this.showChangesFilter,
       selectedCopilotModels: this.selectedCopilotModels,
       copilotModels: this.copilotModels,
+      copilotQuotaSnapshots: this.copilotQuotaSnapshots,
       byokProviders: this.byokProviders,
     }
   }
@@ -10111,6 +10161,11 @@ export class AppStore extends TypedBaseStore<IAppState> {
     return this.fetchCopilotModelsForCurrentAccount()
   }
 
+  /** This shouldn't be called directly. See 'Dispatcher'. */
+  public async _fetchCopilotQuotaSnapshots(): Promise<void> {
+    return this.fetchCopilotQuotaSnapshotsForCurrentAccount()
+  }
+
   private async fetchCopilotModelsForCurrentAccount(): Promise<void> {
     const account = this.getCopilotModelsAccount()
     if (account === undefined) {
@@ -10130,6 +10185,23 @@ export class AppStore extends TypedBaseStore<IAppState> {
       this.scrubMissingCopilotModelSelections()
     } else {
       this.syncCopilotModelsFromCache()
+    }
+    this.emitUpdate()
+  }
+
+  private async fetchCopilotQuotaSnapshotsForCurrentAccount(): Promise<void> {
+    const account = this.getCopilotQuotaSnapshotsAccount()
+    if (account === undefined) {
+      this.copilotQuotaSnapshots = null
+      this.emitUpdate()
+      return
+    }
+
+    const quotaSnapshots = await this.copilotStore.getQuotaSnapshots(account)
+    if (quotaSnapshots !== null) {
+      this.copilotQuotaSnapshots = quotaSnapshots
+    } else {
+      this.syncCopilotQuotaSnapshotsFromCache()
     }
     this.emitUpdate()
   }

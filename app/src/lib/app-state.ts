@@ -1,4 +1,7 @@
-import type { CopilotModelSelections } from './stores/copilot-store'
+import type {
+  CopilotModelSelections,
+  CopilotQuotaSnapshots,
+} from './stores/copilot-store'
 import type { IBYOKProvider } from './copilot/byok'
 import type { IConflictResolutionModelDisplay } from './copilot/conflict-resolution-model'
 import type {
@@ -425,6 +428,12 @@ export interface IAppState {
    * Null when the list has not been fetched yet.
    */
   readonly copilotModels: ReadonlyArray<Model> | null
+
+  /**
+   * Copilot quota snapshots fetched from the SDK. Null when the snapshots have
+   * not been fetched yet.
+   */
+  readonly copilotQuotaSnapshots: CopilotQuotaSnapshots | null
 
   /**
    * The list of user-configured Copilot model providers (BYOK). Empty when

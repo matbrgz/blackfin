@@ -4242,6 +4242,11 @@ export class Dispatcher {
     return this.appStore._fetchCopilotModels()
   }
 
+  /** Fetch Copilot quota usage snapshots from the SDK. */
+  public fetchCopilotQuotaSnapshots(): Promise<void> {
+    return this.appStore._fetchCopilotQuotaSnapshots()
+  }
+
   /**
    * Add a new BYOK Copilot provider. The secret (API key / bearer token)
    * is stored separately in the OS keychain.
