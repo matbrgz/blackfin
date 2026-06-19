@@ -3120,18 +3120,30 @@ export class AppStore extends TypedBaseStore<IAppState> {
     this.updateMenuLabelsForSelectedRepository()
   }
 
+  private isWorktreeDropdownVisible(): boolean {
+    const repository = this.selectedRepository
+    const worktreeCount =
+      repository instanceof Repository
+        ? this.repositoryStateCache.get(repository).worktrees.length
+        : 0
+    return enableWorktreeSupport() && this.showWorktrees && worktreeCount > 1
+  }
+
   /**
    * Calculate the constraints of our resizable panes whenever the window
    * dimensions change.
    */
   private updateResizableConstraints() {
+    const showWorktreeDropdown = this.isWorktreeDropdownVisible()
+
     // The combined width of the toolbar buttons (worktree, branch, push/pull).
     // Since the repository list toolbar button width is tied to the width of
     // the sidebar we can't let it push these buttons off screen.
     const toolbarButtonsMinWidth =
       defaultPushPullButtonWidth +
       defaultBranchDropdownWidth +
-      defaultWorktreeDropdownWidth
+      (showWorktreeDropdown ? defaultWorktreeDropdownWidth : 0)
+    const numButtons = 2 + (showWorktreeDropdown ? 1 : 0)
 
     // Start with all the available width
     let available = window.innerWidth
@@ -3177,10 +3189,12 @@ export class AppStore extends TypedBaseStore<IAppState> {
     // push-pull. Each subsequent allocation uses the clamped value of the
     // previous to prevent the total from exceeding the available space.
     const branchDropdownMax =
-      available - defaultWorktreeDropdownWidth - defaultPushPullButtonWidth
+      available -
+      (showWorktreeDropdown ? defaultWorktreeDropdownWidth : 0) -
+      defaultPushPullButtonWidth
     const minimumBranchDropdownWidth =
-      defaultBranchDropdownWidth > available / 3
-        ? available / 3 - 10
+      defaultBranchDropdownWidth > available / numButtons
+        ? available / numButtons - 10
         : defaultBranchDropdownWidth
     this.branchDropdownWidth = constrain(
       this.branchDropdownWidth,
@@ -3192,17 +3206,17 @@ export class AppStore extends TypedBaseStore<IAppState> {
       available - clamp(this.branchDropdownWidth) - defaultPushPullButtonWidth
     this.worktreeDropdownWidth = constrain(
       this.worktreeDropdownWidth,
-      Math.min(available / 3 - 10, 170),
+      Math.min(available / numButtons - 10, 170),
       worktreeDropdownMax
     )
 
     const pushPullButtonMaxWidth =
       available -
       clamp(this.branchDropdownWidth) -
-      clamp(this.worktreeDropdownWidth)
+      (showWorktreeDropdown ? clamp(this.worktreeDropdownWidth) : 0)
     const minimumPushPullToolBarWidth =
-      defaultPushPullButtonWidth > available / 3
-        ? available / 3
+      defaultPushPullButtonWidth > available / numButtons
+        ? available / numButtons
         : defaultPushPullButtonWidth
     this.pushPullButtonWidth = constrain(
       this.pushPullButtonWidth,
@@ -4907,6 +4921,10 @@ export class AppStore extends TypedBaseStore<IAppState> {
       const worktrees = await listWorktrees(repository)
       this.repositoryStateCache.update(repository, () => ({ worktrees }))
       this.statsStore.recordWorktreeCount(worktrees.length)
+
+      // The presence of linked worktrees determines whether the worktree
+      // dropdown is shown, which changes how the toolbar width is allocated.
+      this.updateResizableConstraints()
 
       // Keep the repository list's local state in sync as well
       const existing = this.localRepositoryStateLookup.get(repository.id)
