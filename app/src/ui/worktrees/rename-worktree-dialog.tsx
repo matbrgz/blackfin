@@ -43,17 +43,17 @@ export class RenameWorktreeDialog extends React.Component<
 
     this.setState({ renaming: true })
 
-    try {
-      await this.props.dispatcher.moveWorktree(
-        repository,
-        worktreePath,
-        newPath
-      )
-    } finally {
-      this.setState({ renaming: false })
-    }
+    const success = await this.props.dispatcher.moveWorktree(
+      repository,
+      worktreePath,
+      newPath
+    )
 
-    onDismissed()
+    this.setState({ renaming: false })
+
+    if (success) {
+      onDismissed()
+    }
   }
 
   public render() {
