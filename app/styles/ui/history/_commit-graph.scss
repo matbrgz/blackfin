@@ -11,6 +11,11 @@
       flex: 1 1 auto;
       min-width: 0;
       border-bottom: 0;
+
+      .fancy-text-box-component,
+      .text-box-component {
+        min-width: 0;
+      }
     }
 
     .commitGraph-view-mode-switch {
