@@ -16,7 +16,7 @@ import {
   removePinnedRepository,
 } from '../../lib/stores/repository-pinning'
 import { IFilterListGroup } from '../lib/filter-list'
-import { IMatches } from '../../lib/fuzzy-find'
+import { IMatch, IMatches } from '../../lib/fuzzy-find'
 import { ILocalRepositoryState, Repository } from '../../models/repository'
 import { normalizePath } from '../../lib/helpers/path'
 import { FoldoutType } from '../../lib/app-state'
@@ -516,6 +516,10 @@ export class RepositoriesList extends React.Component<
           getGroupAriaLabel={this.getGroupAriaLabelGetter(groups)}
           getItemAriaLabel={this.getItemAriaLabel}
           onSelectionChanged={this.onSelectionChanged}
+          postProcessMatches={this.postProcessMatches(
+            groups,
+            this.props.filterText
+          )}
         />
       </div>
     )
@@ -532,6 +536,78 @@ export class RepositoriesList extends React.Component<
 
   private onSelectionChanged = (selectedItem: IRepositoryListItem | null) => {
     this.setState({ selectedItem })
+  }
+
+  private postProcessMatches(
+    groups: ReadonlyArray<
+      IFilterListGroup<IRepositoryListItem, RepositoryListGroup>
+    >,
+    filterText: string
+  ) {
+    if (!this.props.showWorktreesInRepoList || !filterText) {
+      return (items: ReadonlyArray<IMatch<IRepositoryListItem>>) => items
+    }
+
+    return (
+      items: ReadonlyArray<IMatch<IRepositoryListItem>>
+    ): ReadonlyArray<IMatch<IRepositoryListItem>> => {
+      const isLinkedWorktree = (item: IRepositoryListItem) =>
+        item.worktree !== null && item.worktree.type === 'linked'
+
+      // A query that matches a linked worktree should always show the main worktree row first, even
+      // if the main worktree row doesn't match the query. Construct a lookup so we can inject synthetic matches
+      const mainWorktreeRowsLookup = new Map<number, IRepositoryListItem>()
+      for (const group of groups) {
+        for (const listItem of group.items) {
+          if (!isLinkedWorktree(listItem)) {
+            mainWorktreeRowsLookup.set(listItem.repository.id, listItem)
+          }
+        }
+      }
+
+      const output: IMatch<IRepositoryListItem>[] = []
+      const remaining = [...items]
+
+      while (remaining.length > 0) {
+        const match = remaining.shift()!
+        const repoId = match.item.repository.id
+
+        // Collect this match plus every remaining match for the same
+        // repository, preserving relative order.
+        const repoMatches = [match]
+        for (let i = 0; i < remaining.length; ) {
+          if (remaining[i].item.repository.id === repoId) {
+            repoMatches.push(...remaining.splice(i, 1))
+          } else {
+            i++
+          }
+        }
+
+        // Main worktree row first, creating a synthetic match if necessary
+        const mainMatch = repoMatches.find(m => !isLinkedWorktree(m.item))
+        if (mainMatch) {
+          output.push(mainMatch)
+        } else {
+          const mainRow = mainWorktreeRowsLookup.get(repoId)
+          if (mainRow) {
+            output.push({
+              item: mainRow,
+              score: match.score,
+              matches: { title: [], subtitle: [] },
+            })
+          }
+        }
+
+        // Then the linked worktree rows, in their original order
+        for (const m of repoMatches) {
+          if (isLinkedWorktree(m.item)) {
+            output.push(m)
+          }
+        }
+      }
+
+      return output
+    }
   }
 
   private renderPostFilter = () => {

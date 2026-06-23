@@ -139,6 +139,11 @@ interface ISectionFilterListProps<T extends IFilterListItem, GroupIdentifier> {
   /** Called when the filter text is changed by the user */
   readonly onFilterTextChanged?: (text: string) => void
 
+  /** A function to post-process the filtered items before rendering them. */
+  readonly postProcessMatches?: (
+    items: readonly IMatch<T>[]
+  ) => ReadonlyArray<IMatch<T>>
+
   /**
    * Whether or not the filter list should allow selection
    * and filtering. Defaults to false.
@@ -742,7 +747,10 @@ function createStateUpdate<T extends IFilterListItem, GroupIdentifier>(
       groupRows.push({ kind: 'group', identifier: group.identifier })
     }
 
-    for (const { item, matches } of items) {
+    const postProcessedItems = props.postProcessMatches
+      ? props.postProcessMatches(items)
+      : items
+    for (const { item, matches } of postProcessedItems) {
       if (selectedItem && item.id === selectedItem.id) {
         selectedRow = {
           section,
