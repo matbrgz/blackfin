@@ -53,7 +53,7 @@ const options: RedhatOptions = {
   arch: getArchitecture(),
   description: 'Simple collaboration from your desktop',
   productDescription:
-    'GitHub Desktop fork with advanced functionality and Bitbucket integration.',
+    'GitHub Desktop fork with advanced functionality and improvements.',
   categories: ['GNOME', 'GTK', 'Development'],
   requires: [
     // dugite-native dependencies
@@ -74,7 +74,7 @@ const options: RedhatOptions = {
     post: 'script/resources/rpm/post.sh',
     preun: 'script/resources/rpm/preun.sh',
   },
-  homepage: 'https://github.com/pol-rivero/github-desktop-plus',
+  homepage: 'https://github.com/DesktopPlus/desktop-plus',
   mimeType: [
     'x-scheme-handler/x-github-client',
     'x-scheme-handler/x-github-desktop-auth',
@@ -115,7 +115,7 @@ export async function packageRedhat(): Promise<string> {
   } finally {
     Installer.prototype.createSpec = originalCreateSpec
   }
-  const installersPath = `${distRoot}/github-desktop-plus*.rpm`
+  const installersPath = `${distRoot}/desktop-plus*.rpm`
 
   const files = await globPromise(installersPath)
 
@@ -127,7 +127,7 @@ export async function packageRedhat(): Promise<string> {
 
   const oldPath = files[0]
 
-  const newFileName = `GitHubDesktopPlus-v${getVersion()}-linux-${getArchitectureForFileName()}.rpm`
+  const newFileName = `DesktopPlus-v${getVersion()}-linux-${getArchitectureForFileName()}.rpm`
   const newPath = join(distRoot, newFileName)
   await rename(oldPath, newPath)
 

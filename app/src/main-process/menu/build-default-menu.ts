@@ -73,10 +73,10 @@ export function buildDefaultMenuTemplate({
 
   if (__DARWIN__) {
     template.push({
-      label: 'GitHub Desktop',
+      label: 'Desktop Plus',
       submenu: [
         {
-          label: 'About GitHub Desktop Plus',
+          label: 'About Desktop Plus',
           click: emit('show-about'),
           id: 'about',
         },
@@ -572,7 +572,7 @@ export function buildDefaultMenuTemplate({
     click() {
       shell
         .openExternal(
-          'https://github.com/pol-rivero/github-desktop-plus/issues/new/choose'
+          'https://github.com/DesktopPlus/desktop-plus/issues/new/choose'
         )
         .catch(err => log.error('Failed opening issue creation page', err))
     },
@@ -635,7 +635,7 @@ export function buildDefaultMenuTemplate({
         ...helpItems,
         separator,
         {
-          label: '&About GitHub Desktop Plus',
+          label: '&About Desktop Plus',
           click: emit('show-about'),
           id: 'about',
         },

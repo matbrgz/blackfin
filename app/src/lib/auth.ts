@@ -7,6 +7,7 @@ export function getKeyForAccount(account: Account): string {
 
 /** Get the auth key for the endpoint. */
 export function getKeyForEndpoint(endpoint: string, login: string): string {
+  // Don't modify this string! This is used for storing the password in the keychain
   const appName = __DEV__ ? 'GitHub Desktop Plus Dev' : 'GitHub Desktop Plus'
 
   return `${appName} - ${endpoint} - ${login}`

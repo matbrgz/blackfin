@@ -1,6 +1,6 @@
 #!/bin/bash
 
-IMAGE_NAME="github-desktop-plus-tests"
+IMAGE_NAME="desktop-plus-tests"
 
 script_dir=$(dirname $0)
 repo_root=$(realpath "$script_dir/../..")

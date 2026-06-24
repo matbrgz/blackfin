@@ -1,5 +1,6 @@
 import { TokenStore } from '../stores'
 
+// Don't modify this string! This is used for storing data in the keychain
 const appName = __DEV__ ? 'GitHub Desktop Dev' : 'GitHub Desktop'
 
 export function getSSHCredentialStoreKey(name: string) {

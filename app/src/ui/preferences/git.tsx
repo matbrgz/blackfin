@@ -91,7 +91,7 @@ export class Git extends React.Component<IGitProps> {
             version managers, linters, or other tools your hooks rely on). If
             your hooks depend on such programs, install a native package
             instead. See the{' '}
-            <LinkButton uri="https://github.com/pol-rivero/github-desktop-plus#download-and-installation-">
+            <LinkButton uri="https://github.com/DesktopPlus/desktop-plus#download-and-installation-">
               installation instructions
             </LinkButton>
             .
@@ -106,11 +106,11 @@ export class Git extends React.Component<IGitProps> {
           onChange={this.onEnableGitHookEnvChanged}
         />
         <p id="git-hooks-env-description" className="settings-description">
-          When enabled, GitHub Desktop will attempt to load environment
-          variables from your shell when executing Git hooks. This is useful if
-          your Git hooks depend on environment variables set in your shell
-          configuration files, a common practice for version managers such as
-          nvm, rbenv, asdf, etc.
+          When enabled, Desktop Plus will attempt to load environment variables
+          from your shell when executing Git hooks. This is useful if your Git
+          hooks depend on environment variables set in your shell configuration
+          files, a common practice for version managers such as nvm, rbenv,
+          asdf, etc.
         </p>
 
         {this.props.enableGitHookEnv && __WIN32__ && (

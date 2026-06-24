@@ -1,9 +1,9 @@
 #!/bin/bash
 set -e
 
-PROFILE_D_FILE="/etc/profile.d/github-desktop-plus.sh"
-APP_BINARY="/usr/bin/github-desktop-plus"
-CLI_BINARY="/usr/bin/github-desktop-plus-cli"
+PROFILE_D_FILE="/etc/profile.d/desktop-plus.sh"
+APP_BINARY="/usr/bin/desktop-plus"
+CLI_BINARY="/usr/bin/desktop-plus-cli"
 
 case "$1" in
     purge|remove|upgrade|failed-upgrade|abort-install|abort-upgrade|disappear)

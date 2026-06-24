@@ -1,4 +1,4 @@
-GitHub Desktop Plus v3.5.13-beta4
+Desktop Plus v3.5.13-beta4
 
 Upstream: [GitHub Desktop 3.5.13-beta4 release notes](https://github.com/desktop/desktop/releases/tag/release-3.5.13-beta4)
 

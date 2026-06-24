@@ -5,10 +5,10 @@ cask "github-desktop-plus" do
   sha256 arm:   "[[SHA256_ARM64]]",
          intel: "[[SHA256_X64]]"
 
-  url "https://github.com/pol-rivero/github-desktop-plus/releases/download/v#{version}/GitHubDesktopPlus-v#{version}-macOS-#{arch}.zip"
-  name "GitHub Desktop Plus"
-  desc "Fork of GitHub Desktop with extra features and improvements"
-  homepage "https://github.com/pol-rivero/github-desktop-plus"
+  url "https://github.com/DesktopPlus/desktop-plus/releases/download/v#{version}/DesktopPlus-v#{version}-macOS-#{arch}.zip"
+  name "Desktop Plus"
+  desc "GitHub Desktop fork with extra features and improvements"
+  homepage "https://github.com/DesktopPlus/desktop-plus"
 
   livecheck do
     url :url
@@ -17,17 +17,17 @@ cask "github-desktop-plus" do
 
   depends_on macos: :monterey
 
-  app "GitHub Desktop Plus.app"
-  binary "#{appdir}/GitHub Desktop Plus.app/Contents/Resources/app/static/github-desktop-plus-cli.sh",
-         target: "github-desktop-plus-cli"
+  app "Desktop Plus.app"
+  binary "#{appdir}/Desktop Plus.app/Contents/Resources/app/static/desktop-plus-cli.sh",
+         target: "desktop-plus-cli"
 
   postflight do
     system_command "/usr/bin/xattr",
-                   args: ["-dr", "com.apple.quarantine", "#{appdir}/GitHub Desktop Plus.app"]
+                   args: ["-dr", "com.apple.quarantine", "#{appdir}/Desktop Plus.app"]
   end
 
   zap trash: [
-    "~/Library/Application Support/GitHub Desktop Plus",
-    "~/Library/Logs/GitHub Desktop Plus",
+    "~/Library/Application Support/Desktop Plus",
+    "~/Library/Logs/Desktop Plus",
   ]
 end

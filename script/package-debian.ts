@@ -58,10 +58,10 @@ const options: DebianOptions = {
   arch: getArchitecture(),
   description: 'Simple collaboration from your desktop',
   productDescription:
-    'GitHub Desktop fork with advanced functionality and Bitbucket integration.',
+    'GitHub Desktop fork with advanced functionality and improvements.',
   section: 'GNOME;GTK;Development',
   priority: 'extra',
-  homepage: 'https://github.com/pol-rivero/github-desktop-plus',
+  homepage: 'https://github.com/DesktopPlus/desktop-plus',
   depends: [
     // Desktop-specific dependencies
     'libcurl3 | libcurl4',
@@ -92,7 +92,7 @@ const options: DebianOptions = {
     // see https://github.com/shiftkey/desktop/issues/72 for more details
     'x-scheme-handler/x-github-desktop-dev-auth',
   ],
-  maintainer: 'Pol Rivero <github-desktop-plus@polrivero.com>',
+  maintainer: 'Pol Rivero <admin@desktop-plus.org>',
 }
 
 export async function packageDebian(): Promise<string> {
@@ -103,7 +103,7 @@ export async function packageDebian(): Promise<string> {
   const installer = require('electron-installer-debian')
 
   await installer(options)
-  const installersPath = `${distRoot}/github-desktop-plus*.deb`
+  const installersPath = `${distRoot}/desktop-plus*.deb`
 
   const files = await globPromise(installersPath)
 
@@ -115,7 +115,7 @@ export async function packageDebian(): Promise<string> {
 
   const oldPath = files[0]
 
-  const newFileName = `GitHubDesktopPlus-v${getVersion()}-linux-${getArchitectureForFileName()}.deb`
+  const newFileName = `DesktopPlus-v${getVersion()}-linux-${getArchitectureForFileName()}.deb`
   const newPath = join(distRoot, newFileName)
   await rename(oldPath, newPath)
 

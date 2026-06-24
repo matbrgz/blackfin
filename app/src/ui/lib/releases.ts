@@ -4,4 +4,4 @@ export const UpstreamReleaseNotesUri =
     : 'https://desktop.github.com/release-notes/'
 
 export const DesktopPlusReleaseNotesUri =
-  'https://github.com/pol-rivero/github-desktop-plus/releases/'
+  'https://github.com/DesktopPlus/desktop-plus/releases/'

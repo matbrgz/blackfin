@@ -1,4 +1,4 @@
-artifactName: 'GitHubDesktopPlus-${os}-${arch}-${version}.${ext}'
+artifactName: 'DesktopPlus-${os}-${arch}-${version}.${ext}'
 linux:
   category: 'GNOME;GTK;Development'
   packageCategory: 'GNOME;GTK;Development'
@@ -12,4 +12,4 @@ linux:
     - x-scheme-handler/x-github-desktop-dev-auth
   target:
     - AppImage
-  maintainer: 'Pol Rivero<github-desktop-plus@polrivero.com>'
+  maintainer: 'Pol Rivero<admin@desktop-plus.org>'

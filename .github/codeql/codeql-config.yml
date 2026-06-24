@@ -1,4 +1,4 @@
-name: 'GitHub Desktop CodeQL config'
+name: 'Desktop Plus CodeQL config'
 
 paths-ignore:
   - 'vendor'

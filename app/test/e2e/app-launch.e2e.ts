@@ -252,7 +252,7 @@ test.describe('GitHub Desktop - App Launch', () => {
 // ── Auto-update tests ───────────────────────────────────────────────
 
 test.describe('Auto-update', () => {
-  test.skip(true, 'Auto-update has been removed in GitHub Desktop Plus.')
+  test.skip(true, 'Auto-update has been removed in Desktop Plus.')
 
   test.describe('startup update check', () => {
     test('sends an update check to the mock server on launch', async ({
@@ -416,7 +416,7 @@ test.describe('Auto-update', () => {
       await dialog.waitFor({ state: 'visible', timeout: 5000 })
 
       await expect(dialog.locator('.updating-message')).toContainText(
-        'Do not close GitHub Desktop while the update is in progress'
+        'Do not close Desktop Plus while the update is in progress'
       )
 
       // Reset mock and trigger quit again to test Quit Anyway

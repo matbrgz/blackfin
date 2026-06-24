@@ -1,4 +1,4 @@
-# GitHub Desktop Plus
+# GH Desktop Plus
 
 This is an **up-to-date** fork of [GitHub Desktop](https://desktop.github.com) with additional features and improvements.
 
@@ -8,14 +8,14 @@ This is an **up-to-date** fork of [GitHub Desktop](https://desktop.github.com) w
 ## Highlights 👀
 | <h4>Search commits by title, message, tag, or hash</h4> | <h4>Add multiple GitHub, Bitbucket & GitLab accounts</h4> |
 | :---: | :---: |
-| ![Commit search](docs/assets/github-desktop-plus-demo-search.webp) | ![Multiple accounts](docs/assets/github-desktop-plus-demo-multiaccount.webp) |
+| ![Commit search](docs/assets/desktop-plus-demo-search.webp) | ![Multiple accounts](docs/assets/desktop-plus-demo-multiaccount.webp) |
 | <h4>Create multiple stashes per branch</h4> | <h4>Visualize the Commit Graph</h4> |
-| ![Multiple stashes](docs/assets/github-desktop-plus-demo-stashes.webp) | ![Commit Graph](docs/assets/github-desktop-plus-demo-commit-graph.webp) |
+| ![Multiple stashes](docs/assets/desktop-plus-demo-stashes.webp) | ![Commit Graph](docs/assets/desktop-plus-demo-commit-graph.webp) |
 | <h4>Buttons optimized for visual recognition</h4> | <h4>Quickly find unpushed branches</h4> |
-| ![Stash header](docs/assets/github-desktop-plus-demo-stash-header.webp) | ![Branch push indicator](docs/assets/github-desktop-plus-demo-push-indicator.webp) |
+| ![Stash header](docs/assets/desktop-plus-demo-stash-header.webp) | ![Branch push indicator](docs/assets/desktop-plus-demo-push-indicator.webp) |
 
 
-## Additional Features in GitHub Desktop Plus ✨
+## Additional Features in GH Desktop Plus ✨
 
 <details>
 <summary>Click to expand list</summary>
@@ -94,7 +94,7 @@ This is an **up-to-date** fork of [GitHub Desktop](https://desktop.github.com) w
 
 ---
 
-<img src="docs/assets/github-desktop-plus-demo.webp" alt="Demo" style="max-width:1000px;">
+<img src="docs/assets/desktop-plus-demo.webp" alt="Demo" style="max-width:1000px;">
 
 </details>
 
@@ -115,7 +115,7 @@ To update, run `winget upgrade polrivero.GitHubDesktopPlus` or `winget upgrade -
 
 #### Manual download (Not recommended)
 
-Download and execute the installer from the [releases page](https://github.com/pol-rivero/github-desktop-plus/releases/latest).
+Download and execute the installer from the [releases page](https://github.com/DesktopPlus/desktop-plus/releases/latest).
 
 | | **64-bit x86** | **64-bit ARM** |
 | --- | --- | --- |
@@ -142,12 +142,12 @@ For this reason, **I recommend using Winget instead of the manual download**.
 brew install pol-rivero/tap/github-desktop-plus
 ```
 
-Make sure to run `brew update` regularly to get the latest updates for GitHub Desktop Plus.
+Make sure to run `brew update` regularly to get the latest updates for Desktop Plus.
 
 #### Manual download (Not recommended)
 
-Download and extract the ZIP file from the [releases page](https://github.com/pol-rivero/github-desktop-plus/releases/latest). Click the app file to run it.  
-If you encounter the error "Apple could not verify this app is free of malware", go to "System Settings" > "Privacy & Security", scroll down to "Security" and click "Open Anyway" on "GitHub Desktop Plus".
+Download and extract the ZIP file from the [releases page](https://github.com/DesktopPlus/desktop-plus/releases/latest). Click the app file to run it.  
+If you encounter the error "Apple could not verify this app is free of malware", go to "System Settings" > "Privacy & Security", scroll down to "Security" and click "Open Anyway" on "Desktop Plus".
 
 | **64-bit x86** | **64-bit ARM (Apple Silicon)** |
 | --- | --- |
@@ -261,7 +261,7 @@ You can also build from source by installing `github-desktop-plus` or `github-de
 <summary>Click to expand</summary>
 <br>
 
-Simply install GitHub Desktop Plus from [Flathub](https://flathub.org/en/apps/io.github.pol_rivero.github-desktop-plus):
+Simply install Desktop Plus from [Flathub](https://flathub.org/en/apps/io.github.pol_rivero.github-desktop-plus):
 
 ```bash
 flatpak install flathub io.github.pol_rivero.github-desktop-plus
@@ -282,10 +282,10 @@ flatpak install flathub io.github.pol_rivero.github-desktop-plus
 
 **IMPORTANT:** I strongly recommend using your distribution's native package (APT, RPM and AUR packages above) or Flatpak instead of the AppImage, as it requires some manual setup for the sign-in feature to work.  
 If you need to use the AppImage, follow these steps:
-1. Manually [create a `github-desktop-plus.desktop` entry](https://wiki.archlinux.org/title/Desktop_entries).
+1. Manually [create a `desktop-plus.desktop` entry](https://wiki.archlinux.org/title/Desktop_entries).
 2. Link the MIME type:
    ```sh
-   xdg-mime default github-desktop-plus.desktop x-scheme-handler/x-github-desktop-auth
+   xdg-mime default desktop-plus.desktop x-scheme-handler/x-github-desktop-auth
    ```
 
 #### Using ["AM"/"AppMan"](https://github.com/ivan-hc/AM)
@@ -299,7 +299,7 @@ appman install github-desktop-plus
 
 #### Manual download (Not recommended)
 
-Download the AppImage from the [releases page](https://github.com/pol-rivero/github-desktop-plus/releases/latest):
+Download the AppImage from the [releases page](https://github.com/DesktopPlus/desktop-plus/releases/latest):
 
 | **64-bit x86** | **64-bit ARM** |
 | --- | --- |
@@ -308,7 +308,7 @@ Download the AppImage from the [releases page](https://github.com/pol-rivero/git
 Then, make it executable:
 
 ```bash
-chmod +x GitHub-Desktop-Plus-*-linux-*.AppImage
+chmod +x DesktopPlus-*-linux-*.AppImage
 ```
 
 Finally, double-click the .AppImage file to run it.
@@ -323,7 +323,7 @@ Before opening a new issue, please check the [Known Issues](docs/known-issues.md
 
 ## Command Line Interface 💻
 
-GitHub Desktop Plus includes a CLI (`github-desktop-plus-cli`) for opening and cloning repositories from the terminal. See the [CLI documentation](docs/cli.md) for usage details and instructions on creating a shorter alias.
+Desktop Plus includes a CLI (`desktop-plus-cli`) for opening and cloning repositories from the terminal. See the [CLI documentation](docs/cli.md) for usage details and instructions on creating a shorter alias.
 
 ## Running the app locally 🏗️
 

@@ -1,2 +1,2 @@
 /app/test/fixtures/** -text
-/app/static/win32/github-desktop-plus-cli.sh eol=lf
+/app/static/win32/desktop-plus-cli.sh eol=lf

@@ -16,7 +16,7 @@ import {
 const CustomIntegrationValue = 'other'
 
 const BranchPresetScriptDocumentationUrl =
-  'https://github.com/pol-rivero/github-desktop-plus/blob/main/docs/branch-name-presets.md'
+  'https://github.com/DesktopPlus/desktop-plus/blob/main/docs/branch-name-presets.md'
 
 interface IIntegrationsPreferencesProps {
   readonly availableEditors: ReadonlyArray<string>

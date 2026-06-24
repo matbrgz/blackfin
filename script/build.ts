@@ -57,10 +57,10 @@ import { verifyInjectedSassVariables } from './validate-sass/validate-all'
 // Always use ad-hoc code signing ('-'), even for published builds, to avoid "app is damaged" error.
 // This is the friendliest non-paid option.
 // https://wiki.freepascal.org/Code_Signing_for_macOS#Ad_hoc_signing
-const isGitHubDesktopPlus = true
+const isDesktopPlus = true
 const isPublishableBuild = isPublishable()
 const isDevelopmentBuild = getChannel() === 'development'
-const useAdHocSigning = isGitHubDesktopPlus || isDevelopmentBuild
+const useAdHocSigning = isDesktopPlus || isDevelopmentBuild
 const shouldSkipPackaging = process.env.DESKTOP_SKIP_PACKAGE === '1'
 
 const projectRoot = path.join(__dirname, '..')
@@ -475,7 +475,7 @@ function generateLicenseMetadata(outRoot: string) {
   )
 
   const licenseText = readFileSync(chooseALicenseLicense, 'utf8')
-  const licenseWithHeader = `GitHub Desktop uses licensing information provided by choosealicense.com.
+  const licenseWithHeader = `Desktop Plus uses licensing information provided by choosealicense.com.
 
 The bundle in available-licenses.json has been generated from a source list provided at https://github.com/github/choosealicense.com, which is made available under the below license:
 

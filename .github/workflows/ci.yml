@@ -278,9 +278,9 @@ jobs:
       - name: Install app on macOS
         if: runner.os == 'macOS'
         run: |
-          rm -rf "/Applications/GitHub Desktop Plus.app"
-          ditto "dist/GitHub Desktop Plus-darwin-arm64/GitHub Desktop Plus.app" "/Applications/GitHub Desktop Plus.app"
-          echo "DESKTOP_E2E_APP_PATH=/Applications/GitHub Desktop Plus.app/Contents/MacOS/GitHub Desktop Plus" >> "$GITHUB_ENV"
+          rm -rf "/Applications/Desktop Plus.app"
+          ditto "dist/Desktop Plus-darwin-arm64/Desktop Plus.app" "/Applications/Desktop Plus.app"
+          echo "DESKTOP_E2E_APP_PATH=/Applications/Desktop Plus.app/Contents/MacOS/Desktop Plus" >> "$GITHUB_ENV"
       - name: Install app on Windows
         if: runner.os == 'Windows'
         shell: pwsh
@@ -288,7 +288,7 @@ jobs:
           function Write-SquirrelLogs {
             $logPaths = @(
               "$env:LOCALAPPDATA\SquirrelSetup.log",
-              "$env:LOCALAPPDATA\GitHubDesktopPlus\SquirrelSetup.log"
+              "$env:LOCALAPPDATA\DesktopPlus\SquirrelSetup.log"
             )
 
             foreach ($logPath in $logPaths) {
@@ -299,7 +299,7 @@ jobs:
             }
           }
 
-          $setupExe = Get-ChildItem "dist/GitHubDesktopPlus-*-windows-${{ matrix.arch }}.exe" -ErrorAction SilentlyContinue |
+          $setupExe = Get-ChildItem "dist/DesktopPlus-*-windows-${{ matrix.arch }}.exe" -ErrorAction SilentlyContinue |
             Sort-Object FullName -Descending |
             Select-Object -First 1 -ExpandProperty FullName
 
@@ -316,11 +316,11 @@ jobs:
             throw "Windows installer timed out after 300 seconds"
           }
 
-          Get-Process GitHubDesktopPlus -ErrorAction SilentlyContinue | Stop-Process -Force
+          Get-Process DesktopPlus -ErrorAction SilentlyContinue | Stop-Process -Force
 
           $installedExe = $null
           for ($attempt = 0; $attempt -lt 30 -and -not $installedExe; $attempt++) {
-            $installedExe = Get-ChildItem "$env:LOCALAPPDATA\GitHubDesktopPlus\app-*\GitHubDesktopPlus.exe" -ErrorAction SilentlyContinue |
+            $installedExe = Get-ChildItem "$env:LOCALAPPDATA\DesktopPlus\app-*\DesktopPlus.exe" -ErrorAction SilentlyContinue |
               Sort-Object FullName -Descending |
               Select-Object -First 1 -ExpandProperty FullName
 
@@ -331,7 +331,7 @@ jobs:
 
           if (-not $installedExe) {
             Write-SquirrelLogs
-            throw "Unable to locate installed GitHub Desktop executable"
+            throw "Unable to locate installed Desktop Plus executable"
           }
 
           Add-Content -Path $env:GITHUB_ENV -Value "DESKTOP_E2E_APP_PATH=$installedExe"
@@ -369,7 +369,7 @@ jobs:
       - name: Read release notes
         id: release_notes
         run: |
-          RELEASE_NOTES_FILE=".github/github-desktop-plus-release-notes.md"
+          RELEASE_NOTES_FILE=".github/desktop-plus-release-notes.md"
           TITLE=$(head -n 1 "$RELEASE_NOTES_FILE")
           BODY=$(tail -n +3 "$RELEASE_NOTES_FILE")
           echo "title=$TITLE" >> $GITHUB_OUTPUT
@@ -447,7 +447,7 @@ jobs:
             fi
             sed -i "s/\[\[APP_VERSION\]\]/${APP_VERSION}/" $PKGBUILD_FILE
             sed -i "s/\[\[NODE_CODENAME\]\]/${NODE_CODENAME}/" $PKGBUILD_FILE
-            desktop_file_sha256=$(sha256sum $AUR_DIR/github-desktop-plus.desktop | awk '{ print $1 }')
+            desktop_file_sha256=$(sha256sum $AUR_DIR/desktop-plus.desktop | awk '{ print $1 }')
             sed -i "s/\[\[DESKTOP_FILE_SHA256\]\]/$desktop_file_sha256/" $PKGBUILD_FILE
             launch_script_sha256=$(sha256sum $AUR_DIR/launch-app.sh | awk '{ print $1 }')
             sed -i "s/\[\[LAUNCH_SCRIPT_SHA256\]\]/$launch_script_sha256/" $PKGBUILD_FILE
@@ -489,7 +489,7 @@ jobs:
           pkgbuild: ${{ env.PKGBUILD_BIN }}
           assets: |
             ${{ env.AUR_DIR }}/.gitignore
-            ${{ env.AUR_DIR }}/github-desktop-plus.desktop
+            ${{ env.AUR_DIR }}/desktop-plus.desktop
             ${{ env.AUR_DIR }}/launch-app.sh
           commit_username: ${{ secrets.AUR_USERNAME }}
           commit_email: ${{ secrets.AUR_EMAIL }}
@@ -505,7 +505,7 @@ jobs:
           pkgbuild: ${{ env.PKGBUILD }}
           assets: |
             ${{ env.AUR_DIR }}/.gitignore
-            ${{ env.AUR_DIR }}/github-desktop-plus.desktop
+            ${{ env.AUR_DIR }}/desktop-plus.desktop
             ${{ env.AUR_DIR }}/launch-app.sh
           commit_username: ${{ secrets.AUR_USERNAME }}
           commit_email: ${{ secrets.AUR_EMAIL }}
@@ -521,7 +521,7 @@ jobs:
           pkgbuild: ${{ env.PKGBUILD_GIT }}
           assets: |
             ${{ env.AUR_DIR }}/.gitignore
-            ${{ env.AUR_DIR }}/github-desktop-plus.desktop
+            ${{ env.AUR_DIR }}/desktop-plus.desktop
             ${{ env.AUR_DIR }}/launch-app.sh
           commit_username: ${{ secrets.AUR_USERNAME }}
           commit_email: ${{ secrets.AUR_EMAIL }}
@@ -726,7 +726,7 @@ jobs:
         working-directory: homebrew-tap
         run: |
           git config --global user.name "Formula Updater"
-          git config --global user.email "formula-updater@polrivero.com"
+          git config --global user.email "formula-updater@desktop-plus.org"
           git add Casks/github-desktop-plus.rb
-          git commit -m "Update github-desktop-plus to version ${APP_VERSION}"
+          git commit -m "Update desktop-plus to version ${APP_VERSION}"
           git push origin main

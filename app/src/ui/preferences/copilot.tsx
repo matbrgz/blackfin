@@ -214,7 +214,7 @@ export class CopilotPreferences extends React.Component<
         return <p>Checking Copilot access…</p>
       case 'no-license':
         return this.renderAccessCallToAction(
-          'Copilot features in GitHub Desktop require a GitHub Copilot license.',
+          'Copilot features in Desktop Plus require a GitHub Copilot license.',
           'View Copilot plans',
           this.props.onOpenCopilotPlans
         )

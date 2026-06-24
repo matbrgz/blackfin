@@ -20,9 +20,9 @@ else
   exit 1
 fi
 
-REPO_OWNER="pol-rivero"
-REPO_NAME="github-desktop-plus"
-RELEASES_ZSYNC_PATTERN="GitHubDesktopPlus-*-linux-$FILENAME_ARCH_PART.AppImage.zsync"
+REPO_OWNER="DesktopPlus"
+REPO_NAME="desktop-plus"
+RELEASES_ZSYNC_PATTERN="DesktopPlus-*-linux-$FILENAME_ARCH_PART.AppImage.zsync"
 
 extract_appimage_noexec() {
   local f="$1"

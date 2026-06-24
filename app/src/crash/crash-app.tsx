@@ -42,7 +42,7 @@ const BottomImageUri = encodePathAsUrl(
   'static/welcome-illustration-left-bottom.svg'
 )
 
-const issuesUri = 'https://github.com/pol-rivero/github-desktop-plus/issues'
+const issuesUri = 'https://github.com/DesktopPlus/desktop-plus/issues'
 
 /**
  * Formats an error by attempting to strip out user-identifiable information
@@ -136,8 +136,8 @@ export class CrashApp extends React.Component<ICrashAppProps, ICrashAppState> {
   private renderTitle() {
     const message =
       this.state.type === 'launch'
-        ? 'GitHub Desktop failed to launch'
-        : 'GitHub Desktop encountered an error'
+        ? 'Desktop Plus failed to launch'
+        : 'Desktop Plus encountered an error'
 
     return (
       <header>
@@ -151,18 +151,18 @@ export class CrashApp extends React.Component<ICrashAppProps, ICrashAppState> {
     if (this.state.type === 'launch') {
       return (
         <p>
-          GitHub Desktop encountered a catastrophic error that prevents it from
+          Desktop Plus encountered a catastrophic error that prevents it from
           launching. This has been reported to the team, but if you encounter
-          this repeatedly please report this issue to the GitHub Desktop{' '}
+          this repeatedly please report this issue to the Desktop Plus{' '}
           <LinkButton uri={issuesUri}>issue tracker</LinkButton>.
         </p>
       )
     } else {
       return (
         <p>
-          GitHub Desktop has encountered an unrecoverable error and will need to
+          Desktop Plus has encountered an unrecoverable error and will need to
           restart. This has been reported to the team, but if you encounter this
-          repeatedly please report this issue to the GitHub Desktop{' '}
+          repeatedly please report this issue to the Desktop Plus{' '}
           <LinkButton uri={issuesUri}>issue tracker</LinkButton>.
         </p>
       )

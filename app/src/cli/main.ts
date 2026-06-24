@@ -18,7 +18,7 @@ const run = (...args: Array<string>) => {
   if (process.platform === 'darwin') {
     execFile('open', ['-n', join(__dirname, '../../..'), '--args', ...args], cb)
   } else if (process.platform === 'win32') {
-    const exeName = `GitHubDesktopPlus${__DEV__ ? '-dev' : ''}.exe`
+    const exeName = `DesktopPlus${__DEV__ ? '-dev' : ''}.exe`
     spawn(join(__dirname, `../../${exeName}`), args, {
       detached: true,
       stdio: 'ignore',
@@ -27,7 +27,7 @@ const run = (...args: Array<string>) => {
       .on('exit', code => (process.exitCode = code ?? process.exitCode))
       .unref()
   } else if (process.platform === 'linux') {
-    execFile('/bin/github-desktop-plus', args, cb)
+    execFile('/bin/desktop-plus', args, cb)
   } else {
     throw new Error('Unsupported platform')
   }
@@ -40,12 +40,12 @@ const args = parse(process.argv.slice(2), {
 
 const usage = (exitCode = 1): never => {
   process.stderr.write(
-    'GitHub Desktop Plus CLI usage: \n' +
-      '  github-desktop-plus-cli                           Open the current directory\n' +
-      '  github-desktop-plus-cli open [path]               Open the provided path\n' +
-      '  github-desktop-plus-cli clone [-b branch] <url>   Clone the repository by url or name/owner\n' +
-      '                                                    (ex torvalds/linux), optionally checking\n' +
-      '                                                    out the branch\n'
+    'Desktop Plus CLI usage: \n' +
+      '  desktop-plus-cli                           Open the current directory\n' +
+      '  desktop-plus-cli open [path]               Open the provided path\n' +
+      '  desktop-plus-cli clone [-b branch] <url>   Clone the repository by url or name/owner\n' +
+      '                                             (ex torvalds/linux), optionally checking\n' +
+      '                                             out the branch\n'
   )
   process.exit(exitCode)
 }

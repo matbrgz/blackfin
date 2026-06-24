@@ -99,11 +99,11 @@ function resolveVersionedPath(binPath: string, relativePath: string): string {
 function writeBatchScriptCLITrampoline(binPath: string): Promise<void> {
   const versionedPath = resolveVersionedPath(
     binPath,
-    'resources/app/static/github-desktop-plus-cli.bat'
+    'resources/app/static/desktop-plus-cli.bat'
   )
 
   const trampoline = `@echo off\n"%~dp0\\${versionedPath}" %*`
-  const trampolinePath = Path.join(binPath, 'github-desktop-plus-cli.bat')
+  const trampolinePath = Path.join(binPath, 'desktop-plus-cli.bat')
 
   return writeFile(trampolinePath, trampoline)
 }
@@ -115,13 +115,13 @@ function writeShellScriptCLITrampoline(binPath: string): Promise<void> {
   // to resolve it. See https://github.com/desktop/desktop/issues/4998
   const versionedPath = resolveVersionedPath(
     binPath,
-    'resources/app/static/github-desktop-plus-cli.sh'
+    'resources/app/static/desktop-plus-cli.sh'
   ).replace(/\\/g, '/')
 
   const trampoline = `#!/usr/bin/env bash
   DIR="$( cd "$( dirname "\$\{BASH_SOURCE[0]\}" )" && pwd )"
   sh "$DIR/${versionedPath}" "$@"`
-  const trampolinePath = Path.join(binPath, 'github-desktop-plus-cli')
+  const trampolinePath = Path.join(binPath, 'desktop-plus-cli')
 
   return writeFile(trampolinePath, trampoline, { encoding: 'utf8', mode: 755 })
 }
@@ -159,7 +159,7 @@ async function updateShortcut(): Promise<void> {
     const desktopShortcutPath = Path.join(
       homeDirectory,
       'Desktop',
-      'GitHub Desktop.lnk'
+      'Desktop Plus.lnk'
     )
     const exists = await pathExists(desktopShortcutPath)
     const locations: ShortcutLocations = exists

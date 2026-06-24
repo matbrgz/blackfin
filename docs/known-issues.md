@@ -32,18 +32,18 @@ Each known issue links off to an existing GitHub issue. If you have additional q
 
 ### My issue is not listed here?
 
-Please check the [open](https://github.com/pol-rivero/github-desktop-plus/issues) and [closed](https://github.com/pol-rivero/github-desktop-plus/issues?q=is%3Aissue%20state%3Aclosed) bugs in the issue tracker for the details of your bug. If you can't find it, or if you're not sure, open a [new issue](https://github.com/pol-rivero/github-desktop-plus/issues/new?template=bug_report.yaml).
+Please check the [open](https://github.com/DesktopPlus/desktop-plus/issues) and [closed](https://github.com/DesktopPlus/desktop-plus/issues?q=is%3Aissue%20state%3Aclosed) bugs in the issue tracker for the details of your bug. If you can't find it, or if you're not sure, open a [new issue](https://github.com/DesktopPlus/desktop-plus/issues/new?template=bug_report.yaml).
 
 ## macOS
 
 ### 'Apple could not verify this app is free of malware' error when launching the app
 
-Related issue: [#33](https://github.com/pol-rivero/github-desktop-plus/issues/33)
+Related issue: [#33](https://github.com/DesktopPlus/desktop-plus/issues/33)
 
 This error is caused by the app not being notarized by Apple, as notarization requires a paid Apple Developer account.
 
 When installing from Homebrew, this error should not appear as the app will automatically be added to the list of allowed apps.
-However, if you insist on installing manually, simply go to "System Settings" > "Privacy & Security", scroll down to "Security" and click "Open Anyway" on "GitHub Desktop Plus".
+However, if you insist on installing manually, simply go to "System Settings" > "Privacy & Security", scroll down to "Security" and click "Open Anyway" on "Desktop Plus".
 
 ### 'The username or passphrase you entered is not correct' error after signing into account
 
@@ -243,24 +243,24 @@ If you see an error that says "Not enough resources are available to process thi
 
 ### I cannot sign in using "Continue with browser"
 
-Related issue: [#54](https://github.com/pol-rivero/github-desktop-plus/issues/54)
+Related issue: [#54](https://github.com/DesktopPlus/desktop-plus/issues/54)
 
 First of all, make sure you are not using the AppImage package, as it requires some manual setup for the sign-in feature to work. Instead, I strongly recommend using your distribution's native package manager (APT, RPM and AUR packages above) or Flatpak.
 
-If the app remains stuck on the "Continue with browser" screen after following the instructions in your web browser, the most likely cause is that the URI scheme used by GitHub Desktop Plus for authorization (`x-github-desktop-auth://`) is not linked to the correct program. You can verify if this is the case by fully closing GitHub Desktop Plus (Menu: **File** -> **Exit**) and running the following command in your terminal:
+If the app remains stuck on the "Continue with browser" screen after following the instructions in your web browser, the most likely cause is that the URI scheme used by Desktop Plus for authorization (`x-github-desktop-auth://`) is not linked to the correct program. You can verify if this is the case by fully closing Desktop Plus (Menu: **File** -> **Exit**) and running the following command in your terminal:
 
 ```bash
 xdg-open "x-github-desktop-auth://test"
 ```
 
-This should open the GitHub Desktop Plus app. If it doesn't, it means the URI scheme is not linked to the app, and you can fix it by running the following command:
+This should open the Desktop Plus app. If it doesn't, it means the URI scheme is not linked to the app, and you can fix it by running the following command:
 
 ```bash
 # Prints the current default app for the URI scheme
 xdg-mime query default x-scheme-handler/x-github-desktop-auth
 
-# Set GitHub Desktop Plus as the default app for the URI scheme
-xdg-mime default github-desktop-plus.desktop x-scheme-handler/x-github-desktop-auth
+# Set Desktop Plus as the default app for the URI scheme
+xdg-mime default desktop-plus.desktop x-scheme-handler/x-github-desktop-auth
 
 # Alternatively, if you are using the flatpak:
 xdg-mime default io.github.pol_rivero.github-desktop-plus.desktop x-scheme-handler/x-github-desktop-auth

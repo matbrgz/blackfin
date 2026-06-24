@@ -78,7 +78,7 @@ const readStdin = (stream: NodeJS.ReadableStream) =>
   })
 
 const createStdinFile = (content: Buffer) => {
-  const dir = mkdtempSync(join(tmpdir(), 'github-desktop-hooks-'))
+  const dir = mkdtempSync(join(tmpdir(), 'desktop-plus-hooks-'))
   const filePath = join(dir, 'stdin.txt')
 
   writeFileSync(filePath, content)

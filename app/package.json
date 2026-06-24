@@ -1,21 +1,21 @@
 {
   "$NOTE": "NOTE: Do not edit the 'version' field, as that will cause merge conflicts with upstream. The version is set using env.APP_VERSION.",
-  "name": "github-desktop-plus",
-  "desktopName": "github-desktop-plus",
-  "productName": "GitHub Desktop Plus",
-  "bundleID": "com.polrivero.GitHubDesktopPlus",
-  "companyName": "Pol Rivero",
+  "name": "desktop-plus",
+  "desktopName": "desktop-plus",
+  "productName": "Desktop Plus",
+  "bundleID": "org.desktop-plus.DesktopPlus",
+  "companyName": "Desktop Plus",
   "version": "3.5.13-beta4",
   "main": "./main.js",
   "repository": {
     "type": "git",
-    "url": "https://github.com/pol-rivero/github-desktop-plus.git"
+    "url": "https://github.com/DesktopPlus/desktop-plus.git"
   },
   "description": "Simple collaboration from your desktop",
   "author": {
-    "name": "Pol Rivero",
-    "email": "github-desktop-plus@polrivero.com",
-    "url": "https://desktop.github.com/"
+    "name": "Desktop Plus",
+    "email": "admin@desktop-plus.org",
+    "url": "https://desktop-plus.org/"
   },
   "license": "MIT",
   "dependencies": {
