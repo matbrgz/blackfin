@@ -3,8 +3,8 @@
 # Contributor: Jake <aur@ja-ke.tech>
 # Contributor: Ian MacKay <immackay0@gmail.com>
 
-_pkgname='github-desktop-plus'
-pkgname="${_pkgname}-bin"
+_pkgname='desktop-plus'
+pkgname="github-desktop-plus-bin"
 pkgver=[[APP_VERSION]]
 pkgrel=1
 pkgdesc="GitHub Desktop fork with extra features and improvements (binary release)."
