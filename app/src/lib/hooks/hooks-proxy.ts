@@ -122,7 +122,7 @@ const ensureGitExecPathEnv = async (shellEnv: ShellEnvResult) => {
     )
 
     if (!systemGitPath) {
-      debug(`Failed to find system git in PATH (${pathEnv})`)
+      debug('Failed to find system git in PATH')
       return shellEnv
     }
     const execPath = await memoizedGetExecPathFromGit(
