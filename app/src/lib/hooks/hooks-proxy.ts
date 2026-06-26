@@ -103,17 +103,26 @@ const memoizedGetExecPathFromGit = memoizeOne(
 // manually set GIT_EXEC_PATH to the system Git's exec path if it's not
 // already set in the shell environment.
 const ensureGitExecPathEnv = async (shellEnv: ShellEnvResult) => {
-  if (
-    shellEnv.kind === 'success' &&
-    !shellEnv.env.GIT_EXEC_PATH &&
-    shellEnv.env.PATH
-  ) {
-    const systemGitPath = await which('git', {
-      path: shellEnv.env.PATH,
-    }).catch(() => undefined)
+  if (shellEnv.kind !== 'success' || shellEnv.env.GIT_EXEC_PATH) {
+    return shellEnv
+  }
+
+  // PATH is uppercase on most platforms but isn't guaranteed to be on Windows
+  // (e.g. cmd/PowerShell may store it as Path), and shellEnv.env is a plain,
+  // case-sensitive object so we look it up case-insensitively here.
+  const pathEnv =
+    shellEnv.env.PATH ??
+    Object.entries(shellEnv.env).find(
+      ([key]) => key.toUpperCase() === 'PATH'
+    )?.[1]
+
+  if (pathEnv) {
+    const systemGitPath = await which('git', { path: pathEnv }).catch(
+      () => undefined
+    )
 
     if (!systemGitPath) {
-      debug(`Failed to find system git in PATH (${shellEnv.env.PATH})`)
+      debug(`Failed to find system git in PATH (${pathEnv})`)
       return shellEnv
     }
     const execPath = await memoizedGetExecPathFromGit(
