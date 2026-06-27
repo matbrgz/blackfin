@@ -142,6 +142,7 @@ import {
   quitApp,
   sendCancelQuittingSync,
   getMainProcessConfig,
+  getConfigMigrationResult,
   updateMainProcessConfig,
   showOpenDialog,
 } from '../../ui/main-process-proxy'
@@ -509,6 +510,7 @@ const confirmCommitFilteredChangesDefault: boolean = true
 const confirmCommitMessageOverrideDefault: boolean = true
 const confirmWorktreeRemovalDefault: boolean = true
 const askToMoveToApplicationsFolderKey: string = 'askToMoveToApplicationsFolder'
+const configDirMigratedBannerKey: string = 'config-dir-migrated-banner-shown'
 const confirmRepoRemovalKey: string = 'confirmRepoRemoval'
 const showCommitLengthWarningKey: string = 'showCommitLengthWarning'
 const confirmDiscardChangesKey: string = 'confirmDiscardChanges'
@@ -3042,6 +3044,19 @@ export class AppStore extends TypedBaseStore<IAppState> {
     const mainProcessConfig = await getMainProcessConfig()
     this.titleBarStyle = mainProcessConfig.titleBarStyle
     this.hideWindowOnQuit = mainProcessConfig.hideWindowOnQuit
+
+    // If the main process migrated the config directory from a previous app
+    // name during this launch, let the user know with a banner (only once).
+    const migratedFromName = await getConfigMigrationResult()
+    if (migratedFromName !== null && !getBoolean(configDirMigratedBannerKey)) {
+      setBoolean(configDirMigratedBannerKey, true)
+      setTimeout(() => {
+        this._setBanner({
+          type: BannerType.ConfigDirMigrated,
+          migratedFromAppName: migratedFromName,
+        })
+      }, 2000)
+    }
 
     this.lastThankYou = getObject<ILastThankYou>(lastThankYouKey)
 

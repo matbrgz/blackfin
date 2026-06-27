@@ -18,6 +18,7 @@ export enum BannerType {
   ConflictsFound = 'ConflictsFound',
   OSVersionNoLongerSupported = 'OSVersionNoLongerSupported',
   WorktreesEnabled = 'WorktreesEnabled',
+  ConfigDirMigrated = 'ConfigDirMigrated',
 }
 
 export type Banner =
@@ -124,3 +125,7 @@ export type Banner =
     }
   | { readonly type: BannerType.OSVersionNoLongerSupported }
   | { readonly type: BannerType.WorktreesEnabled }
+  | {
+      readonly type: BannerType.ConfigDirMigrated
+      readonly migratedFromAppName: string
+    }

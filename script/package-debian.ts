@@ -8,9 +8,9 @@ import { rename } from 'fs-extra'
 
 import { getVersion } from '../app/package-info'
 import {
-    getDistPath,
-    getDistRoot,
-    getArchitectureForFileName,
+  getDistPath,
+  getDistRoot,
+  getArchitectureForFileName,
 } from './dist-info'
 
 function getArchitecture() {

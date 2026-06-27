@@ -8,9 +8,9 @@ import { readFile, writeFile, rename } from 'fs-extra'
 
 import { getVersion } from '../app/package-info'
 import {
-    getArchitectureForFileName,
-    getDistPath,
-    getDistRoot,
+  getArchitectureForFileName,
+  getDistPath,
+  getDistRoot,
 } from './dist-info'
 
 function getArchitecture() {

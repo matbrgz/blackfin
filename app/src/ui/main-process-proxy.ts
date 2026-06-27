@@ -415,6 +415,15 @@ export const updateMainProcessConfig = invokeProxy(
 )
 export const getMainProcessConfig = invokeProxy('get-main-process-config', 0)
 
+/**
+ * Ask the main process whether the config directory was migrated from a
+ * previous app name during this launch. Returns the old name, or null.
+ */
+export const getConfigMigrationResult = invokeProxy(
+  'get-config-migration-result',
+  0
+)
+
 /** Tell the main process to show a notification */
 export const showNotification = invokeProxy('show-notification', 3)
 

@@ -61,6 +61,14 @@ import {
 } from './notifications'
 import parseCommandLineArgs from 'minimist'
 import { CLIAction } from '../lib/cli-action'
+import {
+  getConfigMigrationResult,
+  migrateLegacyConfigDir,
+} from './migrate-config-dir'
+
+// Migrate the config directory from a previous app name (if needed) before
+// anything touches the userData directory.
+migrateLegacyConfigDir()
 
 app.setAppLogsPath()
 enableSourceMaps()
@@ -203,7 +211,7 @@ function normalizeRepositoryPath(path: string) {
 function findWindowForRepositoryPath(rawTargetPath: string): AppWindow | null {
   const targetPath = normalizeRepositoryPath(rawTargetPath)
   const allWindows = getAppWindows().filter(w => w.hasSelectedRepositoryPath())
-  const windowsSortedFromMostSpecificToLeast = allWindows.sort(
+  const windowsSortedFromMostSpecificToLeast = allWindows.toSorted(
     (a, b) => b.selectedRepositoryPath.length - a.selectedRepositoryPath.length
   )
 
@@ -893,6 +901,10 @@ app.on('ready', () => {
   ipcMain.handle('save-guid', (_, guid) => saveGUIDFile(guid))
 
   ipcMain.handle('get-main-process-config', async () => readMainProcessConfig())
+
+  ipcMain.handle('get-config-migration-result', async () =>
+    getConfigMigrationResult()
+  )
 
   ipcMain.handle(
     'update-main-process-config',

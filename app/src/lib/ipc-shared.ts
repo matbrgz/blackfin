@@ -141,6 +141,7 @@ export type RequestResponseChannels = {
     configDiff: Partial<MainProcessConfig>
   ) => Promise<void>
   'get-main-process-config': () => Promise<MainProcessConfig>
+  'get-config-migration-result': () => Promise<string | null>
   'show-notification': (
     title: string,
     body: string,
