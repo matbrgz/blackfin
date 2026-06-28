@@ -199,7 +199,6 @@ jobs:
           script/generate-appimage-zsync.sh dist/*.AppImage ${{ matrix.arch }}
       - name: Upload artifacts
         uses: actions/upload-artifact@v7
-        if: ${{ inputs.upload-artifacts }}
         with:
           name: ${{matrix.friendlyName}}-${{matrix.arch}}
           path: |
