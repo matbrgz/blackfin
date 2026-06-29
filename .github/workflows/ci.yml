@@ -482,10 +482,10 @@ jobs:
           retention-days: 5
           if-no-files-found: error
 
-      - name: Publish AUR package github-desktop-plus-bin
+      - name: Publish AUR package desktop-plus-bin
         uses: KSXGitHub/github-actions-deploy-aur@v4.1.2
         with:
-          pkgname: github-desktop-plus-bin
+          pkgname: desktop-plus-bin
           pkgbuild: ${{ env.PKGBUILD_BIN }}
           assets: |
             ${{ env.AUR_DIR }}/.gitignore
@@ -498,10 +498,10 @@ jobs:
             'Update AUR package to version v${{ env.APP_VERSION }}'
           ssh_keyscan_types: rsa,ecdsa,ed25519
 
-      - name: Publish AUR package github-desktop-plus
+      - name: Publish AUR package desktop-plus
         uses: KSXGitHub/github-actions-deploy-aur@v4.1.2
         with:
-          pkgname: github-desktop-plus
+          pkgname: desktop-plus
           pkgbuild: ${{ env.PKGBUILD }}
           assets: |
             ${{ env.AUR_DIR }}/.gitignore
@@ -514,10 +514,10 @@ jobs:
             'Update AUR package to version v${{ env.APP_VERSION }}'
           ssh_keyscan_types: rsa,ecdsa,ed25519
 
-      - name: Publish AUR package github-desktop-plus-git
+      - name: Publish AUR package desktop-plus-git
         uses: KSXGitHub/github-actions-deploy-aur@v4.1.2
         with:
-          pkgname: github-desktop-plus-git
+          pkgname: desktop-plus-git
           pkgbuild: ${{ env.PKGBUILD_GIT }}
           assets: |
             ${{ env.AUR_DIR }}/.gitignore

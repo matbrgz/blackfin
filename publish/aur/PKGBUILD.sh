@@ -7,15 +7,16 @@
 
 
 _pkgname='desktop-plus'
-pkgname="github-desktop-plus"
+_old_pkgname='github-desktop-plus'
+pkgname="${_pkgname}"
 pkgver=[[APP_VERSION]]
 pkgrel=1
 pkgdesc="GitHub Desktop fork with extra features and improvements."
 arch=('x86_64' 'aarch64')
 url="https://github.com/desktop-plus/desktop-plus"
 license=('MIT')
-provides=(${_pkgname})
-conflicts=(${_pkgname})
+provides=(${_pkgname} ${_old_pkgname})
+conflicts=(${_pkgname} ${_old_pkgname})
 depends=(curl
          libcurl-gnutls
          git

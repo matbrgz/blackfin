@@ -18,6 +18,7 @@ Thank you very much to @ghedwards for generously giving me the ownership of the 
 > - **All platforms:** The executable name for the application has changed from `github-desktop-plus` to `desktop-plus`.
 > - **All platforms:** The executable name for the CLI has changed from `github-desktop-plus-cli` to `desktop-plus-cli`.
 > - **Linux (non-Flatpak):** The `.desktop` file name has changed from `github-desktop-plus.desktop` to `desktop-plus.desktop`.
+> - **Arch Linux:** The package name has changed from `github-desktop-plus` / `github-desktop-plus-bin` to `desktop-plus` / `desktop-plus-bin`. The old packages are still available in the AUR but will be removed soon, so please install the new packages instead.
 >
 > If you have any **scripts**, **shortcuts**, **aliases** or **.desktop drop-ins** that reference the old names, please update them to the new ones.
 
