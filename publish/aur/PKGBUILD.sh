@@ -94,9 +94,11 @@ package() {
     cp -r --preserve=mode "dist/desktop-plus-linux-$suffix/"* "$INSTALL_DIR/"
 
     cd "$INSTALL_DIR/resources/app/static/logos"
-    install -Dm0644 "1024x1024.png" "$pkgdir/usr/share/icons/hicolor/1024x1024/apps/${_pkgname}.png"
-    install -Dm0644 "512x512.png" "$pkgdir/usr/share/icons/hicolor/512x512/apps/${_pkgname}.png"
-    install -Dm0644 "256x256.png" "$pkgdir/usr/share/icons/hicolor/256x256/apps/${_pkgname}.png"
+    # Icon is named "gh-desktop-plus" rather than "desktop-plus" to avoid the freedesktop dash-stripping fallback
+    # ('desktop' exists in many icon themes, so that icon would be used instead of ours).
+    install -Dm0644 "1024x1024.png" "$pkgdir/usr/share/icons/hicolor/1024x1024/apps/gh-desktop-plus.png"
+    install -Dm0644 "512x512.png" "$pkgdir/usr/share/icons/hicolor/512x512/apps/gh-desktop-plus.png"
+    install -Dm0644 "256x256.png" "$pkgdir/usr/share/icons/hicolor/256x256/apps/gh-desktop-plus.png"
 
     install -Dm755 "$srcdir/launch-app.sh" "$pkgdir/usr/bin/${_pkgname}"
 

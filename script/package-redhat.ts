@@ -12,6 +12,7 @@ import {
   getDistPath,
   getDistRoot,
 } from './dist-info'
+import { LINUX_ICON_NAME, overrideHicolorIconName } from './linux-icon'
 
 function getArchitecture() {
   const arch = process.env.npm_config_arch || process.arch
@@ -100,6 +101,7 @@ const options: RedhatOptions = {
     // see https://github.com/shiftkey/desktop/issues/72 for more details
     'x-scheme-handler/x-github-desktop-dev-auth',
   ],
+  desktopTemplate: 'script/resources/rpm/desktop.ejs',
 }
 
 export async function packageRedhat(): Promise<string> {
@@ -110,6 +112,9 @@ export async function packageRedhat(): Promise<string> {
   const installer = require('electron-installer-redhat')
 
   const { Installer } = installer
+
+  const restoreIconName = overrideHicolorIconName(Installer)
+
   const originalCreateSpec = Installer.prototype.createSpec
   Installer.prototype.createSpec = async function (this: any) {
     await originalCreateSpec.call(this)
@@ -125,6 +130,16 @@ export async function packageRedhat(): Promise<string> {
       /^Requires:.*$/m,
       match => `${match}\n${renameDirectives}`
     )
+
+    // overrideHicolorIconName installs the icons under LINUX_ICON_NAME, but the
+    // spec's %files section lists them by package name. Rewrite those entries
+    // (and only those — not the bin/lib/.desktop paths) so the manifest matches
+    // the files actually staged, otherwise rpmbuild fails on the missing file.
+    const iconLinePattern = new RegExp(
+      `(/usr/share/icons/hicolor/[^/]+/apps/)${options.name}`,
+      'g'
+    )
+    specContent = specContent.replace(iconLinePattern, `$1${LINUX_ICON_NAME}`)
 
     // The Copilot extension bundles pre-built binaries for multiple CPU
     // architectures (arm64, armhf, loong64, riscv64d, …) as plain resources.
@@ -144,6 +159,7 @@ export async function packageRedhat(): Promise<string> {
     await installer(options)
   } finally {
     Installer.prototype.createSpec = originalCreateSpec
+    restoreIconName()
   }
   const installersPath = `${distRoot}/desktop-plus*.rpm`
 

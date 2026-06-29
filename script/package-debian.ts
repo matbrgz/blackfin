@@ -15,6 +15,7 @@ import {
   getDistRoot,
   getArchitectureForFileName,
 } from './dist-info'
+import { overrideHicolorIconName } from './linux-icon'
 
 function getArchitecture() {
   const arch = process.env.npm_config_arch || process.arch
@@ -114,6 +115,7 @@ const options: DebianOptions = {
     'x-scheme-handler/x-github-desktop-dev-auth',
   ],
   maintainer: 'Pol Rivero <admin@desktop-plus.org>',
+  desktopTemplate: 'script/resources/deb/desktop.ejs',
 }
 
 export async function packageDebian(): Promise<string> {
@@ -123,7 +125,12 @@ export async function packageDebian(): Promise<string> {
 
   const installer = require('electron-installer-debian')
 
-  await installer(options)
+  const restoreIconName = overrideHicolorIconName(installer.Installer)
+  try {
+    await installer(options)
+  } finally {
+    restoreIconName()
+  }
   const installersPath = `${distRoot}/desktop-plus*.deb`
 
   const files = await globPromise(installersPath)
