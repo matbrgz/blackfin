@@ -256,17 +256,36 @@ export function createCopilotInMemorySessionFsProvider(): SessionFsProvider {
       const file = files.get(normalizedSrc)
 
       if (file !== undefined) {
+        if (normalizedSrc === normalizedDest) {
+          return
+        }
+
+        if (directories.has(normalizedDest)) {
+          throw createCopilotInMemorySessionFsError(normalizedDest, 'EISDIR')
+        }
+
         addParentDirectory(normalizedDest)
         files.set(normalizedDest, file)
         files.delete(normalizedSrc)
         return
       }
 
-      if (!directories.has(normalizedSrc)) {
+      const directory = directories.get(normalizedSrc)
+
+      if (directory === undefined) {
         throw createCopilotInMemorySessionFsError(src)
       }
 
-      addDirectory(normalizedDest)
+      if (normalizedSrc === normalizedDest) {
+        return
+      }
+
+      if (files.has(normalizedDest) || directories.has(normalizedDest)) {
+        throw createCopilotInMemorySessionFsError(normalizedDest, 'EEXIST')
+      }
+
+      addParentDirectory(normalizedDest)
+      directories.set(normalizedDest, directory)
 
       const srcPrefix = `${normalizedSrc}/`
       const destPrefix = `${normalizedDest}/`
