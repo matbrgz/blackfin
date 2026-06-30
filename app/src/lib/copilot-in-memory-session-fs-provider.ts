@@ -49,7 +49,7 @@ export function createCopilotInMemorySessionFsProvider(): SessionFsProvider {
     const normalized = normalizePath(path)
     directories.add(normalized)
 
-    if (normalized !== '.') {
+    if (normalized !== '.' && normalized !== '/') {
       addDirectory(getParentPath(normalized))
     }
   }
@@ -62,7 +62,8 @@ export function createCopilotInMemorySessionFsProvider(): SessionFsProvider {
 
   const getDirectChildren = (path: string) => {
     const normalized = normalizePath(path)
-    const prefix = normalized === '.' ? '' : `${normalized}/`
+    const prefix =
+      normalized === '.' ? '' : normalized === '/' ? '/' : `${normalized}/`
     const children = new Set<string>()
 
     for (const entry of [...files.keys(), ...directories]) {
@@ -181,7 +182,7 @@ export function createCopilotInMemorySessionFsProvider(): SessionFsProvider {
       }
 
       if (directories.has(normalized)) {
-        const prefix = `${normalized}/`
+        const prefix = normalized === '/' ? '/' : `${normalized}/`
         const hasChildren = getDirectChildren(normalized).length > 0
 
         if (hasChildren && !recursive) {

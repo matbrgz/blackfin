@@ -63,6 +63,16 @@ describe('createCopilotInMemorySessionFsProvider', () => {
     assert.deepStrictEqual(await provider.readdir('state/'), ['events'])
   })
 
+  it('handles absolute POSIX paths without recursing indefinitely', async () => {
+    const provider = createCopilotInMemorySessionFsProvider()
+
+    await provider.writeFile('/state/events.jsonl', 'event')
+
+    assert.strictEqual(await provider.readFile('/state/events.jsonl'), 'event')
+    assert.deepStrictEqual(await provider.readdir('/'), ['state'])
+    assert.deepStrictEqual(await provider.readdir('/state'), ['events.jsonl'])
+  })
+
   it('reports file and directory metadata', async () => {
     const provider = createCopilotInMemorySessionFsProvider()
 
