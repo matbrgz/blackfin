@@ -56,10 +56,9 @@ describe('get-file-hash', () => {
   })
 
   it('rejects for non-existent file', async () => {
-    await assert.rejects(
-      getFileHash('/nonexistent/path/file.js', 'sha256'),
-      { code: 'ENOENT' }
-    )
+    await assert.rejects(getFileHash('/nonexistent/path/file.js', 'sha256'), {
+      code: 'ENOENT',
+    })
   })
 
   it('supports sha1 algorithm', async () => {
