@@ -1,4 +1,4 @@
-cask "github-desktop-plus" do
+cask "desktop-plus" do
   arch arm: "arm64", intel: "x64"
 
   version "[[VERSION]]"

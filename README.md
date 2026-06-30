@@ -139,10 +139,10 @@ For this reason, **I recommend using Winget instead of the manual download**.
 #### Using Homebrew (Recommended)
 
 ```bash
-brew install pol-rivero/tap/github-desktop-plus
+brew install desktop-plus/tap/desktop-plus
 ```
 
-Make sure to run `brew update` regularly to get the latest updates for Desktop Plus.
+Make sure to run `brew update` + `brew upgrade` regularly to get the latest updates for Desktop Plus.
 
 #### Manual download (Not recommended)
 

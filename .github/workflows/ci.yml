@@ -710,7 +710,7 @@ jobs:
       - name: Clone Homebrew Tap
         uses: actions/checkout@v6
         with:
-          repository: 'pol-rivero/homebrew-tap'
+          repository: 'desktop-plus/homebrew-tap'
           token: ${{ secrets.HOMEBREW_TAP_PERSONAL_ACCESS_TOKEN }}
           path: homebrew-tap
 
@@ -720,13 +720,37 @@ jobs:
           sed -e "s/\[\[VERSION\]\]/${APP_VERSION}/" \
               -e "s/\[\[SHA256_ARM64\]\]/${SHA256_ARM64}/" \
               -e "s/\[\[SHA256_X64\]\]/${SHA256_X64}/" \
-              publish/homebrew/github-desktop-plus.rb > homebrew-tap/Casks/github-desktop-plus.rb
+              publish/homebrew/desktop-plus.rb > homebrew-tap/Casks/desktop-plus.rb
 
       - name: Push to Homebrew Tap
         working-directory: homebrew-tap
         run: |
           git config --global user.name "Formula Updater"
           git config --global user.email "formula-updater@desktop-plus.org"
-          git add Casks/github-desktop-plus.rb
+          git add Casks/desktop-plus.rb
+          git commit -m "Update desktop-plus to version ${APP_VERSION}"
+          git push origin main
+
+      - name: Clone Homebrew Tap (old name)
+        uses: actions/checkout@v6
+        with:
+          repository: 'pol-rivero/homebrew-tap'
+          token: ${{ secrets.HOMEBREW_TAP_PERSONAL_ACCESS_TOKEN_OLD_NAME }}
+          path: homebrew-tap-old
+
+      - name: Generate Homebrew cask (old name)
+        run: |
+          mkdir -p homebrew-tap-old/Casks
+          sed -e "s/\[\[VERSION\]\]/${APP_VERSION}/" \
+              -e "s/\[\[SHA256_ARM64\]\]/${SHA256_ARM64}/" \
+              -e "s/\[\[SHA256_X64\]\]/${SHA256_X64}/" \
+              publish/homebrew/desktop-plus.rb > homebrew-tap-old/Casks/desktop-plus.rb
+
+      - name: Push to Homebrew Tap (old name)
+        working-directory: homebrew-tap-old
+        run: |
+          git config --global user.name "Formula Updater"
+          git config --global user.email "formula-updater@desktop-plus.org"
+          git add Casks/desktop-plus.rb
           git commit -m "Update desktop-plus to version ${APP_VERSION}"
           git push origin main
