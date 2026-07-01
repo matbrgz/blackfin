@@ -52,12 +52,10 @@ writeFileSync(
 )
 
 console.log('Writing bundle hash…')
-getBundleHash().then(bundleHash => {
-  writeFileSync(
-    path.join(getDistRoot(), 'bundle-hash.json'),
-    JSON.stringify({ bundleHash })
-  )
-})
+writeFileSync(
+  path.join(getDistRoot(), 'bundle-hash.json'),
+  JSON.stringify({ bundleHash: getBundleHash() })
+)
 
 function packageOSX() {
   const dest = getOSXZipPath()
