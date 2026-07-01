@@ -1,4 +1,5 @@
 import { createHash } from 'crypto'
+import { readFileSync } from 'fs'
 import { getFileHash } from './get-file-hash'
 import * as path from 'path'
 
@@ -35,5 +36,14 @@ export async function computeBundleHash(bundleDir: string): Promise<string> {
   const hashes = await Promise.all(
     bundleFiles.map(f => getFileHash(path.join(bundleDir, f), 'sha256'))
   )
+  return createHash('sha256').update(hashes.join('')).digest('hex')
+}
+
+/** Synchronous variant for use in build scripts where async is not available. */
+export function computeBundleHashSync(bundleDir: string): string {
+  const hashes = bundleFiles.map(f => {
+    const content = readFileSync(path.join(bundleDir, f))
+    return createHash('sha256').update(content).digest('hex')
+  })
   return createHash('sha256').update(hashes.join('')).digest('hex')
 }

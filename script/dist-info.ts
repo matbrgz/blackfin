@@ -1,9 +1,8 @@
 import * as Path from 'path'
 import * as Fs from 'fs'
-import { createHash } from 'crypto'
 
 import { getProductName, getVersion } from '../app/package-info'
-import { bundleFiles } from '../app/src/lib/compute-bundle-hash'
+import { computeBundleHashSync } from '../app/src/lib/compute-bundle-hash'
 import { join } from 'path'
 
 const productName = getProductName()
@@ -111,13 +110,7 @@ export function getBundleSizes() {
 }
 
 export function getBundleHash() {
-  const outPath = Path.join(projectRoot, 'out')
-  const hashes = bundleFiles.map(f => {
-    // eslint-disable-next-line no-sync
-    const content = Fs.readFileSync(Path.join(outPath, f))
-    return createHash('sha256').update(content).digest('hex')
-  })
-  return createHash('sha256').update(hashes.join('')).digest('hex')
+  return computeBundleHashSync(Path.join(projectRoot, 'out'))
 }
 export const isPublishable = () =>
   ['production', 'beta', 'test'].includes(getChannel())
