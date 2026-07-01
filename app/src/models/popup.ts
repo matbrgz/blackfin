@@ -87,6 +87,7 @@ export enum PopupType {
   WarnLocalChangesBeforeUndo = 'WarnLocalChangesBeforeUndo',
   WarnUndoPushedCommit = 'WarnUndoPushedCommit',
   WarningBeforeReset = 'WarningBeforeReset',
+  WarnResetToPushedCommit = 'WarnResetToPushedCommit',
   InvalidatedToken = 'InvalidatedToken',
   AddSSHHost = 'AddSSHHost',
   SSHKeyPassphrase = 'SSHKeyPassphrase',
@@ -399,6 +400,11 @@ export type PopupDetail =
     }
   | {
       type: PopupType.WarningBeforeReset
+      repository: Repository
+      commit: Commit
+    }
+  | {
+      type: PopupType.WarnResetToPushedCommit
       repository: Repository
       commit: Commit
     }

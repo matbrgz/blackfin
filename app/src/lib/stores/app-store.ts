@@ -6721,9 +6721,19 @@ export class AppStore extends TypedBaseStore<IAppState> {
   ): Promise<void> {
     const gitStore = this.gitStoreCache.get(repository)
     const repositoryState = this.repositoryStateCache.get(repository)
-    const { changesState } = repositoryState
+    const { changesState, localCommitSHAs } = repositoryState
     const isWorkingDirectoryClean =
       changesState.workingDirectory.files.length === 0
+
+    // Warn the user if they're resetting to a pushed commit
+    const isPushedCommit = !localCommitSHAs.includes(commit.sha)
+    if (showConfirmationDialog && isPushedCommit) {
+      return this._showPopup({
+        type: PopupType.WarnResetToPushedCommit,
+        repository,
+        commit,
+      })
+    }
 
     // Warn the user if there are changes in the working directory
     if (showConfirmationDialog && !isWorkingDirectoryClean) {

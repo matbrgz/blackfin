@@ -864,11 +864,9 @@ export class CommitList extends React.Component<
 
     const canBeUndone = this.props.canUndoCommits === true && isHeadCommit
     const canBeAmended = this.props.canAmendCommits === true && isHeadCommit
-    // The user can reset to any commit up to the first non-local one (included).
     // They cannot reset to the most recent commit... because they're already
     // in it.
-    const isResettableCommit =
-      actualRow > 0 && actualRow <= this.props.localCommitSHAs.length
+    const isResettableCommit = !isHeadCommit
     const canBeResetTo =
       this.props.canResetToCommits === true && isResettableCommit
     const canBeCheckedOut = actualRow > 0 //Cannot checkout the current commit

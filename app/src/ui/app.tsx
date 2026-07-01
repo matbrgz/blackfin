@@ -170,6 +170,7 @@ import { MultiCommitOperation } from './multi-commit-operation/multi-commit-oper
 import { WarnLocalChangesBeforeUndo } from './undo/warn-local-changes-before-undo'
 import { WarnUndoPushedCommit } from './undo/warn-undo-pushed-commit'
 import { WarningBeforeReset } from './reset/warning-before-reset'
+import { WarnResetToPushedCommit } from './reset/warn-reset-to-pushed-commit'
 import { InvalidatedToken } from './invalidated-token/invalidated-token'
 import { MultiCommitOperationKind } from '../models/multi-commit-operation'
 import { AddSSHHost } from './ssh/add-ssh-host'
@@ -2568,6 +2569,18 @@ export class App extends React.Component<IAppProps, IAppState> {
         return (
           <WarningBeforeReset
             key="warning-before-reset"
+            dispatcher={this.props.dispatcher}
+            repository={repository}
+            commit={commit}
+            onDismissed={onPopupDismissedFn}
+          />
+        )
+      }
+      case PopupType.WarnResetToPushedCommit: {
+        const { repository, commit } = popup
+        return (
+          <WarnResetToPushedCommit
+            key="warn-reset-to-pushed-commit"
             dispatcher={this.props.dispatcher}
             repository={repository}
             commit={commit}
