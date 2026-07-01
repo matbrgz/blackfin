@@ -1,5 +1,9 @@
 {
   "releases": {
+    "3.6.2": [
+      "[Fixed] Invoking Desktop from the command line inside a worktree now opens the existing repository with the worktree selected instead of prompting to add a new repository - #22378",
+      "[Fixed] Scrolling no longer gets stuck when the pointer is over a tall group in the repository list - #22387. Thanks @peteski22!"
+    ],
     "3.6.1": [
       "[Fixed] Copilot Max plan users are recognized correctly - #22400",
       "[Fixed] The default Copilot model is Auto",
