@@ -21,7 +21,7 @@ import { isOSNoLongerSupportedByElectron } from '../../lib/get-os'
 import { AriaLiveContainer } from '../accessibility/aria-live-container'
 import { formatDate } from '../../lib/format-date'
 
-const logoPath = 'static/logos/512x512.png'
+const logoPath = 'static/logo.png'
 const DesktopLogo = encodePathAsUrl(__dirname, logoPath)
 
 interface IAboutProps {
