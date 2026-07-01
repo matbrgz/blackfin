@@ -1,5 +1,9 @@
 {
   "releases": {
+    "3.6.3-beta1": [
+      "[Fixed] Repository list scrolling no longer gets stuck or jitters when scrolling over tall groups (e.g. large organizations) - #22438. Thanks @peteski22!",
+      "[Improved] Clarify the line-ending conversion warning to explain that Git will automatically convert the file's line endings on next checkout, with a link to learn more - #21446. Thanks @Whitebrim!"
+    ],
     "3.6.2": [
       "[Fixed] Invoking Desktop from the command line inside a worktree now opens the existing repository with the worktree selected instead of prompting to add a new repository - #22378",
       "[Fixed] Scrolling no longer gets stuck when the pointer is over a tall group in the repository list - #22387. Thanks @peteski22!"
