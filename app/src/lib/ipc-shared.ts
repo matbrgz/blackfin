@@ -72,10 +72,6 @@ export type RequestChannels = {
   'restart-app': () => void
   'quit-app': () => void
   'open-repository-in-new-window': (path: string) => void
-  'open-worktree-in-new-window': (
-    repositoryId: number,
-    worktreePath: string
-  ) => void
   'set-window-title': (title: string) => void
   'set-window-selected-repository': (path: string | null) => void
   'minimize-window': () => void

@@ -35,7 +35,7 @@ import {
   generateRepositoryListContextMenu,
   generateWorktreeListItemContextMenu,
 } from '../repositories-list/repository-list-item-context-menu'
-import { openWorktreeInNewWindow } from '../main-process-proxy'
+import { openRepositoryInNewWindow } from '../main-process-proxy'
 import { enableWorktreeSupport } from '../../lib/feature-flag'
 import { SectionFilterList } from '../lib/section-filter-list'
 import { assertNever } from '../../lib/fatal-error'
@@ -756,11 +756,8 @@ export class RepositoriesList extends React.Component<
     this.props.dispatcher.requestDeleteWorktree(repository, worktreePath)
   }
 
-  private onOpenWorktreeInNewWindow = (
-    repository: Repository,
-    worktreePath: string
-  ) => {
-    openWorktreeInNewWindow(repository.id, worktreePath)
+  private onOpenWorktreeInNewWindow = (worktreePath: string) => {
+    openRepositoryInNewWindow(worktreePath)
   }
 
   private onChangeRepositoryGroupName = (repository: Repository) => {

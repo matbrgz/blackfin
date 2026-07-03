@@ -127,10 +127,7 @@ interface IWorktreeListItemContextMenuConfig {
   onRenameWorktree: (repository: Repository, worktreePath: string) => void
   onDeleteWorktree: (repository: Repository, worktreePath: string) => void
   onViewOnGitHub: (repository: Repositoryish) => void
-  onOpenWorktreeInNewWindow: (
-    repository: Repository,
-    worktreePath: string
-  ) => void
+  onOpenWorktreeInNewWindow: (worktreePath: string) => void
   onOpenInShell: (repository: Repositoryish, path?: string) => void
   onShowRepository: (repository: Repositoryish, path?: string) => void
   onOpenInExternalEditor: (repository: Repositoryish, path?: string) => void
@@ -184,7 +181,7 @@ export const generateWorktreeListItemContextMenu = (
       label: __DARWIN__
         ? 'Open Worktree in New Window'
         : 'Open worktree in new window',
-      action: () => config.onOpenWorktreeInNewWindow(repository, path),
+      action: () => config.onOpenWorktreeInNewWindow(path),
     },
     {
       label: openInShell,
