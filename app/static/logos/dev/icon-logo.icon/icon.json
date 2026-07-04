@@ -20,30 +20,15 @@
       "blur-material" : 0.5,
       "layers" : [
         {
-          "fill-specializations" : [
-            {
-              "value" : {
-                "solid" : "srgb:1.00000,1.00000,1.00000,1.00000"
-              }
-            },
-            {
-              "appearance" : "dark",
-              "value" : {
-                "solid" : "srgb:0.96863,0.76471,0.07451,1.00000"
-              }
-            }
-          ],
-          "glass-specializations" : [
-            {
-              "value" : true
-            },
-            {
-              "appearance" : "tinted",
-              "value" : true
-            }
-          ],
-          "image-name" : "1 – Layer 3.svg",
-          "name" : "octocat"
+          "image-name" : "git-branch-plus.svg",
+          "name" : "lucide-git-branch-plus",
+          "position" : {
+            "scale" : 36,
+            "translation-in-points" : [
+              0,
+              0
+            ]
+          }
         }
       ],
       "name" : "foreground",

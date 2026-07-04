@@ -19,7 +19,7 @@
     {
       "layers" : [
         {
-          "image-name" : "git-branch-plus 4.svg",
+          "image-name" : "git-branch-plus.svg",
           "name" : "lucide-git-branch-plus",
           "position" : {
             "scale" : 36,
