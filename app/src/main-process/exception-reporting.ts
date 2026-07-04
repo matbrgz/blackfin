@@ -3,10 +3,6 @@ import { ENABLE_TELEMETRY } from '../lib/telemetry-flag'
 import { getArchitecture } from '../lib/get-architecture'
 import { getMainGUID } from '../lib/get-main-guid'
 
-const ErrorEndpoint = 'https://central.github.com/api/desktop/exception'
-const NonFatalErrorEndpoint =
-  'https://central.github.com/api/desktop-non-fatal/exception'
-
 let hasSentFatalError = false
 
 /** Report the error to Central. */
@@ -16,6 +12,13 @@ export async function reportError(
   nonFatal?: boolean
 ) {
   if (__DEV__) {
+    return
+  }
+
+  const url = nonFatal
+    ? __NON_FATAL_ERROR_REPORTING_ENDPOINT__
+    : __ERROR_REPORTING_ENDPOINT__
+  if (url === undefined) {
     return
   }
 
@@ -67,7 +70,6 @@ export async function reportError(
 
   try {
     await new Promise<void>((resolve, reject) => {
-      const url = nonFatal ? NonFatalErrorEndpoint : ErrorEndpoint
       const request = net.request({ method: 'POST', url })
 
       request.setHeader('Content-Type', 'application/x-www-form-urlencoded')
