@@ -4,6 +4,7 @@ import { lookupPreferredEmail } from '../../lib/email'
 import { isDotComAccount, type Account } from '../../models/account'
 import type { IAvatarUser } from '../../models/avatar'
 import { Avatar } from '../lib/avatar'
+import { Button } from '../lib/button'
 import { TooltippedContent } from '../lib/tooltipped-content'
 import { TooltipDirection } from '../lib/tooltip'
 
@@ -35,6 +36,7 @@ export interface ICategorizedSnapshot {
 interface ISnapshotCardProps {
   readonly account: Account
   readonly snapshots: ReadonlyMap<string, AccountQuotaSnapshot> | null
+  readonly onConfigureModels?: (account: Account) => void
 }
 
 interface ISnapshotUsageItemProps {
@@ -310,30 +312,46 @@ function SnapshotUsageItem({
   )
 }
 
-export function SnapshotCard({ account, snapshots }: ISnapshotCardProps) {
-  const avatarUser = getAccountAvatarUser(account)
+export class SnapshotCard extends React.Component<ISnapshotCardProps> {
+  public render() {
+    const { account, snapshots, onConfigureModels } = this.props
+    const avatarUser = getAccountAvatarUser(account)
 
-  return (
-    <div className="copilot-snapshot-card">
-      <div className="copilot-snapshot-account">
-        <Avatar
-          accounts={[account]}
-          user={avatarUser}
-          size={32}
-          tooltip={false}
-        />
-        <div className="copilot-snapshot-account-info">
-          <div className="copilot-snapshot-account-login">@{account.login}</div>
-          <div className="copilot-snapshot-account-type">
-            {formatAccountType(account)}
+    return (
+      <div className="copilot-snapshot-card">
+        <div className="copilot-snapshot-account">
+          <div className="copilot-snapshot-account-identity">
+            <Avatar
+              accounts={[account]}
+              user={avatarUser}
+              size={32}
+              tooltip={false}
+            />
+            <div className="copilot-snapshot-account-info">
+              <div className="copilot-snapshot-account-login">
+                @{account.login}
+              </div>
+              <div className="copilot-snapshot-account-type">
+                {formatAccountType(account)}
+              </div>
+            </div>
           </div>
+          {onConfigureModels !== undefined && (
+            <Button onClick={this.onConfigureModelsClick}>
+              {__DARWIN__ ? 'Configure Models…' : 'Configure models…'}
+            </Button>
+          )}
         </div>
+        {snapshots === null
+          ? renderLoadingSnapshots()
+          : renderSnapshots(snapshots)}
       </div>
-      {snapshots === null
-        ? renderLoadingSnapshots()
-        : renderSnapshots(snapshots)}
-    </div>
-  )
+    )
+  }
+
+  private onConfigureModelsClick = () => {
+    this.props.onConfigureModels?.(this.props.account)
+  }
 }
 
 function renderLoadingSnapshots(): JSX.Element {

@@ -16,9 +16,14 @@ import {
 import type {
   CopilotFeature,
   CopilotModelSelections,
+  CopilotModelsByAccount,
   CopilotQuotaSnapshots,
+  CopilotQuotaSnapshotsByAccount,
 } from './copilot-store'
-import { CommitMessageGenerationCancelledError } from './copilot-store'
+import {
+  CommitMessageGenerationCancelledError,
+  getCopilotAccountCacheKey,
+} from './copilot-store'
 import {
   IBYOKProvider,
   loadBYOKProviders,
@@ -723,7 +728,10 @@ export class AppStore extends TypedBaseStore<IAppState> {
 
   private selectedCopilotModels: CopilotModelSelections = {}
   private copilotModels: ReadonlyArray<Model> | null = null
+  private copilotModelsByAccount: CopilotModelsByAccount = new Map()
   private copilotQuotaSnapshots: CopilotQuotaSnapshots | null = null
+  private copilotQuotaSnapshotsByAccount: CopilotQuotaSnapshotsByAccount =
+    new Map()
   private byokProviders: ReadonlyArray<IBYOKProvider> = []
 
   public constructor(
@@ -1058,8 +1066,8 @@ export class AppStore extends TypedBaseStore<IAppState> {
     })
   }
 
-  private getCopilotSettingsAccount(): Account | undefined {
-    return this.accounts.find(
+  private getCopilotSettingsAccounts(): ReadonlyArray<Account> {
+    return this.accounts.filter(
       account =>
         !isGHES(account.endpoint) &&
         enableCopilotSdkCommitMessageGeneration(account) &&
@@ -1067,6 +1075,10 @@ export class AppStore extends TypedBaseStore<IAppState> {
         account.copilotLicenseType !== undefined &&
         account.copilotLicenseType !== CopilotLicenseTypeNoAccess
     )
+  }
+
+  private getCopilotSettingsAccount(): Account | undefined {
+    return this.getCopilotSettingsAccounts()[0]
   }
 
   private getCopilotModelsAccount(): Account | undefined {
@@ -1078,6 +1090,20 @@ export class AppStore extends TypedBaseStore<IAppState> {
   }
 
   private syncCopilotModelsFromCache(): void {
+    const accounts = this.getCopilotSettingsAccounts()
+    const copilotModelsByAccount = new Map<
+      string,
+      ReadonlyArray<Model> | null
+    >()
+
+    for (const account of accounts) {
+      copilotModelsByAccount.set(
+        getCopilotAccountCacheKey(account),
+        this.copilotStore.getCachedModelList(account)
+      )
+    }
+
+    this.copilotModelsByAccount = copilotModelsByAccount
     const account = this.getCopilotModelsAccount()
 
     if (account === undefined) {
@@ -1085,10 +1111,25 @@ export class AppStore extends TypedBaseStore<IAppState> {
       return
     }
 
-    this.copilotModels = this.copilotStore.getCachedModelList(account)
+    this.copilotModels =
+      copilotModelsByAccount.get(getCopilotAccountCacheKey(account)) ?? null
   }
 
   private syncCopilotQuotaSnapshotsFromCache(): void {
+    const accounts = this.getCopilotSettingsAccounts()
+    const copilotQuotaSnapshotsByAccount = new Map<
+      string,
+      CopilotQuotaSnapshots | null
+    >()
+
+    for (const account of accounts) {
+      copilotQuotaSnapshotsByAccount.set(
+        getCopilotAccountCacheKey(account),
+        this.copilotStore.getCachedQuotaSnapshots(account)
+      )
+    }
+
+    this.copilotQuotaSnapshotsByAccount = copilotQuotaSnapshotsByAccount
     const account = this.getCopilotQuotaSnapshotsAccount()
 
     if (account === undefined) {
@@ -1097,15 +1138,18 @@ export class AppStore extends TypedBaseStore<IAppState> {
     }
 
     this.copilotQuotaSnapshots =
-      this.copilotStore.getCachedQuotaSnapshots(account)
+      copilotQuotaSnapshotsByAccount.get(getCopilotAccountCacheKey(account)) ??
+      null
   }
 
   private updateCopilotModelsForCurrentAccount(): void {
-    const account = this.getCopilotModelsAccount()
+    const accounts = this.getCopilotSettingsAccounts()
 
     if (
-      account === undefined ||
-      this.copilotStore.getCachedModelList(account) !== null
+      accounts.length === 0 ||
+      accounts.every(
+        account => this.copilotStore.getCachedModelList(account) !== null
+      )
     ) {
       return
     }
@@ -1119,11 +1163,13 @@ export class AppStore extends TypedBaseStore<IAppState> {
   }
 
   private updateCopilotQuotaSnapshotsForCurrentAccount(): void {
-    const account = this.getCopilotQuotaSnapshotsAccount()
+    const accounts = this.getCopilotSettingsAccounts()
 
     if (
-      account === undefined ||
-      this.copilotStore.getCachedQuotaSnapshots(account) !== null
+      accounts.length === 0 ||
+      accounts.every(
+        account => this.copilotStore.getCachedQuotaSnapshots(account) !== null
+      )
     ) {
       return
     }
@@ -1327,7 +1373,9 @@ export class AppStore extends TypedBaseStore<IAppState> {
       showChangesFilter: this.showChangesFilter,
       selectedCopilotModels: this.selectedCopilotModels,
       copilotModels: this.copilotModels,
+      copilotModelsByAccount: this.copilotModelsByAccount,
       copilotQuotaSnapshots: this.copilotQuotaSnapshots,
+      copilotQuotaSnapshotsByAccount: this.copilotQuotaSnapshotsByAccount,
       byokProviders: this.byokProviders,
     }
   }
@@ -10260,42 +10308,56 @@ export class AppStore extends TypedBaseStore<IAppState> {
   }
 
   private async fetchCopilotModelsForCurrentAccount(): Promise<void> {
-    const account = this.getCopilotModelsAccount()
-    if (account === undefined) {
+    const accounts = this.getCopilotSettingsAccounts()
+    if (accounts.length === 0) {
       this.copilotModels = null
+      this.copilotModelsByAccount = new Map()
       this.emitUpdate()
       return
     }
 
-    const models = await this.copilotStore.listModels(account)
-    // Only overwrite the cached model list when we actually got a list back.
-    // listModels() returns null when the result is unknown (the selected
-    // account cannot use the SDK or an SDK failure has no prior cache);
-    // treating that as an empty list would scrub the user's Copilot model
-    // selections.
-    if (models !== null) {
-      this.copilotModels = [...models]
+    const copilotModelsByAccount = new Map(this.copilotModelsByAccount)
+
+    for (const account of accounts) {
+      const models = await this.copilotStore.listModels(account)
+      const key = getCopilotAccountCacheKey(account)
+      copilotModelsByAccount.set(key, models === null ? null : [...models])
+    }
+
+    this.copilotModelsByAccount = copilotModelsByAccount
+    this.copilotModels =
+      copilotModelsByAccount.get(getCopilotAccountCacheKey(accounts[0])) ?? null
+    if (this.copilotModels !== null) {
       this.scrubMissingCopilotModelSelections()
-    } else {
-      this.syncCopilotModelsFromCache()
     }
     this.emitUpdate()
   }
 
   private async fetchCopilotQuotaSnapshotsForCurrentAccount(): Promise<void> {
-    const account = this.getCopilotQuotaSnapshotsAccount()
-    if (account === undefined) {
+    const accounts = this.getCopilotSettingsAccounts()
+    if (accounts.length === 0) {
       this.copilotQuotaSnapshots = null
+      this.copilotQuotaSnapshotsByAccount = new Map()
       this.emitUpdate()
       return
     }
 
-    const quotaSnapshots = await this.copilotStore.getQuotaSnapshots(account)
-    if (quotaSnapshots !== null) {
-      this.copilotQuotaSnapshots = quotaSnapshots
-    } else {
-      this.syncCopilotQuotaSnapshotsFromCache()
+    const copilotQuotaSnapshotsByAccount = new Map(
+      this.copilotQuotaSnapshotsByAccount
+    )
+
+    for (const account of accounts) {
+      copilotQuotaSnapshotsByAccount.set(
+        getCopilotAccountCacheKey(account),
+        await this.copilotStore.getQuotaSnapshots(account)
+      )
     }
+
+    this.copilotQuotaSnapshotsByAccount = copilotQuotaSnapshotsByAccount
+    this.copilotQuotaSnapshots =
+      copilotQuotaSnapshotsByAccount.get(
+        getCopilotAccountCacheKey(accounts[0])
+      ) ?? null
     this.emitUpdate()
   }
 

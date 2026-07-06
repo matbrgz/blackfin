@@ -2,7 +2,8 @@
 // Add/Edit Custom Provider dialog. Kept in its own partial so the dialog
 // styles don't have to live inside the `#preferences` scope.
 
-#preferences {
+#preferences,
+.copilot-settings-dialog {
   .copilot-section {
     min-width: 0;
 
@@ -127,6 +128,13 @@
     }
   }
 
+  .copilot-account-snapshot-card-list {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    gap: var(--spacing);
+  }
+
   .copilot-snapshot-card {
     display: flex;
     min-width: 0;
@@ -139,6 +147,18 @@
   }
 
   .copilot-snapshot-account {
+    display: flex;
+    min-width: 0;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--spacing);
+
+    .button-component {
+      flex-shrink: 0;
+    }
+  }
+
+  .copilot-snapshot-account-identity {
     display: flex;
     min-width: 0;
     align-items: center;

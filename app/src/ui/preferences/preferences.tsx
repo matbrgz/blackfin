@@ -45,7 +45,9 @@ import { Accessibility } from './accessibility'
 import { CopilotPreferences } from './copilot'
 import type {
   CopilotFeature,
+  CopilotModelsByAccount,
   CopilotModelSelections,
+  CopilotQuotaSnapshotsByAccount,
   CopilotQuotaSnapshots,
 } from '../../lib/stores/copilot-store'
 import type { IBYOKProvider } from '../../lib/copilot/byok'
@@ -117,7 +119,9 @@ interface IPreferencesProps {
   readonly showDiffCheckMarks: boolean
   readonly selectedCopilotModels: CopilotModelSelections
   readonly copilotModels: ReadonlyArray<Model> | null
+  readonly copilotModelsByAccount: CopilotModelsByAccount
   readonly copilotQuotaSnapshots: CopilotQuotaSnapshots | null
+  readonly copilotQuotaSnapshotsByAccount: CopilotQuotaSnapshotsByAccount
   readonly byokProviders: ReadonlyArray<IBYOKProvider>
   readonly alwaysUseCopilotForConflictResolution: boolean
 }
@@ -544,7 +548,11 @@ export class Preferences extends React.Component<
           <CopilotPreferences
             selectedCopilotModels={this.state.selectedCopilotModels}
             copilotModels={this.props.copilotModels}
+            copilotModelsByAccount={this.props.copilotModelsByAccount}
             copilotQuotaSnapshots={this.props.copilotQuotaSnapshots}
+            copilotQuotaSnapshotsByAccount={
+              this.props.copilotQuotaSnapshotsByAccount
+            }
             accounts={this.props.accounts}
             byokProviders={this.props.byokProviders}
             showBYOKSettings={this.shouldShowBYOKSettings()}

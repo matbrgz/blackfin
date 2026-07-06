@@ -1696,7 +1696,11 @@ export class App extends React.Component<IAppProps, IAppState> {
             showDiffCheckMarks={this.state.showDiffCheckMarks}
             selectedCopilotModels={this.state.selectedCopilotModels}
             copilotModels={this.state.copilotModels}
+            copilotModelsByAccount={this.state.copilotModelsByAccount}
             copilotQuotaSnapshots={this.state.copilotQuotaSnapshots}
+            copilotQuotaSnapshotsByAccount={
+              this.state.copilotQuotaSnapshotsByAccount
+            }
             byokProviders={this.state.byokProviders}
             alwaysUseCopilotForConflictResolution={
               this.state.alwaysUseCopilotForConflictResolution

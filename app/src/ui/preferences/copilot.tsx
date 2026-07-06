@@ -3,19 +3,26 @@ import type { IBYOKProvider } from '../../lib/copilot/byok'
 import { isGHES } from '../../lib/endpoint-capabilities'
 import {
   type CopilotFeature,
+  getCopilotAccountCacheKey,
+  type CopilotModelsByAccount,
   type CopilotModelSelections,
+  type CopilotQuotaSnapshotsByAccount,
   type CopilotQuotaSnapshots,
 } from '../../lib/stores/copilot-store'
 import type { Account } from '../../models/account'
 import { DialogContent, DialogPreferredFocusClassName } from '../dialog'
 import { CallToAction } from '../lib/call-to-action'
 import type { Model } from '@github/copilot-sdk/dist/generated/rpc'
+import { CopilotSettingsDialog } from './copilot-settings-dialog'
 import { CopilotUserSettings } from './copilot-user-settings'
+import { SnapshotCard } from './snapshot-card'
 
 interface ICopilotPreferencesProps {
   readonly selectedCopilotModels: CopilotModelSelections
   readonly copilotModels: ReadonlyArray<Model> | null
+  readonly copilotModelsByAccount: CopilotModelsByAccount
   readonly copilotQuotaSnapshots: CopilotQuotaSnapshots | null
+  readonly copilotQuotaSnapshotsByAccount: CopilotQuotaSnapshotsByAccount
   readonly accounts: ReadonlyArray<Account>
   readonly byokProviders: ReadonlyArray<IBYOKProvider>
   readonly showBYOKSettings: boolean
@@ -35,6 +42,10 @@ interface ICopilotPreferencesProps {
   readonly onDeleteBYOKProvider: (provider: IBYOKProvider) => void
 }
 
+interface ICopilotPreferencesState {
+  readonly configuringAccount: Account | null
+}
+
 type CopilotAccessState =
   | 'signed-out'
   | 'checking'
@@ -42,15 +53,37 @@ type CopilotAccessState =
   | 'desktop-disabled'
 
 const CopilotLicenseTypeNoAccess = 'NO_ACCESS'
-export class CopilotPreferences extends React.Component<ICopilotPreferencesProps> {
-  public render() {
-    const account = this.getCopilotSettingsAccount()
+export class CopilotPreferences extends React.Component<
+  ICopilotPreferencesProps,
+  ICopilotPreferencesState
+> {
+  public constructor(props: ICopilotPreferencesProps) {
+    super(props)
 
-    if (account !== undefined) {
+    this.state = {
+      configuringAccount: null,
+    }
+  }
+
+  public render() {
+    const accounts = this.getCopilotSettingsAccounts()
+
+    if (accounts.length === 1) {
       return (
         <DialogContent className="copilot-tab">
-          {this.renderUserSettings(account)}
+          {this.renderUserSettings(accounts[0])}
         </DialogContent>
+      )
+    }
+
+    if (accounts.length > 1) {
+      return (
+        <>
+          <DialogContent className="copilot-tab">
+            {this.renderAccountSnapshotCards(accounts)}
+          </DialogContent>
+          {this.renderCopilotSettingsDialog()}
+        </>
       )
     }
 
@@ -72,8 +105,8 @@ export class CopilotPreferences extends React.Component<ICopilotPreferencesProps
       <CopilotUserSettings
         account={account}
         selectedCopilotModels={this.props.selectedCopilotModels}
-        copilotModels={this.props.copilotModels}
-        copilotQuotaSnapshots={this.props.copilotQuotaSnapshots}
+        copilotModels={this.getCopilotModels(account)}
+        copilotQuotaSnapshots={this.getCopilotQuotaSnapshots(account)}
         byokProviders={this.props.byokProviders}
         showBYOKSettings={this.props.showBYOKSettings}
         alwaysUseCopilotForConflictResolution={
@@ -90,17 +123,99 @@ export class CopilotPreferences extends React.Component<ICopilotPreferencesProps
     )
   }
 
+  private renderAccountSnapshotCards(
+    accounts: ReadonlyArray<Account>
+  ): JSX.Element {
+    return (
+      <div className="copilot-tab-content">
+        <div className="copilot-section">
+          <div className="copilot-account-snapshot-card-list">
+            {accounts.map(account => (
+              <SnapshotCard
+                key={getCopilotAccountCacheKey(account)}
+                account={account}
+                snapshots={this.getCopilotQuotaSnapshots(account)}
+                onConfigureModels={this.onConfigureModels}
+              />
+            ))}
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  private renderCopilotSettingsDialog(): JSX.Element | null {
+    const account = this.state.configuringAccount
+
+    if (account === null) {
+      return null
+    }
+
+    return (
+      <CopilotSettingsDialog
+        key={getCopilotAccountCacheKey(account)}
+        account={account}
+        selectedCopilotModels={this.props.selectedCopilotModels}
+        copilotModels={this.getCopilotModels(account)}
+        copilotQuotaSnapshots={this.getCopilotQuotaSnapshots(account)}
+        byokProviders={this.props.byokProviders}
+        showBYOKSettings={this.props.showBYOKSettings}
+        alwaysUseCopilotForConflictResolution={
+          this.props.alwaysUseCopilotForConflictResolution
+        }
+        onSelectedCopilotModelChanged={this.props.onSelectedCopilotModelChanged}
+        onAlwaysUseCopilotForConflictResolutionChanged={
+          this.props.onAlwaysUseCopilotForConflictResolutionChanged
+        }
+        onAddBYOKProvider={this.props.onAddBYOKProvider}
+        onEditBYOKProvider={this.props.onEditBYOKProvider}
+        onDeleteBYOKProvider={this.props.onDeleteBYOKProvider}
+        onDismissed={this.onDismissCopilotSettingsDialog}
+      />
+    )
+  }
+
+  private onConfigureModels = (account: Account) => {
+    this.setState({ configuringAccount: account })
+  }
+
+  private onDismissCopilotSettingsDialog = () => {
+    this.setState({ configuringAccount: null })
+  }
+
   private getCopilotAccounts(): ReadonlyArray<Account> {
     return this.props.accounts.filter(account => !isGHES(account.endpoint))
   }
 
-  private getCopilotSettingsAccount(): Account | undefined {
-    return this.getCopilotAccounts().find(
+  private getCopilotSettingsAccounts(): ReadonlyArray<Account> {
+    return this.getCopilotAccounts().filter(
       account =>
         account.isCopilotDesktopEnabled === true &&
         account.copilotLicenseType !== undefined &&
         account.copilotLicenseType !== CopilotLicenseTypeNoAccess
     )
+  }
+
+  private getCopilotModels(account: Account): ReadonlyArray<Model> | null {
+    const key = getCopilotAccountCacheKey(account)
+
+    if (this.props.copilotModelsByAccount.has(key)) {
+      return this.props.copilotModelsByAccount.get(key) ?? null
+    }
+
+    return this.props.copilotModels
+  }
+
+  private getCopilotQuotaSnapshots(
+    account: Account
+  ): CopilotQuotaSnapshots | null {
+    const key = getCopilotAccountCacheKey(account)
+
+    if (this.props.copilotQuotaSnapshotsByAccount.has(key)) {
+      return this.props.copilotQuotaSnapshotsByAccount.get(key) ?? null
+    }
+
+    return this.props.copilotQuotaSnapshots
   }
 
   private getCopilotAccessState(): CopilotAccessState {

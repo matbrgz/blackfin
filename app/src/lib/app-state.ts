@@ -1,5 +1,7 @@
 import type {
+  CopilotModelsByAccount,
   CopilotModelSelections,
+  CopilotQuotaSnapshotsByAccount,
   CopilotQuotaSnapshots,
 } from './stores/copilot-store'
 import type { IBYOKProvider } from './copilot/byok'
@@ -429,11 +431,17 @@ export interface IAppState {
    */
   readonly copilotModels: ReadonlyArray<Model> | null
 
+  /** Account-scoped Copilot model lists, keyed by Copilot account cache key. */
+  readonly copilotModelsByAccount: CopilotModelsByAccount
+
   /**
    * Copilot quota snapshots fetched from the SDK. Null when the snapshots have
    * not been fetched yet.
    */
   readonly copilotQuotaSnapshots: CopilotQuotaSnapshots | null
+
+  /** Account-scoped Copilot quota snapshots, keyed by Copilot account cache key. */
+  readonly copilotQuotaSnapshotsByAccount: CopilotQuotaSnapshotsByAccount
 
   /**
    * The list of user-configured Copilot model providers (BYOK). Empty when
