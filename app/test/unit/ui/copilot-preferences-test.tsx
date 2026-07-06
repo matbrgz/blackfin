@@ -14,7 +14,6 @@ import {
   resetTestTimers,
 } from '../../helpers/ui/timers'
 import { CopilotPreferences } from '../../../src/ui/preferences/copilot'
-import { DialogStackContext } from '../../../src/ui/dialog'
 import {
   DefaultCopilotModel,
   type CopilotFeature,
@@ -231,8 +230,6 @@ let hadGlobalResizeObserver = false
 let originalGlobalResizeObserver: typeof ResizeObserver | undefined
 let hadWindowResizeObserver = false
 let originalWindowResizeObserver: typeof ResizeObserver | undefined
-let restoreIpcSend: (() => void) | null = null
-let restoreDialogMethods: (() => void) | null = null
 
 beforeEach(() => {
   hadGlobalResizeObserver = 'ResizeObserver' in globalThis
@@ -250,9 +247,6 @@ beforeEach(() => {
 })
 
 afterEach(() => {
-  restoreIpcSend?.()
-  restoreDialogMethods?.()
-
   if (hadGlobalResizeObserver) {
     Object.assign(globalThis, { ResizeObserver: originalGlobalResizeObserver })
   } else {
@@ -267,35 +261,6 @@ afterEach(() => {
     }
   }
 })
-
-async function stubIpcSend() {
-  const electron = await import('electron')
-  const previousSend = electron.ipcRenderer.send
-  electron.ipcRenderer.send = () => {}
-  restoreIpcSend = () => {
-    electron.ipcRenderer.send = previousSend
-    restoreIpcSend = null
-  }
-}
-
-function stubDialogMethods() {
-  const prototype = HTMLDialogElement.prototype
-  const previousShowModal = prototype.showModal
-  const previousClose = prototype.close
-
-  prototype.showModal = function () {
-    this.setAttribute('open', '')
-  }
-  prototype.close = function () {
-    this.removeAttribute('open')
-  }
-
-  restoreDialogMethods = () => {
-    prototype.showModal = previousShowModal
-    prototype.close = previousClose
-    restoreDialogMethods = null
-  }
-}
 
 function defaults() {
   return {
@@ -316,6 +281,7 @@ function defaults() {
     onAddBYOKProvider: () => {},
     onEditBYOKProvider: () => {},
     onDeleteBYOKProvider: () => {},
+    onConfigureModels: () => {},
   }
 }
 
@@ -341,13 +307,6 @@ function getModelPickerButtons(
 
 function getModelPickerButtonText(container: HTMLElement): string {
   return getModelPickerButton(container).textContent ?? ''
-}
-
-function getPopoverContent(): HTMLElement {
-  const popover = document.querySelector('.popover-dropdown-content')
-  assert.ok(popover instanceof HTMLElement)
-
-  return popover
 }
 
 function getListItemHeight(element: HTMLElement): string {
@@ -594,10 +553,7 @@ describe('CopilotPreferences', () => {
     )
   })
 
-  it('opens account-specific Copilot settings from a Snapshot card', async () => {
-    await stubIpcSend()
-    stubDialogMethods()
-
+  it('requests account-specific Copilot settings from a Snapshot card', () => {
     const mona = makeAccount()
     const octo = makeAccount({
       endpoint: 'https://api.octocorp.ghe.com',
@@ -606,33 +562,26 @@ describe('CopilotPreferences', () => {
       name: 'Octo Cat',
       copilotLicenseType: 'COPILOT_BUSINESS',
     })
-    const changed: Array<{
-      feature: CopilotFeature
-      model: string | null
-    }> = []
+    const configuredAccounts = new Array<Account>()
 
     const view = render(
-      <DialogStackContext.Provider value={{ isTopMost: true }}>
-        <CopilotPreferences
-          {...defaults()}
-          accounts={[mona, octo]}
-          copilotModelsByAccount={
-            new Map([
-              [getCopilotAccountCacheKey(mona), [defaultModel]],
-              [getCopilotAccountCacheKey(octo), models],
-            ])
-          }
-          copilotQuotaSnapshotsByAccount={
-            new Map([
-              [getCopilotAccountCacheKey(mona), quotaSnapshots],
-              [getCopilotAccountCacheKey(octo), quotaSnapshots],
-            ])
-          }
-          onSelectedCopilotModelChanged={(feature, model) => {
-            changed.push({ feature, model })
-          }}
-        />
-      </DialogStackContext.Provider>
+      <CopilotPreferences
+        {...defaults()}
+        accounts={[mona, octo]}
+        copilotModelsByAccount={
+          new Map([
+            [getCopilotAccountCacheKey(mona), [defaultModel]],
+            [getCopilotAccountCacheKey(octo), models],
+          ])
+        }
+        copilotQuotaSnapshotsByAccount={
+          new Map([
+            [getCopilotAccountCacheKey(mona), quotaSnapshots],
+            [getCopilotAccountCacheKey(octo), quotaSnapshots],
+          ])
+        }
+        onConfigureModels={account => configuredAccounts.push(account)}
+      />
     )
 
     const cards = view.container.querySelectorAll('.copilot-snapshot-card')
@@ -643,27 +592,8 @@ describe('CopilotPreferences', () => {
       within(octoCard).getByRole('button', { name: /Configure models…/i })
     )
 
-    assert.ok(screen.getByText('Copilot Settings: @octo'))
-    const settingsDialog = screen.getByRole('dialog', {
-      name: 'Copilot Settings: @octo',
-    })
-    assert.ok(settingsDialog instanceof HTMLElement)
-    const modelPickerButton = getModelPickerButton(settingsDialog)
-    fireEvent.click(modelPickerButton)
-    await waitFor(() =>
-      assert.ok(within(getPopoverContent()).getByText('Claude Sonnet (2x)'))
-    )
-    fireEvent.click(within(getPopoverContent()).getByText('Claude Sonnet (2x)'))
-
-    assert.deepStrictEqual(changed, [
-      {
-        feature: 'commit-message-generation',
-        model: encodeModelKey({
-          kind: 'copilot',
-          modelId: 'claude-sonnet',
-        }),
-      },
-    ])
+    assert.deepStrictEqual(configuredAccounts, [octo])
+    assert.strictEqual(screen.queryByText('Copilot Settings: @octo'), null)
   })
 
   it('ignores GHES accounts while checking Copilot access', () => {

@@ -1,5 +1,4 @@
 import * as React from 'react'
-import * as ReactDOM from 'react-dom'
 import type { Model } from '@github/copilot-sdk/dist/generated/rpc'
 import type { IBYOKProvider } from '../../lib/copilot/byok'
 import type {
@@ -35,16 +34,6 @@ interface ICopilotSettingsDialogProps {
 
 export class CopilotSettingsDialog extends React.Component<ICopilotSettingsDialogProps> {
   public render() {
-    const dialog = this.renderDialog()
-
-    if (document.body === null) {
-      return dialog
-    }
-
-    return ReactDOM.createPortal(dialog, document.body)
-  }
-
-  private renderDialog() {
     return (
       <Dialog
         id="copilot-settings-dialog"

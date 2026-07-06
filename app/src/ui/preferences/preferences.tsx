@@ -340,6 +340,22 @@ export class Preferences extends React.Component<
     })
   }
 
+  public componentDidUpdate(prevProps: IPreferencesProps) {
+    if (prevProps.selectedCopilotModels !== this.props.selectedCopilotModels) {
+      this.setState({ selectedCopilotModels: this.props.selectedCopilotModels })
+    }
+
+    if (
+      prevProps.alwaysUseCopilotForConflictResolution !==
+      this.props.alwaysUseCopilotForConflictResolution
+    ) {
+      this.setState({
+        alwaysUseCopilotForConflictResolution:
+          this.props.alwaysUseCopilotForConflictResolution,
+      })
+    }
+  }
+
   private onCancel = () => {
     if (this.state.initiallySelectedTheme !== this.props.selectedTheme) {
       this.onSelectedThemeChanged(this.state.initiallySelectedTheme)
@@ -569,6 +585,7 @@ export class Preferences extends React.Component<
             onAddBYOKProvider={this.onAddBYOKProvider}
             onEditBYOKProvider={this.onEditBYOKProvider}
             onDeleteBYOKProvider={this.onDeleteBYOKProvider}
+            onConfigureModels={this.onConfigureCopilotModels}
           />
         )
         break
@@ -940,6 +957,13 @@ export class Preferences extends React.Component<
     this.props.dispatcher.showPopup({
       type: PopupType.ConfirmDeleteCopilotBYOKProvider,
       provider,
+    })
+  }
+
+  private onConfigureCopilotModels = (account: Account) => {
+    this.props.dispatcher.showPopup({
+      type: PopupType.CopilotSettings,
+      account,
     })
   }
 

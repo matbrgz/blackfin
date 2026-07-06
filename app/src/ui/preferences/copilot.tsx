@@ -13,7 +13,6 @@ import type { Account } from '../../models/account'
 import { DialogContent, DialogPreferredFocusClassName } from '../dialog'
 import { CallToAction } from '../lib/call-to-action'
 import type { Model } from '@github/copilot-sdk/dist/generated/rpc'
-import { CopilotSettingsDialog } from './copilot-settings-dialog'
 import { CopilotUserSettings } from './copilot-user-settings'
 import { SnapshotCard } from './snapshot-card'
 
@@ -40,10 +39,7 @@ interface ICopilotPreferencesProps {
   readonly onAddBYOKProvider: () => void
   readonly onEditBYOKProvider: (provider: IBYOKProvider) => void
   readonly onDeleteBYOKProvider: (provider: IBYOKProvider) => void
-}
-
-interface ICopilotPreferencesState {
-  readonly configuringAccount: Account | null
+  readonly onConfigureModels: (account: Account) => void
 }
 
 type CopilotAccessState =
@@ -53,18 +49,7 @@ type CopilotAccessState =
   | 'desktop-disabled'
 
 const CopilotLicenseTypeNoAccess = 'NO_ACCESS'
-export class CopilotPreferences extends React.Component<
-  ICopilotPreferencesProps,
-  ICopilotPreferencesState
-> {
-  public constructor(props: ICopilotPreferencesProps) {
-    super(props)
-
-    this.state = {
-      configuringAccount: null,
-    }
-  }
-
+export class CopilotPreferences extends React.Component<ICopilotPreferencesProps> {
   public render() {
     const accounts = this.getCopilotSettingsAccounts()
 
@@ -78,12 +63,9 @@ export class CopilotPreferences extends React.Component<
 
     if (accounts.length > 1) {
       return (
-        <>
-          <DialogContent className="copilot-tab">
-            {this.renderAccountSnapshotCards(accounts)}
-          </DialogContent>
-          {this.renderCopilotSettingsDialog()}
-        </>
+        <DialogContent className="copilot-tab">
+          {this.renderAccountSnapshotCards(accounts)}
+        </DialogContent>
       )
     }
 
@@ -135,52 +117,13 @@ export class CopilotPreferences extends React.Component<
                 key={getCopilotAccountCacheKey(account)}
                 account={account}
                 snapshots={this.getCopilotQuotaSnapshots(account)}
-                onConfigureModels={this.onConfigureModels}
+                onConfigureModels={this.props.onConfigureModels}
               />
             ))}
           </div>
         </div>
       </div>
     )
-  }
-
-  private renderCopilotSettingsDialog(): JSX.Element | null {
-    const account = this.state.configuringAccount
-
-    if (account === null) {
-      return null
-    }
-
-    return (
-      <CopilotSettingsDialog
-        key={getCopilotAccountCacheKey(account)}
-        account={account}
-        selectedCopilotModels={this.props.selectedCopilotModels}
-        copilotModels={this.getCopilotModels(account)}
-        copilotQuotaSnapshots={this.getCopilotQuotaSnapshots(account)}
-        byokProviders={this.props.byokProviders}
-        showBYOKSettings={this.props.showBYOKSettings}
-        alwaysUseCopilotForConflictResolution={
-          this.props.alwaysUseCopilotForConflictResolution
-        }
-        onSelectedCopilotModelChanged={this.props.onSelectedCopilotModelChanged}
-        onAlwaysUseCopilotForConflictResolutionChanged={
-          this.props.onAlwaysUseCopilotForConflictResolutionChanged
-        }
-        onAddBYOKProvider={this.props.onAddBYOKProvider}
-        onEditBYOKProvider={this.props.onEditBYOKProvider}
-        onDeleteBYOKProvider={this.props.onDeleteBYOKProvider}
-        onDismissed={this.onDismissCopilotSettingsDialog}
-      />
-    )
-  }
-
-  private onConfigureModels = (account: Account) => {
-    this.setState({ configuringAccount: account })
-  }
-
-  private onDismissCopilotSettingsDialog = () => {
-    this.setState({ configuringAccount: null })
   }
 
   private getCopilotAccounts(): ReadonlyArray<Account> {
