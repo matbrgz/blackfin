@@ -116,7 +116,7 @@ export enum PopupType {
   DeleteWorktree = 'DeleteWorktree',
   EditCopilotBYOKProvider = 'EditCopilotBYOKProvider',
   EditCopilotBYOKModel = 'EditCopilotBYOKModel',
-  CopilotSettings = 'CopilotSettings',
+  CopilotUserSettings = 'CopilotUserSettings',
   ConfirmDeleteCopilotBYOKProvider = 'ConfirmDeleteCopilotBYOKProvider',
   CopilotConflictResolutionAlwaysNudge = 'CopilotConflictResolutionAlwaysNudge',
   DeleteWorktreeFailed = 'DeleteWorktreeFailed',
@@ -168,7 +168,7 @@ export type PopupDetail =
       onSave: (model: IBYOKModel) => void
     }
   | {
-      type: PopupType.CopilotSettings
+      type: PopupType.CopilotUserSettings
       account: Account
     }
   | {

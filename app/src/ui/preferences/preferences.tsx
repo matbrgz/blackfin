@@ -962,7 +962,7 @@ export class Preferences extends React.Component<
 
   private onConfigureCopilotModels = (account: Account) => {
     this.props.dispatcher.showPopup({
-      type: PopupType.CopilotSettings,
+      type: PopupType.CopilotUserSettings,
       account,
     })
   }

@@ -2,6 +2,16 @@
 // Add/Edit Custom Provider dialog. Kept in its own partial so the dialog
 // styles don't have to live inside the `#preferences` scope.
 
+.copilot-settings-dialog {
+  .dialog-content.copilot-tab {
+    padding: 0;
+  }
+
+  .copilot-tab-content {
+    padding: var(--spacing-double);
+  }
+}
+
 #preferences,
 .copilot-settings-dialog {
   .copilot-section {

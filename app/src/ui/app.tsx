@@ -1770,7 +1770,7 @@ export class App extends React.Component<IAppProps, IAppState> {
             }
           />
         )
-      case PopupType.CopilotSettings:
+      case PopupType.CopilotUserSettings:
         return (
           <CopilotSettingsDialog
             key={`copilot-settings-${getCopilotAccountCacheKey(popup.account)}`}
