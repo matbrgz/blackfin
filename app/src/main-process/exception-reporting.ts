@@ -1,9 +1,34 @@
 import { app, net } from 'electron'
 import { ENABLE_TELEMETRY } from '../lib/telemetry-flag'
 import { getArchitecture } from '../lib/get-architecture'
+import { computeBundleHash } from '../lib/compute-bundle-hash'
 import { getMainGUID } from '../lib/get-main-guid'
 
 let hasSentFatalError = false
+
+/** Cached bundle hash result. Undefined means not yet attempted. */
+let cachedBundleHash: string | null | undefined = undefined
+
+/**
+ * Get the combined SHA-256 bundle hash, caching the result (including failures)
+ * for the lifetime of the process. Attempted at most once per session.
+ *
+ * The caching only benefits non-fatal errors since fatal errors terminate the
+ * process before a second report could be sent.
+ */
+async function getBundleHash(): Promise<string | null> {
+  if (cachedBundleHash !== undefined) {
+    return cachedBundleHash
+  }
+
+  try {
+    cachedBundleHash = await computeBundleHash(app.getAppPath())
+  } catch {
+    cachedBundleHash = null
+  }
+
+  return cachedBundleHash
+}
 
 /** Report the error to Central. */
 export async function reportError(
@@ -47,6 +72,11 @@ export async function reportError(
   data.set('sha', __SHA__)
   data.set('version', app.getVersion())
   data.set('guid', await getMainGUID())
+
+  const bundleHash = await getBundleHash()
+  if (bundleHash !== null) {
+    data.set('bundleHash', bundleHash)
+  }
 
   if (extra) {
     for (const key of Object.keys(extra)) {

@@ -221,6 +221,7 @@ jobs:
             dist/*.rpm
             dist/*.sha256
             dist/bundle-size.json
+            dist/bundle-hash.json
           if-no-files-found: error
 
   e2e-smoke:
