@@ -259,6 +259,7 @@ import {
   IConfigValueOrigin,
   unstageAll,
   git,
+  listWorktreesFromGitDirFallback,
 } from '../git'
 import {
   installGlobalLFSFilters,
@@ -4515,11 +4516,12 @@ export class AppStore extends TypedBaseStore<IAppState> {
     if (repository.gitDir === undefined) {
       return null
     }
+    const repositoryGitDir = repository.gitDir
 
     const worktrees = await listWorktreesFromGitDir(repository.gitDir).catch(
       e => {
         log.error('Could not list worktrees from git dir', e)
-        return []
+        return listWorktreesFromGitDirFallback(repositoryGitDir)
       }
     )
     const mainWorktree = worktrees.find(wt => wt.type === 'main')
