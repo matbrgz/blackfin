@@ -1,9 +1,7 @@
 import * as Path from 'path'
-import { readFile } from 'fs/promises'
 import type { Repository } from '../../models/repository'
 import type { WorktreeEntry, WorktreeType } from '../../models/worktree'
 import { git } from './core'
-import { directoryExists } from '../directory-exists'
 
 export function parseWorktreePorcelainOutput(
   stdout: string
@@ -66,45 +64,6 @@ export async function listWorktrees(
   )
 
   return parseWorktreePorcelainOutput(result.stdout)
-}
-
-/**
- * Path to the main worktree's working directory for a repository pointing at a
- * linked worktree, derived purely from on-disk Git metadata so it still works
- * when the linked worktree's working directory is gone.
- *
- * Returns null when it can't be determined (unknown `gitDir`) or doesn't exist.
- */
-export async function getMainWorktreePath(
-  repository: Repository
-): Promise<string | null> {
-  const { gitDir } = repository
-  if (gitDir === undefined) {
-    return null
-  }
-
-  const commonDir = await resolveCommonGitDir(gitDir)
-  const mainWorktreePath = Path.dirname(commonDir)
-
-  if (!(await directoryExists(mainWorktreePath))) {
-    return null
-  }
-  return mainWorktreePath
-}
-
-async function resolveCommonGitDir(gitDir: string): Promise<string> {
-  if (Path.basename(Path.dirname(gitDir)) !== 'worktrees') {
-    return gitDir
-  }
-
-  // Prefer the `commondir` file, but fall back to the conventional layout (two
-  // levels up) when it's unreadable, e.g. `git worktree remove` deleted the
-  // worktree's admin files too.
-  const conventionalCommonDir = Path.dirname(Path.dirname(gitDir))
-  return readFile(Path.join(gitDir, 'commondir'), 'utf8')
-    .then(content => content.replace(/\r?\n$/, ''))
-    .then(p => (p ? Path.resolve(gitDir, p) : conventionalCommonDir))
-    .catch(() => conventionalCommonDir)
 }
 
 export async function addWorktree(

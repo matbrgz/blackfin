@@ -241,7 +241,6 @@ import {
   getRepositoryType,
   RepositoryType,
   listWorktrees,
-  getMainWorktreePath,
   removeWorktree,
   moveWorktree,
   getCommitRangeDiff,
@@ -2585,16 +2584,6 @@ export class AppStore extends TypedBaseStore<IAppState> {
 
     // if repository might be marked missing, try checking if it has been restored
     const refreshedRepository = await this.recoverMissingRepository(repository)
-
-    // A removed linked worktree falls back to its main worktree instead of the
-    // missing-repository view.
-    const mainWorktreeRepository = await this.switchToMainWorktreeIfMissing(
-      refreshedRepository
-    )
-    if (mainWorktreeRepository !== null) {
-      return this._selectRepository(mainWorktreeRepository)
-    }
-
     if (refreshedRepository.missing) {
       // as the repository is no longer found on disk, cleaning this up
       // ensures we don't accidentally run any Git operations against the
@@ -4488,32 +4477,6 @@ export class AppStore extends TypedBaseStore<IAppState> {
     }
   }
 
-  /**
-   * If the repository points at a linked worktree that's gone from disk, switch
-   * it back to its main worktree so we don't needlessly show it as missing.
-   *
-   * Returns the repository pointing at the main worktree, or null if no switch
-   * happened (path still exists, not a linked worktree, or main worktree gone
-   * too). Validating the switched-to worktree is left to the following refresh.
-   */
-  private async switchToMainWorktreeIfMissing(
-    repository: Repository
-  ): Promise<Repository | null> {
-    if (await pathExists(repository.path)) {
-      return null
-    }
-
-    const mainWorktreePath = await getMainWorktreePath(repository)
-    if (mainWorktreePath === null) {
-      return null
-    }
-
-    const { repository: updatedRepository } =
-      await this.repositoriesStore.switchWorktree(repository, mainWorktreePath)
-
-    return updatedRepository
-  }
-
   private async recoverMissingRepository(
     repository: Repository
   ): Promise<Repository> {
@@ -4549,22 +4512,6 @@ export class AppStore extends TypedBaseStore<IAppState> {
     // set the flag and don't try anything Git-related
     const exists = await pathExists(repository.path)
     if (!exists) {
-      // Only for the selected repo, so a background refresh of another repo
-      // can't hijack the current selection by switching it to its main worktree.
-      const isSelected =
-        this.selectedRepository instanceof Repository &&
-        this.selectedRepository.id === repository.id
-
-      if (isSelected) {
-        const mainWorktreeRepository = await this.switchToMainWorktreeIfMissing(
-          repository
-        )
-        if (mainWorktreeRepository !== null) {
-          await this._selectRepository(mainWorktreeRepository)
-          return
-        }
-      }
-
       this._updateRepositoryMissing(repository, true)
       return
     }
