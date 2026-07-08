@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <component type="desktop-application">
-  <id>io.github.pol_rivero.github-desktop-plus</id>
+  <id>org.desktop_plus.desktop-plus</id>
   <name>Desktop Plus</name>
   <summary>Git client with advanced functionality and Bitbucket, GitLab integration</summary>
   <metadata_license>CC0-1.0</metadata_license>
@@ -17,7 +17,13 @@
   <url type="homepage">https://desktop-plus.org</url>
   <url type="vcs-browser">https://github.com/desktop-plus/desktop-plus</url>
   <url type="bugtracker">https://github.com/desktop-plus/desktop-plus/issues</url>
-  <launchable type="desktop-id">io.github.pol_rivero.github-desktop-plus.desktop</launchable>
+  <launchable type="desktop-id">org.desktop_plus.desktop-plus.desktop</launchable>
+  <provides>
+    <id>io.github.pol_rivero.github-desktop-plus</id>
+  </provides>
+  <replaces>
+    <id>io.github.pol_rivero.github-desktop-plus</id>
+  </replaces>
   <screenshots>
     <screenshot type="default">
       <image>https://raw.githubusercontent.com/desktop-plus/desktop-plus/fd22fd8dca8dc59f2a9329d35618a36da55980e7/docs/assets/flathub/search.webp</image>
