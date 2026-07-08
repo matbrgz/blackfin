@@ -32,6 +32,10 @@ import {
   IFileConflictContext,
   formatConflictContextForPrompt,
 } from '../copilot-conflict-context'
+import {
+  createCopilotInMemorySessionFsProvider,
+  getCopilotInMemorySessionFsConfig,
+} from '../copilot-in-memory-session-fs-provider'
 import * as ipcRenderer from '../ipc-renderer'
 import { startTimer } from '../../ui/lib/timing'
 import { join } from 'path'
@@ -47,7 +51,6 @@ import type {
   ModelBillingTokenPrices,
 } from '@github/copilot-sdk/dist/generated/rpc'
 import { isGHE } from '../endpoint-capabilities'
-import { getCopilotInMemorySessionFsConfig } from '../copilot-in-memory-session-fs-provider'
 
 /** The default model ID used for Copilot commit message generation. */
 export const DefaultCopilotModel = 'auto'
@@ -819,13 +822,16 @@ export class CopilotStore extends BaseStore {
 
   /**
    * Stops the given Copilot client.
+   *
+   * Deliberately "fire-and-forget" because the SDK's `stop()` can take a while
+   * to complete, and we don't want to block the UI or any other Copilot
+   * operations while waiting for it. Any errors during stopping are logged but
+   * not propagated.
    */
-  private async stopClient(client: CopilotClient): Promise<void> {
-    try {
-      await client.stop()
-    } catch (error) {
+  private stopClient(client: CopilotClient): void {
+    client.stop().catch(error => {
       log.error('CopilotStore: Error stopping client', error)
-    }
+    })
   }
 
   private async createCancellableSession(
@@ -1050,6 +1056,8 @@ export class CopilotStore extends BaseStore {
             content: buildCommitMessageSystemPrompt(hasRules, tags),
           },
           availableTools: [],
+          enableSessionStore: false,
+          createSessionFsProvider: createCopilotInMemorySessionFsProvider,
           onPermissionRequest: async () => ({
             kind: 'reject',
           }),
@@ -1100,7 +1108,7 @@ export class CopilotStore extends BaseStore {
 
       // Stop the client after use
       if (client !== null) {
-        await this.stopClient(client)
+        this.stopClient(client)
       }
     }
   }
@@ -1303,7 +1311,7 @@ export class CopilotStore extends BaseStore {
         references: firstReferences,
       }
     } finally {
-      await this.stopClient(client)
+      this.stopClient(client)
     }
   }
 
@@ -1346,6 +1354,8 @@ export class CopilotStore extends BaseStore {
         provider: modelConfig.provider,
         streaming: true,
         availableTools: [],
+        enableSessionStore: false,
+        createSessionFsProvider: createCopilotInMemorySessionFsProvider,
         systemMessage: {
           mode: 'append',
           content: ConflictResolutionSystemPrompt,
@@ -1606,7 +1616,7 @@ export class CopilotStore extends BaseStore {
       // We can switch back to `ModelInfo` once the SDK updates its types.
       return await client.listModels()
     } finally {
-      await this.stopClient(client)
+      this.stopClient(client)
     }
   }
 
