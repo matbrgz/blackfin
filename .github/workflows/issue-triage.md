@@ -37,7 +37,7 @@ tools:
   github:
     toolsets: [repos, issues]
     allowed-repos: ["desktop/gh-cli-and-desktop-shared-workflows", "desktop/desktop"]
-    min-integrity: approved
+    min-integrity: none
 
 safe-outputs:
   add-labels:
