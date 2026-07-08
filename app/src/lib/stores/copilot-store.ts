@@ -47,6 +47,7 @@ import type {
   ModelBillingTokenPrices,
 } from '@github/copilot-sdk/dist/generated/rpc'
 import { isGHE } from '../endpoint-capabilities'
+import { getCopilotInMemorySessionFsConfig } from '../copilot-in-memory-session-fs-provider'
 
 /** The default model ID used for Copilot commit message generation. */
 export const DefaultCopilotModel = 'auto'
@@ -808,6 +809,10 @@ export class CopilotStore extends BaseStore {
         }`,
       },
       workingDirectory: repositoryPath,
+      sessionFs: getCopilotInMemorySessionFsConfig(
+        repositoryPath,
+        __WIN32__ ? 'windows' : 'posix'
+      ),
       gitHubToken: account.token,
     })
   }
