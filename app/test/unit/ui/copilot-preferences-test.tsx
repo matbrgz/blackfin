@@ -17,6 +17,7 @@ import { CopilotPreferences } from '../../../src/ui/preferences/copilot'
 import {
   DefaultCopilotModel,
   type CopilotFeature,
+  type ICopilotQuotaSnapshot,
   getCopilotAccountCacheKey,
 } from '../../../src/lib/stores/copilot-store'
 import {
@@ -24,10 +25,7 @@ import {
   type IBYOKProvider,
 } from '../../../src/lib/copilot/byok'
 import { Account } from '../../../src/models/account'
-import type {
-  AccountQuotaSnapshot,
-  Model,
-} from '@github/copilot-sdk/dist/generated/rpc'
+import type { Model } from '@github/copilot-sdk/dist/generated/rpc'
 import { setNumberFormatPreference } from '../../../src/models/formatting-preferences'
 
 interface IAccountOptions {
@@ -144,8 +142,8 @@ const models: ReadonlyArray<Model> = [
 ]
 
 function makeQuotaSnapshot(
-  overrides: Partial<AccountQuotaSnapshot> = {}
-): AccountQuotaSnapshot {
+  overrides: Partial<ICopilotQuotaSnapshot> = {}
+): ICopilotQuotaSnapshot {
   return {
     isUnlimitedEntitlement: false,
     entitlementRequests: 100,
@@ -154,11 +152,12 @@ function makeQuotaSnapshot(
     remainingPercentage: 75,
     overage: 0,
     overageAllowedWithExhaustedQuota: false,
+    tokenBasedBilling: false,
     ...overrides,
   }
 }
 
-const quotaSnapshots = new Map<string, AccountQuotaSnapshot>([
+const quotaSnapshots = new Map<string, ICopilotQuotaSnapshot>([
   ['chat', makeQuotaSnapshot()],
   [
     'premium_interactions',
@@ -675,7 +674,7 @@ describe('CopilotPreferences', () => {
       <CopilotPreferences
         {...defaults()}
         copilotQuotaSnapshots={
-          new Map<string, AccountQuotaSnapshot>([
+          new Map<string, ICopilotQuotaSnapshot>([
             [
               'chat',
               makeQuotaSnapshot({
@@ -683,6 +682,7 @@ describe('CopilotPreferences', () => {
                 entitlementRequests: -1,
                 usedRequests: 0,
                 remainingPercentage: 100,
+                tokenBasedBilling: true,
               }),
             ],
             [
@@ -692,6 +692,7 @@ describe('CopilotPreferences', () => {
                 entitlementRequests: -1,
                 usedRequests: 0,
                 remainingPercentage: 100,
+                tokenBasedBilling: true,
               }),
             ],
             [
@@ -700,6 +701,7 @@ describe('CopilotPreferences', () => {
                 entitlementRequests: 12.5,
                 usedRequests: 2.5,
                 remainingPercentage: 80,
+                tokenBasedBilling: true,
               }),
             ],
           ])

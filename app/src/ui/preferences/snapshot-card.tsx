@@ -1,6 +1,9 @@
 import * as React from 'react'
-import type { AccountQuotaSnapshot } from '@github/copilot-sdk/dist/generated/rpc'
 import { lookupPreferredEmail } from '../../lib/email'
+import type {
+  CopilotQuotaSnapshots,
+  ICopilotQuotaSnapshot,
+} from '../../lib/stores/copilot-store'
 import { isDotComAccount, type Account } from '../../models/account'
 import type { IAvatarUser } from '../../models/avatar'
 import { Avatar } from '../lib/avatar'
@@ -30,12 +33,12 @@ const rateLimitKeys = ['session', 'weekly']
 export interface ICategorizedSnapshot {
   readonly key: string
   readonly displayName: string
-  readonly snapshot: AccountQuotaSnapshot
+  readonly snapshot: ICopilotQuotaSnapshot
 }
 
 interface ISnapshotCardProps {
   readonly account: Account
-  readonly snapshots: ReadonlyMap<string, AccountQuotaSnapshot> | null
+  readonly snapshots: CopilotQuotaSnapshots | null
   readonly onConfigureModels?: (account: Account) => void
 }
 
@@ -45,7 +48,7 @@ interface ISnapshotUsageItemProps {
 }
 
 interface IQuotaProgressBarProps {
-  readonly snapshot: AccountQuotaSnapshot
+  readonly snapshot: ICopilotQuotaSnapshot
 }
 
 function getAccountAvatarUser(account: Account): IAvatarUser {
@@ -65,24 +68,14 @@ function formatAccountType(account: Account): string {
   return `GitHub Enterprise · ${account.friendlyEndpoint}`
 }
 
-function hasTokenBasedBillingSignals(
-  snapshots: ReadonlyMap<string, AccountQuotaSnapshot>
-): boolean {
-  const premiumInteractions = snapshots.get('premium_interactions')
-  const chat = snapshots.get('chat')
-  const completions = snapshots.get('completions')
-
-  if (
-    premiumInteractions === undefined ||
-    premiumInteractions.entitlementRequests <= 0
-  ) {
-    return false
+function hasTokenBasedBilling(snapshots: CopilotQuotaSnapshots): boolean {
+  for (const snapshot of snapshots.values()) {
+    if (snapshot.tokenBasedBilling) {
+      return true
+    }
   }
 
-  return (
-    (chat?.isUnlimitedEntitlement ?? false) &&
-    (completions?.isUnlimitedEntitlement ?? false)
-  )
+  return false
 }
 
 function getSnapshotDisplayName(
@@ -99,7 +92,7 @@ function getSnapshotDisplayName(
   return snapshotDisplayNames[key] ?? key
 }
 
-function getUsedPercentage(snapshot: AccountQuotaSnapshot): number {
+function getUsedPercentage(snapshot: ICopilotQuotaSnapshot): number {
   if (snapshot.isUnlimitedEntitlement) {
     return 0
   }
@@ -126,12 +119,12 @@ function formatAiCreditValue(credits: number): string {
   }).format(credits)
 }
 
-function formatUsedPercentage(snapshot: AccountQuotaSnapshot): string {
+function formatUsedPercentage(snapshot: ICopilotQuotaSnapshot): string {
   return `${getUsedPercentage(snapshot)}%`
 }
 
 function formatUsageTooltip(
-  snapshot: AccountQuotaSnapshot,
+  snapshot: ICopilotQuotaSnapshot,
   displayName: string
 ): string | undefined {
   if (snapshot.isUnlimitedEntitlement || snapshot.entitlementRequests <= 0) {
@@ -183,17 +176,17 @@ function formatResetText(resetDate: string): string | null {
   return `resets in ${days} ${pluralize(days, 'day')}`
 }
 
-function isQuotaVisible(snapshot: AccountQuotaSnapshot): boolean {
+function isQuotaVisible(snapshot: ICopilotQuotaSnapshot): boolean {
   return snapshot.isUnlimitedEntitlement || snapshot.entitlementRequests > 0
 }
 
-function isRateLimitVisible(snapshot: AccountQuotaSnapshot): boolean {
+function isRateLimitVisible(snapshot: ICopilotQuotaSnapshot): boolean {
   return !snapshot.isUnlimitedEntitlement && snapshot.remainingPercentage < 100
 }
 
 function getCategorizedSnapshot(
   key: string,
-  snapshot: AccountQuotaSnapshot,
+  snapshot: ICopilotQuotaSnapshot,
   tokenBasedBilling: boolean
 ): ICategorizedSnapshot {
   return {
@@ -204,7 +197,7 @@ function getCategorizedSnapshot(
 }
 
 export function getVisibleQuotaSnapshots(
-  snapshots: ReadonlyMap<string, AccountQuotaSnapshot>,
+  snapshots: CopilotQuotaSnapshots,
   tokenBasedBilling: boolean
 ): ReadonlyArray<ICategorizedSnapshot> {
   const visibleSnapshots = new Array<ICategorizedSnapshot>()
@@ -231,7 +224,7 @@ export function getVisibleQuotaSnapshots(
 }
 
 export function getVisibleRateLimitSnapshots(
-  snapshots: ReadonlyMap<string, AccountQuotaSnapshot>,
+  snapshots: CopilotQuotaSnapshots,
   tokenBasedBilling: boolean
 ): ReadonlyArray<ICategorizedSnapshot> {
   const visibleSnapshots = new Array<ICategorizedSnapshot>()
@@ -358,10 +351,8 @@ function renderLoadingSnapshots(): JSX.Element {
   return <p className="copilot-usage-empty">Loading Copilot usage…</p>
 }
 
-function renderSnapshots(
-  snapshots: ReadonlyMap<string, AccountQuotaSnapshot>
-): JSX.Element {
-  const tokenBasedBilling = hasTokenBasedBillingSignals(snapshots)
+function renderSnapshots(snapshots: CopilotQuotaSnapshots): JSX.Element {
+  const tokenBasedBilling = hasTokenBasedBilling(snapshots)
   const rateLimits = getVisibleRateLimitSnapshots(snapshots, tokenBasedBilling)
   const quotas = getVisibleQuotaSnapshots(snapshots, tokenBasedBilling)
 

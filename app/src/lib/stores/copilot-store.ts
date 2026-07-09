@@ -132,8 +132,17 @@ interface ICopilotQuotaCacheEntry {
  */
 export type CopilotModelSelections = Partial<Record<CopilotFeature, string>>
 
+/**
+ * Quota snapshots type from SDK, expanding it with the tokenBasedBilling field.
+ * This shouldn't be necessary once the SDK is updated to include this field in
+ * the generated types.
+ */
+export interface ICopilotQuotaSnapshot extends AccountQuotaSnapshot {
+  readonly tokenBasedBilling: boolean
+}
+
 /** Quota snapshots returned by the Copilot SDK, keyed by quota type. */
-export type CopilotQuotaSnapshots = ReadonlyMap<string, AccountQuotaSnapshot>
+export type CopilotQuotaSnapshots = ReadonlyMap<string, ICopilotQuotaSnapshot>
 
 /** Copilot models keyed by account cache key. */
 export type CopilotModelsByAccount = ReadonlyMap<
@@ -154,6 +163,16 @@ export type CopilotQuotaSnapshotsByAccount = ReadonlyMap<
 const ModelListCacheTTL = 10 * 60 * 1000
 
 const QuotaSnapshotsCacheTTL = 10 * 60 * 1000
+
+function isCopilotQuotaSnapshot(
+  snapshot: AccountQuotaSnapshot | undefined
+): snapshot is ICopilotQuotaSnapshot {
+  return (
+    snapshot !== undefined &&
+    'tokenBasedBilling' in snapshot &&
+    typeof snapshot.tokenBasedBilling === 'boolean'
+  )
+}
 
 /** Returns the cache key used for account-scoped Copilot metadata. */
 export function getCopilotAccountCacheKey(account: Account): string {
@@ -1633,8 +1652,8 @@ export class CopilotStore extends BaseStore {
 
       return new Map(
         Object.entries(result.quotaSnapshots).filter(
-          (entry): entry is [string, AccountQuotaSnapshot] =>
-            entry[1] !== undefined
+          (entry): entry is [string, ICopilotQuotaSnapshot] =>
+            isCopilotQuotaSnapshot(entry[1])
         )
       )
     } finally {
