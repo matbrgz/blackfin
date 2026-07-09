@@ -182,10 +182,12 @@ export class TestCopilotSnapshotCardDialog extends React.Component<
               snapshots={this.getSnapshots()}
             />
           </div>
-          {this.renderAccountControls()}
-          {snapshotDefinitions.map(snapshot =>
-            this.renderSnapshotControls(snapshot)
-          )}
+          <div className="test-copilot-snapshot-card-controls">
+            {this.renderAccountControls()}
+            {snapshotDefinitions.map(snapshot =>
+              this.renderSnapshotControls(snapshot)
+            )}
+          </div>
         </DialogContent>
         <DialogFooter>
           <Button type="button" onClick={this.onUseTokenBasedBillingPreset}>

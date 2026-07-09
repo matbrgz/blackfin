@@ -53,6 +53,24 @@ describe('TestCopilotSnapshotCardDialog', () => {
     assert.ok(within(preview).getByText('Premium requests'))
   })
 
+  it('keeps the preview separate from the scrollable controls', () => {
+    const view = renderDialog()
+    const content = view.container.querySelector('.dialog-content')
+    const preview = view.container.querySelector(
+      '.test-copilot-snapshot-card-preview'
+    )
+    const controls = view.container.querySelector(
+      '.test-copilot-snapshot-card-controls'
+    )
+
+    assert.ok(content instanceof HTMLElement)
+    assert.ok(preview instanceof HTMLElement)
+    assert.ok(controls instanceof HTMLElement)
+    assert.strictEqual(content.children[0], preview)
+    assert.strictEqual(content.children[1], controls)
+    assert.strictEqual(controls.contains(screen.getByLabelText('Login')), true)
+  })
+
   it('uses the first available account as the fake account default', () => {
     const view = renderDialog([makeAccount()])
     const preview = view.container.querySelector(
