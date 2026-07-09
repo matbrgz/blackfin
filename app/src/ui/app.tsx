@@ -195,6 +195,7 @@ import { showTestUI } from './lib/test-ui-components/test-ui-components'
 import { ConfirmCommitFilteredChanges } from './changes/confirm-commit-filtered-changes-dialog'
 import { AboutTestDialog } from './about/about-test-dialog'
 import { TestCLIActionDialog } from './cli-action/test-cli-action-dialog'
+import { TestCopilotSnapshotCardDialog } from './preferences/test-copilot-snapshot-card-dialog'
 import {
   enableCopilotSdkCommitMessageGeneration,
   enableWorktreeSupport,
@@ -2775,6 +2776,14 @@ export class App extends React.Component<IAppProps, IAppState> {
           <TestCLIActionDialog
             key="test-cli-action"
             dispatcher={this.props.dispatcher}
+            onDismissed={onPopupDismissedFn}
+          />
+        )
+      case PopupType.TestCopilotSnapshotCard:
+        return (
+          <TestCopilotSnapshotCardDialog
+            key="test-copilot-snapshot-card"
+            accounts={this.state.accounts}
             onDismissed={onPopupDismissedFn}
           />
         )

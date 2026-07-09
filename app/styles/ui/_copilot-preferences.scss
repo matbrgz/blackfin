@@ -13,7 +13,8 @@
 }
 
 #preferences,
-.copilot-settings-dialog {
+.copilot-settings-dialog,
+#test-copilot-snapshot-card {
   .copilot-section {
     min-width: 0;
 
@@ -363,6 +364,41 @@
     .copilot-model-picker-cost-details-row:not(:last-child) {
       margin-bottom: var(--spacing-third);
     }
+  }
+}
+
+#test-copilot-snapshot-card {
+  .dialog-content {
+    max-height: calc(100vh - 200px);
+    overflow-y: auto;
+  }
+
+  .test-copilot-snapshot-card-preview {
+    margin-bottom: var(--spacing-double);
+  }
+
+  .test-copilot-snapshot-card-fieldset {
+    padding: 0;
+    margin: 0 0 var(--spacing-double);
+    border: none;
+
+    > legend {
+      padding: 0;
+      margin-bottom: var(--spacing-half);
+      font-weight: var(--font-weight-semibold);
+    }
+  }
+
+  .test-copilot-snapshot-card-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--spacing);
+  }
+
+  .test-copilot-snapshot-card-checkbox-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing);
   }
 }
 
