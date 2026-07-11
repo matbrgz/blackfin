@@ -204,10 +204,17 @@ export class AppWindow {
       this.window.webContents.setVisualZoomLevelLimits(1, 1)
     })
 
-    this.window.webContents.on('did-fail-load', () => {
-      this.window.webContents.openDevTools()
-      this.window.show()
-    })
+    this.window.webContents.on(
+      'did-fail-load',
+      (event, errorCode, errorDescription, validatedURL, isMainFrame) => {
+        // Ignore in subframes (like PR quick view)
+        if (!isMainFrame) {
+          return
+        }
+        this.window.webContents.openDevTools()
+        this.window.show()
+      }
+    )
 
     const rendererReadyListener = ipcMain.on(
       'renderer-ready',
