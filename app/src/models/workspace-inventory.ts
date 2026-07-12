@@ -60,6 +60,21 @@ export enum ArtifactKind {
   Coverage = 'coverage',
 }
 
+/**
+ * Where a piece of agent context lives, and therefore how far it reaches.
+ *
+ * This distinction is the whole reason to show global context at all. A rule in
+ * `~/.claude/CLAUDE.md` applies to every project you touch, and it is invisible
+ * from inside any of them — so when an agent does something surprising in one
+ * repository, the cause may well be a file that repository has never heard of.
+ */
+export enum ContextScope {
+  /** The user's home directory. Applies to every project on this machine. */
+  Global = 'global',
+  /** Inside a repository. Applies to that project only. */
+  Project = 'project',
+}
+
 export interface IHeading {
   readonly level: number
   readonly text: string
@@ -80,6 +95,7 @@ export interface IContextReference {
 export interface IContextFile {
   readonly agent: AgentId
   readonly role: ContextRole
+  readonly scope: ContextScope
   readonly relativePath: string
   readonly byteLength: number
   readonly lineCount: number
@@ -178,4 +194,23 @@ export function contextFilesWithRole(
   role: ContextRole
 ): ReadonlyArray<IContextFile> {
   return inventory.contextFiles.filter(f => f.role === role)
+}
+
+/**
+ * The agent context in the user's home directory, which applies to every
+ * project on this machine.
+ */
+export interface IGlobalContext {
+  readonly homePath: string
+  readonly scannedAt: number
+  readonly status: InventoryStatus
+  readonly contextFiles: ReadonlyArray<IContextFile>
+}
+
+export function emptyGlobalContext(
+  homePath: string,
+  scannedAt: number,
+  status: InventoryStatus
+): IGlobalContext {
+  return { homePath, scannedAt, status, contextFiles: [] }
 }

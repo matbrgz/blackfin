@@ -1,9 +1,9 @@
 {
   "repository": {
     "type": "git",
-    "url": "https://github.com/pol-rivero/desktop-plus.git"
+    "url": "https://github.com/pol-rivero/blackfin.git"
   },
-  "description": "Desktop Plus build dependencies",
+  "description": "Blackfin build dependencies",
   "scripts": {
     "cli": "ts-node app/src/cli/main.ts",
     "check:eslint": "tsc -P eslint-rules/",
@@ -52,8 +52,8 @@
   },
   "author": {
     "name": "Pol Rivero",
-    "email": "admin@desktop-plus.org",
-    "url": "https://desktop-plus.org/"
+    "email": "admin@blackfin.dev",
+    "url": "https://github.com/matbrgz/blackfin/"
   },
   "license": "MIT",
   "engines": {

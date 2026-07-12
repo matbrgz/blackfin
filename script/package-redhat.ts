@@ -65,15 +65,15 @@ const options: RedhatOptions = {
   dest: distRoot,
   arch: getArchitecture(),
   version: getVersion(),
-  name: 'desktop-plus',
+  name: 'blackfin',
   description:
     'GitHub Desktop fork with advanced functionality and improvements.',
-  productName: 'Desktop Plus',
+  productName: 'Blackfin',
   productDescription:
     'GitHub Desktop fork with advanced functionality and improvements.',
   genericName: 'Git Client',
   categories: ['Development', 'GitHub'],
-  homepage: 'https://desktop-plus.org',
+  homepage: 'https://github.com/matbrgz/blackfin',
   requires: [
     // dugite-native dependencies
     '(libcurl or libcurl4)',
@@ -121,12 +121,12 @@ export async function packageRedhat(): Promise<string> {
     await originalCreateSpec.call(this)
     let specContent: string = await readFile(this.specPath, 'utf8')
 
-    // The RPM package was renamed from "github-desktop-plus" to "desktop-plus".
+    // The RPM package was renamed from "github-blackfin" to "blackfin".
     // Declaring Obsoletes/Provides for the old name makes `dnf upgrade` migrate
     // existing users by replacing the old package with this one.
     const renameDirectives =
-      'Provides: github-desktop-plus = %{version}-%{release}\n' +
-      'Obsoletes: github-desktop-plus < %{version}-%{release}'
+      'Provides: github-blackfin = %{version}-%{release}\n' +
+      'Obsoletes: github-blackfin < %{version}-%{release}'
     specContent = specContent.replace(
       /^Requires:.*$/m,
       match => `${match}\n${renameDirectives}`
@@ -162,7 +162,7 @@ export async function packageRedhat(): Promise<string> {
     Installer.prototype.createSpec = originalCreateSpec
     restoreIconName()
   }
-  const installersPath = `${distRoot}/desktop-plus*.rpm`
+  const installersPath = `${distRoot}/blackfin*.rpm`
 
   const files = await globPromise(installersPath)
 
@@ -174,7 +174,7 @@ export async function packageRedhat(): Promise<string> {
 
   const oldPath = files[0]
 
-  const newFileName = `DesktopPlus-v${getVersion()}-linux-${getArchitectureForFileName()}.rpm`
+  const newFileName = `Blackfin-v${getVersion()}-linux-${getArchitectureForFileName()}.rpm`
   const newPath = join(distRoot, newFileName)
   await rename(oldPath, newPath)
 

@@ -2,7 +2,7 @@ import * as React from 'react'
 import memoizeOne from 'memoize-one'
 import { WindowState } from '../../lib/window-state'
 import { WindowControls } from './window-controls'
-import { desktopPlusLogo } from '../octicons/desktop-plus-logo'
+import { desktopPlusLogo } from '../octicons/blackfin-logo'
 import { Octicon } from '../octicons/octicon'
 import { isMacOSBigSurOrLater, isMacOSTahoeOrLater } from '../../lib/get-os'
 import {

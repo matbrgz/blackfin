@@ -414,7 +414,7 @@ describe('CopilotPreferences', () => {
 
     assert.ok(
       screen.getByText(
-        'Copilot features in Desktop Plus require a GitHub Copilot license.'
+        'Copilot features in Blackfin require a GitHub Copilot license.'
       )
     )
 
@@ -499,7 +499,7 @@ describe('CopilotPreferences', () => {
 
     assert.ok(
       screen.getByText(
-        'Copilot features in Desktop Plus require a GitHub Copilot license.'
+        'Copilot features in Blackfin require a GitHub Copilot license.'
       )
     )
     assert.strictEqual(screen.queryByRole('combobox'), null)

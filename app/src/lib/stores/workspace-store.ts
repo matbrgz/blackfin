@@ -1,7 +1,13 @@
+import { homedir } from 'os'
 import { BaseStore } from './base-store'
 import { WorkspaceDatabase } from '../databases/workspace-database'
-import { IRepositoryInventory } from '../../models/workspace-inventory'
+import {
+  IGlobalContext,
+  IRepositoryInventory,
+  emptyGlobalContext,
+} from '../../models/workspace-inventory'
 import { scanRepository } from '../workspace/scan'
+import { scanGlobalContext } from '../workspace/scan-global'
 import {
   CleanupOutcome,
   deleteArtifact,
@@ -52,8 +58,26 @@ export class WorkspaceStore extends BaseStore {
     super()
   }
 
+  /**
+   * The agent context in the user's home directory. Held in memory only — it is
+   * one directory tree, it scans in milliseconds, and caching it would buy
+   * nothing but a chance to show something stale.
+   */
+  private globalContext: IGlobalContext = emptyGlobalContext(homedir(), 0, {
+    kind: 'ok',
+  })
+
   public getInventories(): ReadonlyMap<number, IRepositoryInventory> {
     return this.inventories
+  }
+
+  public getGlobalContext(): IGlobalContext {
+    return this.globalContext
+  }
+
+  public async rescanGlobalContext(): Promise<void> {
+    this.globalContext = await scanGlobalContext(homedir(), this.now())
+    this.emitUpdate()
   }
 
   public getInventory(repositoryId: number): IRepositoryInventory | null {
@@ -90,6 +114,8 @@ export class WorkspaceStore extends BaseStore {
     this.abortController?.abort()
     const controller = new AbortController()
     this.abortController = controller
+
+    await this.rescanGlobalContext()
 
     // Drop cached rows for repositories the user has since removed, so the
     // center doesn't report on projects that are gone.

@@ -77,6 +77,7 @@ import {
   openRepositoryInNewWindow,
   setWindowTitle,
   setWindowSelectedRepository,
+  showOpenDialog,
 } from './main-process-proxy'
 import { DiscardChanges } from './discard-changes'
 import { Welcome } from './welcome'
@@ -104,7 +105,7 @@ import { Publish } from './publish-repository'
 import { Acknowledgements } from './acknowledgements'
 import { UntrustedCertificate } from './untrusted-certificate'
 import { NoRepositoriesView } from './no-repositories'
-import { WorkspaceCenter, Lens } from './workspace/workspace-center'
+import { WorkspaceCenter } from './workspace/workspace-center'
 import { HomeView } from './home/home-view'
 import { AppRail } from './rail/app-rail'
 import { AppSection } from '../models/app-section'
@@ -1168,10 +1169,10 @@ export class App extends React.Component<IAppProps, IAppState> {
         repository instanceof Repository
           ? repository.alias ?? repository.name
           : repository.name
-      return `${repositoryTitle} - Desktop Plus`
+      return `${repositoryTitle} - Blackfin`
     }
 
-    return 'Desktop Plus'
+    return 'Blackfin'
   }
 
   private updateWindowTitle() {
@@ -3478,11 +3479,9 @@ export class App extends React.Component<IAppProps, IAppState> {
       case AppSection.Code:
         return this.renderRepository()
       case AppSection.Agents:
-        return this.renderWorkspaceCenter(Lens.Agents)
       case AppSection.Docs:
-        return this.renderWorkspaceCenter(Lens.Docs)
       case AppSection.Disk:
-        return this.renderWorkspaceCenter(Lens.Disk)
+        return this.renderWorkspaceCenter(this.state.selectedAppSection)
       default:
         return assertNever(
           this.state.selectedAppSection,
@@ -3498,6 +3497,7 @@ export class App extends React.Component<IAppProps, IAppState> {
         inventories={this.state.workspaceInventories}
         progress={this.state.workspaceScanProgress}
         onRescan={this.onRescanWorkspace}
+        onAddFolder={this.onAddWorkspaceFolder}
         onOpenRepository={this.onWorkspaceSelectRepository}
         onNavigate={this.onSelectAppSection}
       />
@@ -4166,6 +4166,28 @@ export class App extends React.Component<IAppProps, IAppState> {
     this.props.dispatcher.rescanWorkspace()
   }
 
+  /**
+   * Pick a folder, and add every git repository inside it. A control center
+   * should take your work wholesale, not one project at a time.
+   */
+  private onAddWorkspaceFolder = async () => {
+    const path = await showOpenDialog({
+      properties: ['createDirectory', 'openDirectory'],
+    })
+
+    if (path === null) {
+      return
+    }
+
+    const added = await this.props.dispatcher.addRepositoriesFromFolder(path)
+
+    if (added.length === 0) {
+      this.props.dispatcher.postError(
+        new Error(`No git repositories were found in ${path}.`)
+      )
+    }
+  }
+
   /** Opening a project from anywhere lands you in the git client, on it. */
   private onWorkspaceSelectRepository = (repository: Repository) => {
     this.props.dispatcher.selectRepository(repository)
@@ -4195,18 +4217,28 @@ export class App extends React.Component<IAppProps, IAppState> {
     )
   }
 
-  private renderWorkspaceCenter(lens: Lens) {
+  private renderWorkspaceCenter(section: AppSection) {
     return (
       <WorkspaceCenter
-        lens={lens}
+        section={section}
         repositories={this.workspaceRepositories()}
         inventories={this.state.workspaceInventories}
+        globalContext={this.state.globalAgentContext}
         progress={this.state.workspaceScanProgress}
         onRescan={this.onRescanWorkspace}
         onCleanUp={this.onWorkspaceCleanUp}
         onOpenFile={this.onWorkspaceOpenFile}
+        onOpenPath={this.onWorkspaceOpenPath}
       />
     )
+  }
+
+  /**
+   * Global context files live outside any repository, so there is no repository
+   * to open them in. The OS knows what to do with a markdown file.
+   */
+  private onWorkspaceOpenPath = (absolutePath: string) => {
+    shell.showItemInFolder(absolutePath)
   }
 
   private renderRepository() {

@@ -279,3 +279,65 @@
     color: var(--text-secondary-color);
   }
 }
+
+.workspace-scopes {
+  display: flex;
+  gap: var(--spacing-half);
+  padding: var(--spacing) var(--spacing-double);
+  border-bottom: var(--base-border);
+}
+
+.workspace-scope {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-half);
+
+  padding: var(--spacing-half) var(--spacing);
+  border: none;
+  border-radius: var(--border-radius);
+
+  background: transparent;
+  color: var(--text-secondary-color);
+  cursor: pointer;
+
+  &:hover {
+    background: var(--box-alt-background-color);
+    color: var(--text-color);
+  }
+
+  &.selected {
+    background: var(--box-selected-background-color);
+    color: var(--box-selected-text-color);
+  }
+}
+
+.workspace-scope-count {
+  padding: 0 var(--spacing-half);
+  border-radius: 8px;
+  background: var(--box-alt-background-color);
+  font-size: var(--font-size-sm);
+  font-variant-numeric: tabular-nums;
+}
+
+.workspace-global-note {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-half);
+
+  margin: var(--spacing);
+  padding: var(--spacing);
+  border: var(--base-border);
+  border-radius: var(--border-radius);
+
+  background: var(--box-alt-background-color);
+  color: var(--text-secondary-color);
+
+  .octicon {
+    fill: currentColor;
+    flex-shrink: 0;
+  }
+}
+
+.workspace-global .workspace-detail {
+  border-top: none;
+}

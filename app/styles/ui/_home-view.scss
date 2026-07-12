@@ -23,6 +23,13 @@
     }
   }
 
+  .home-actions {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing);
+    flex-shrink: 0;
+  }
+
   .home-progress {
     color: var(--text-secondary-color);
   }
@@ -194,6 +201,18 @@
   }
 
   .home-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--spacing-half);
     color: var(--text-secondary-color);
+
+    p {
+      margin: 0;
+    }
+
+    button {
+      margin-top: var(--spacing-half);
+    }
   }
 }

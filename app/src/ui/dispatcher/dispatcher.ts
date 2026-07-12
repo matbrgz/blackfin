@@ -383,6 +383,13 @@ export class Dispatcher {
     return this.appStore._rescanWorkspace()
   }
 
+  /** Find every git repository inside a folder and add them all. */
+  public addRepositoriesFromFolder(
+    path: string
+  ): Promise<ReadonlyArray<Repository>> {
+    return this.appStore._addRepositoriesFromFolder(path)
+  }
+
   /** Move the given reclaimable directories to the trash. */
   public cleanUpWorkspace(
     repository: Repository,

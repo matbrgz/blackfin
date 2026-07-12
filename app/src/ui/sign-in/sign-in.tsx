@@ -36,8 +36,8 @@ const DefaultTitle = 'Sign in'
 
 const browserSignInInfoContent = (
   <p>
-    Your browser will redirect you back to Desktop Plus once you've signed in.
-    If your browser asks for your permission to launch Desktop Plus, please
+    Your browser will redirect you back to Blackfin once you've signed in.
+    If your browser asks for your permission to launch Blackfin, please
     allow it.
   </p>
 )

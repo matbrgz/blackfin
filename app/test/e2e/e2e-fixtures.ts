@@ -101,7 +101,7 @@ export function terminateWindowsUpdaterProcesses() {
     return
   }
 
-  for (const imageName of ['Update.exe', 'DesktopPlus.exe']) {
+  for (const imageName of ['Update.exe', 'Blackfin.exe']) {
     spawnSync('taskkill', ['/F', '/T', '/IM', imageName], {
       stdio: 'ignore',
       windowsHide: true,

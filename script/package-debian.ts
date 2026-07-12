@@ -75,17 +75,17 @@ const options: DebianOptions = {
   dest: distRoot,
   arch: getArchitecture(),
   version: getVersion(),
-  name: 'desktop-plus',
+  name: 'blackfin',
   description:
     'GitHub Desktop fork with advanced functionality and improvements.',
-  productName: 'Desktop Plus',
+  productName: 'Blackfin',
   productDescription:
     'GitHub Desktop fork with advanced functionality and improvements.',
   genericName: 'Git Client',
   categories: ['Development', 'GitHub'],
   section: 'GNOME;GTK;Development',
   priority: 'extra',
-  homepage: 'https://desktop-plus.org',
+  homepage: 'https://github.com/matbrgz/blackfin',
   depends: [
     // dugite-native dependencies
     'libcurl3 | libcurl4',
@@ -115,7 +115,7 @@ const options: DebianOptions = {
     // see https://github.com/shiftkey/desktop/issues/72 for more details
     'x-scheme-handler/x-github-desktop-dev-auth',
   ],
-  maintainer: 'Pol Rivero <admin@desktop-plus.org>',
+  maintainer: 'Pol Rivero <admin@blackfin.dev>',
   desktopTemplate: 'script/resources/deb/desktop.ejs',
 }
 
@@ -132,7 +132,7 @@ export async function packageDebian(): Promise<string> {
   } finally {
     restoreIconName()
   }
-  const installersPath = `${distRoot}/desktop-plus*.deb`
+  const installersPath = `${distRoot}/blackfin*.deb`
 
   const files = await globPromise(installersPath)
 
@@ -144,7 +144,7 @@ export async function packageDebian(): Promise<string> {
 
   const oldPath = files[0]
 
-  const newFileName = `DesktopPlus-v${getVersion()}-linux-${getArchitectureForFileName()}.deb`
+  const newFileName = `Blackfin-v${getVersion()}-linux-${getArchitectureForFileName()}.deb`
   const newPath = join(distRoot, newFileName)
   await rename(oldPath, newPath)
 
@@ -160,14 +160,14 @@ export async function packageTransitionalDebian(): Promise<string> {
   const version = getVersion()
 
   const stagingDir = await mkdtemp(
-    join(tmpdir(), 'github-desktop-plus-transitional-')
+    join(tmpdir(), 'github-blackfin-transitional-')
   )
   const debianDir = join(stagingDir, 'DEBIAN')
   await ensureDir(debianDir)
 
   const control =
     [
-      `Package: github-desktop-plus`,
+      `Package: github-blackfin`,
       `Version: ${version}`,
       `Architecture: ${arch}`,
       `Maintainer: ${options.maintainer}`,
@@ -175,8 +175,8 @@ export async function packageTransitionalDebian(): Promise<string> {
       `Section: devel`,
       `Priority: optional`,
       `Homepage: ${options.homepage}`,
-      `Description: Transitional package for Desktop Plus`,
-      ` GitHub Desktop Plus has been renamed to Desktop Plus. This dummy package`,
+      `Description: Transitional package for Blackfin`,
+      ` GitHub Blackfin has been renamed to Blackfin. This dummy package`,
       ` depends on the new "${options.name}" package and can be safely removed`,
       ` once the migration is complete.`,
     ].join('\n') + '\n'
@@ -187,7 +187,7 @@ export async function packageTransitionalDebian(): Promise<string> {
   // what dpkg-name produces, the "_arch" suffix (vs. the real package's
   // "-x86_64"/"-arm64") keeps this out of the release_aur job's
   // "*-x86_64.deb"/"*-arm64.deb" globs, which expect a single match.
-  const newFileName = `github-desktop-plus_${version}_${arch}.deb`
+  const newFileName = `github-blackfin_${version}_${arch}.deb`
   const newPath = join(distRoot, newFileName)
 
   execFileSync('fakeroot', ['dpkg-deb', '--build', stagingDir, newPath], {

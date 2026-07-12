@@ -1,21 +1,21 @@
 {
   "$NOTE": "NOTE: Do not edit the 'version' field, as that will cause merge conflicts with upstream. The version is set using env.APP_VERSION.",
-  "name": "desktop-plus",
-  "desktopName": "desktop-plus.desktop",
-  "productName": "Desktop Plus",
-  "bundleID": "org.desktop-plus.DesktopPlus",
-  "companyName": "Desktop Plus",
+  "name": "blackfin",
+  "desktopName": "blackfin.desktop",
+  "productName": "Blackfin",
+  "bundleID": "dev.blackfin.Blackfin",
+  "companyName": "Blackfin",
   "version": "3.6.3-beta3",
   "main": "./main.js",
   "repository": {
     "type": "git",
-    "url": "https://github.com/desktop-plus/desktop-plus.git"
+    "url": "https://github.com/matbrgz/blackfin.git"
   },
-  "description": "Simple collaboration from your desktop",
+  "description": "The Agentic Control Center for Developers",
   "author": {
-    "name": "Desktop Plus",
-    "email": "admin@desktop-plus.org",
-    "url": "https://desktop-plus.org/"
+    "name": "Blackfin",
+    "email": "admin@blackfin.dev",
+    "url": "https://github.com/matbrgz/blackfin/"
   },
   "license": "MIT",
   "dependencies": {

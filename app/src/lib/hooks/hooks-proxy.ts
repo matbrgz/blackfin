@@ -83,7 +83,7 @@ const readStdin = (stream: NodeJS.ReadableStream) =>
   })
 
 const createStdinFile = async (content: Buffer) => {
-  const dir = await mkdtemp(join(tmpdir(), 'desktop-plus-hooks-'))
+  const dir = await mkdtemp(join(tmpdir(), 'blackfin-hooks-'))
   const filePath = join(dir, 'stdin.txt')
 
   await writeFile(filePath, content)

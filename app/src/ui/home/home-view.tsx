@@ -114,6 +114,7 @@ interface IHomeViewProps {
   readonly inventories: ReadonlyMap<number, IRepositoryInventory>
   readonly progress: IScanProgress
   readonly onRescan: () => void
+  readonly onAddFolder: () => void
   readonly onOpenRepository: (repository: Repository) => void
   readonly onNavigate: (section: AppSection) => void
 }
@@ -147,15 +148,21 @@ export class HomeView extends React.Component<IHomeViewProps> {
           <p>Agentic control center</p>
         </div>
 
-        {progress.scanning ? (
-          <span className="home-progress">
-            Scanning {progress.completed} of {progress.total}…
-          </span>
-        ) : (
-          <Button onClick={this.props.onRescan}>
-            <Octicon symbol={octicons.sync} /> Rescan
+        <div className="home-actions">
+          <Button onClick={this.props.onAddFolder}>
+            <Octicon symbol={octicons.fileDirectory} /> Add folder…
           </Button>
-        )}
+
+          {progress.scanning ? (
+            <span className="home-progress">
+              Scanning {progress.completed} of {progress.total}…
+            </span>
+          ) : (
+            <Button onClick={this.props.onRescan}>
+              <Octicon symbol={octicons.sync} /> Rescan
+            </Button>
+          )}
+        </div>
       </header>
     )
   }
@@ -272,7 +279,16 @@ export class HomeView extends React.Component<IHomeViewProps> {
     if (repositories.length === 0) {
       return (
         <section className="home-projects">
-          <p className="home-empty">No projects yet.</p>
+          <div className="home-empty">
+            <p>No projects yet.</p>
+            <p>
+              Point Blackfin at the folder your projects live in and it will
+              find them.
+            </p>
+            <Button onClick={this.props.onAddFolder}>
+              <Octicon symbol={octicons.fileDirectory} /> Add folder…
+            </Button>
+          </div>
         </section>
       )
     }

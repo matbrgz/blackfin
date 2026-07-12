@@ -1,4 +1,7 @@
-import { IRepositoryInventory } from '../models/workspace-inventory'
+import {
+  IGlobalContext,
+  IRepositoryInventory,
+} from '../models/workspace-inventory'
 import { AppSection } from '../models/app-section'
 import { IScanProgress } from './stores/workspace-store'
 import type { CopilotModelSelections } from './stores/copilot-store'
@@ -110,6 +113,12 @@ export interface IAppState {
 
   /** The workspace inventory for each repository, keyed by repository id. */
   readonly workspaceInventories: ReadonlyMap<number, IRepositoryInventory>
+
+  /**
+   * The agent context in the user's home directory, which applies to every
+   * project on this machine.
+   */
+  readonly globalAgentContext: IGlobalContext
 
   /** Progress of the workspace scan currently in flight, if there is one. */
   readonly workspaceScanProgress: IScanProgress

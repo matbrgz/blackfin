@@ -1,14 +1,14 @@
 #!/bin/bash
 
-INSTALL_DIR="/usr/lib/desktop-plus"
+INSTALL_DIR="/usr/lib/blackfin"
 CLI_DIR="$INSTALL_DIR/resources/app/static"
-CLI_INSTALL_TARGET="/usr/bin/desktop-plus-cli"
+CLI_INSTALL_TARGET="/usr/bin/blackfin-cli"
 
 # add executable permissions for CLI interface
-chmod +x "$CLI_DIR"/desktop-plus-cli || :
+chmod +x "$CLI_DIR"/blackfin-cli || :
 
 # create symbolic links to /usr/bin directory
-ln -f -s "$CLI_DIR"/desktop-plus-cli "$CLI_INSTALL_TARGET" || :
+ln -f -s "$CLI_DIR"/blackfin-cli "$CLI_INSTALL_TARGET" || :
 
 # https://github.com/shiftkey/desktop/issues/21
 if [ ! -f /usr/lib64/libcurl-gnutls.so.4 ]; then

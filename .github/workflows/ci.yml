@@ -288,9 +288,9 @@ jobs:
       - name: Install app on macOS
         if: runner.os == 'macOS'
         run: |
-          rm -rf "/Applications/Desktop Plus.app"
-          ditto "dist/Desktop Plus-darwin-arm64/Desktop Plus.app" "/Applications/Desktop Plus.app"
-          echo "DESKTOP_E2E_APP_PATH=/Applications/Desktop Plus.app/Contents/MacOS/Desktop Plus" >> "$GITHUB_ENV"
+          rm -rf "/Applications/Blackfin.app"
+          ditto "dist/Blackfin-darwin-arm64/Blackfin.app" "/Applications/Blackfin.app"
+          echo "DESKTOP_E2E_APP_PATH=/Applications/Blackfin.app/Contents/MacOS/Blackfin" >> "$GITHUB_ENV"
       - name: Install app on Windows
         if: runner.os == 'Windows'
         shell: pwsh
@@ -298,7 +298,7 @@ jobs:
           function Write-SquirrelLogs {
             $logPaths = @(
               "$env:LOCALAPPDATA\SquirrelSetup.log",
-              "$env:LOCALAPPDATA\DesktopPlus\SquirrelSetup.log"
+              "$env:LOCALAPPDATA\Blackfin\SquirrelSetup.log"
             )
 
             foreach ($logPath in $logPaths) {
@@ -309,7 +309,7 @@ jobs:
             }
           }
 
-          $setupExe = Get-ChildItem "dist/DesktopPlus-*-windows-${{ matrix.arch }}.exe" -ErrorAction SilentlyContinue |
+          $setupExe = Get-ChildItem "dist/Blackfin-*-windows-${{ matrix.arch }}.exe" -ErrorAction SilentlyContinue |
             Sort-Object FullName -Descending |
             Select-Object -First 1 -ExpandProperty FullName
 
@@ -326,11 +326,11 @@ jobs:
             throw "Windows installer timed out after 300 seconds"
           }
 
-          Get-Process DesktopPlus -ErrorAction SilentlyContinue | Stop-Process -Force
+          Get-Process Blackfin -ErrorAction SilentlyContinue | Stop-Process -Force
 
           $installedExe = $null
           for ($attempt = 0; $attempt -lt 30 -and -not $installedExe; $attempt++) {
-            $installedExe = Get-ChildItem "$env:LOCALAPPDATA\DesktopPlus\app-*\DesktopPlus.exe" -ErrorAction SilentlyContinue |
+            $installedExe = Get-ChildItem "$env:LOCALAPPDATA\Blackfin\app-*\Blackfin.exe" -ErrorAction SilentlyContinue |
               Sort-Object FullName -Descending |
               Select-Object -First 1 -ExpandProperty FullName
 
@@ -341,7 +341,7 @@ jobs:
 
           if (-not $installedExe) {
             Write-SquirrelLogs
-            throw "Unable to locate installed Desktop Plus executable"
+            throw "Unable to locate installed Blackfin executable"
           }
 
           Add-Content -Path $env:GITHUB_ENV -Value "DESKTOP_E2E_APP_PATH=$installedExe"
@@ -379,7 +379,7 @@ jobs:
       - name: Read release notes
         id: release_notes
         run: |
-          RELEASE_NOTES_FILE=".github/desktop-plus-release-notes.md"
+          RELEASE_NOTES_FILE=".github/blackfin-release-notes.md"
           TITLE=$(head -n 1 "$RELEASE_NOTES_FILE")
           BODY=$(tail -n +3 "$RELEASE_NOTES_FILE")
           echo "title=$TITLE" >> $GITHUB_OUTPUT
@@ -395,13 +395,13 @@ jobs:
           name: ${{ steps.release_notes.outputs.title }}
           body: ${{ steps.release_notes.outputs.body }}
           files: |
-            artifacts/**/DesktopPlus-*.AppImage
-            artifacts/**/DesktopPlus-*.AppImage.zsync
-            artifacts/**/DesktopPlus-*.deb
-            artifacts/**/DesktopPlus-*.rpm
-            artifacts/**/DesktopPlus-*.exe
-            artifacts/**/DesktopPlus-*.msi
-            artifacts/**/DesktopPlus-*.zip
+            artifacts/**/Blackfin-*.AppImage
+            artifacts/**/Blackfin-*.AppImage.zsync
+            artifacts/**/Blackfin-*.deb
+            artifacts/**/Blackfin-*.rpm
+            artifacts/**/Blackfin-*.exe
+            artifacts/**/Blackfin-*.msi
+            artifacts/**/Blackfin-*.zip
           draft: false
           fail_on_unmatched_files: true
         env:
@@ -457,7 +457,7 @@ jobs:
             fi
             sed -i "s/\[\[APP_VERSION\]\]/${APP_VERSION}/" $PKGBUILD_FILE
             sed -i "s/\[\[NODE_CODENAME\]\]/${NODE_CODENAME}/" $PKGBUILD_FILE
-            desktop_file_sha256=$(sha256sum $AUR_DIR/desktop-plus.desktop | awk '{ print $1 }')
+            desktop_file_sha256=$(sha256sum $AUR_DIR/blackfin.desktop | awk '{ print $1 }')
             sed -i "s/\[\[DESKTOP_FILE_SHA256\]\]/$desktop_file_sha256/" $PKGBUILD_FILE
             launch_script_sha256=$(sha256sum $AUR_DIR/launch-app.sh | awk '{ print $1 }')
             sed -i "s/\[\[LAUNCH_SCRIPT_SHA256\]\]/$launch_script_sha256/" $PKGBUILD_FILE
@@ -492,14 +492,14 @@ jobs:
           retention-days: 5
           if-no-files-found: error
 
-      - name: Publish AUR package desktop-plus-bin
+      - name: Publish AUR package blackfin-bin
         uses: KSXGitHub/github-actions-deploy-aur@v4.1.2
         with:
-          pkgname: desktop-plus-bin
+          pkgname: blackfin-bin
           pkgbuild: ${{ env.PKGBUILD_BIN }}
           assets: |
             ${{ env.AUR_DIR }}/.gitignore
-            ${{ env.AUR_DIR }}/desktop-plus.desktop
+            ${{ env.AUR_DIR }}/blackfin.desktop
             ${{ env.AUR_DIR }}/launch-app.sh
           commit_username: ${{ secrets.AUR_USERNAME }}
           commit_email: ${{ secrets.AUR_EMAIL }}
@@ -508,14 +508,14 @@ jobs:
             'Update AUR package to version v${{ env.APP_VERSION }}'
           ssh_keyscan_types: rsa,ecdsa,ed25519
 
-      - name: Publish AUR package desktop-plus
+      - name: Publish AUR package blackfin
         uses: KSXGitHub/github-actions-deploy-aur@v4.1.2
         with:
-          pkgname: desktop-plus
+          pkgname: blackfin
           pkgbuild: ${{ env.PKGBUILD }}
           assets: |
             ${{ env.AUR_DIR }}/.gitignore
-            ${{ env.AUR_DIR }}/desktop-plus.desktop
+            ${{ env.AUR_DIR }}/blackfin.desktop
             ${{ env.AUR_DIR }}/launch-app.sh
           commit_username: ${{ secrets.AUR_USERNAME }}
           commit_email: ${{ secrets.AUR_EMAIL }}
@@ -524,14 +524,14 @@ jobs:
             'Update AUR package to version v${{ env.APP_VERSION }}'
           ssh_keyscan_types: rsa,ecdsa,ed25519
 
-      - name: Publish AUR package desktop-plus-git
+      - name: Publish AUR package blackfin-git
         uses: KSXGitHub/github-actions-deploy-aur@v4.1.2
         with:
-          pkgname: desktop-plus-git
+          pkgname: blackfin-git
           pkgbuild: ${{ env.PKGBUILD_GIT }}
           assets: |
             ${{ env.AUR_DIR }}/.gitignore
-            ${{ env.AUR_DIR }}/desktop-plus.desktop
+            ${{ env.AUR_DIR }}/blackfin.desktop
             ${{ env.AUR_DIR }}/launch-app.sh
           commit_username: ${{ secrets.AUR_USERNAME }}
           commit_email: ${{ secrets.AUR_EMAIL }}
@@ -686,7 +686,7 @@ jobs:
       - name: Publish to winget
         uses: vedantmgoyal9/winget-releaser@v2
         with:
-          identifier: polrivero.GitHubDesktopPlus
+          identifier: polrivero.GitHubBlackfin
           version:
             ${{ needs.compute_version.outputs.SEMVER_COMPATIBLE_VERSION }}
           installers-regex: '\.exe$'
@@ -720,7 +720,7 @@ jobs:
       - name: Clone Homebrew Tap
         uses: actions/checkout@v6
         with:
-          repository: 'desktop-plus/homebrew-tap'
+          repository: 'blackfin/homebrew-tap'
           token: ${{ secrets.HOMEBREW_TAP_PERSONAL_ACCESS_TOKEN }}
           path: homebrew-tap
 
@@ -730,15 +730,15 @@ jobs:
           sed -e "s/\[\[VERSION\]\]/${APP_VERSION}/" \
               -e "s/\[\[SHA256_ARM64\]\]/${SHA256_ARM64}/" \
               -e "s/\[\[SHA256_X64\]\]/${SHA256_X64}/" \
-              publish/homebrew/desktop-plus.rb > homebrew-tap/Casks/desktop-plus.rb
+              publish/homebrew/blackfin.rb > homebrew-tap/Casks/blackfin.rb
 
       - name: Push to Homebrew Tap
         working-directory: homebrew-tap
         run: |
           git config --global user.name "Formula Updater"
-          git config --global user.email "formula-updater@desktop-plus.org"
-          git add Casks/desktop-plus.rb
-          git commit -m "Update desktop-plus to version ${APP_VERSION}"
+          git config --global user.email "formula-updater@blackfin.org"
+          git add Casks/blackfin.rb
+          git commit -m "Update blackfin to version ${APP_VERSION}"
           git push origin main
 
       - name: Clone Homebrew Tap (old name)
@@ -754,13 +754,13 @@ jobs:
           sed -e "s/\[\[VERSION\]\]/${APP_VERSION}/" \
               -e "s/\[\[SHA256_ARM64\]\]/${SHA256_ARM64}/" \
               -e "s/\[\[SHA256_X64\]\]/${SHA256_X64}/" \
-              publish/homebrew/desktop-plus.rb > homebrew-tap-old/Casks/desktop-plus.rb
+              publish/homebrew/blackfin.rb > homebrew-tap-old/Casks/blackfin.rb
 
       - name: Push to Homebrew Tap (old name)
         working-directory: homebrew-tap-old
         run: |
           git config --global user.name "Formula Updater"
-          git config --global user.email "formula-updater@desktop-plus.org"
-          git add Casks/desktop-plus.rb
-          git commit -m "Update desktop-plus to version ${APP_VERSION}"
+          git config --global user.email "formula-updater@blackfin.org"
+          git add Casks/blackfin.rb
+          git commit -m "Update blackfin to version ${APP_VERSION}"
           git push origin main

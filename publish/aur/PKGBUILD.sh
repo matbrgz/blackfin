@@ -6,14 +6,14 @@
 # Contributor: Jiawen Geng
 
 
-_pkgname='desktop-plus'
-_old_pkgname='github-desktop-plus'
+_pkgname='blackfin'
+_old_pkgname='github-blackfin'
 pkgname="${_pkgname}"
 pkgver=[[APP_VERSION]]
 pkgrel=1
 pkgdesc="GitHub Desktop fork with extra features and improvements."
 arch=('x86_64' 'aarch64')
-url="https://github.com/desktop-plus/desktop-plus"
+url="https://github.com/matbrgz/blackfin"
 license=('MIT')
 provides=(${_pkgname} ${_old_pkgname})
 conflicts=(${_pkgname} ${_old_pkgname})
@@ -36,7 +36,7 @@ makedepends=(python-setuptools
              util-linux
              xorg-server-xvfb
              yarn)
-source=("$pkgname::git+https://github.com/desktop-plus/desktop-plus.git#tag=v$pkgver"
+source=("$pkgname::git+https://github.com/matbrgz/blackfin.git#tag=v$pkgver"
         'git+https://github.com/github/gemoji.git'
         'git+https://github.com/github/gitignore.git'
         'git+https://github.com/github/choosealicense.com.git'
@@ -92,19 +92,19 @@ package() {
         aarch64) suffix="arm64" ;;
         *) echo "Unsupported architecture: $CARCH"; exit 1 ;;
     esac
-    cp -r --preserve=mode "dist/desktop-plus-linux-$suffix/"* "$INSTALL_DIR/"
+    cp -r --preserve=mode "dist/blackfin-linux-$suffix/"* "$INSTALL_DIR/"
 
     cd "$INSTALL_DIR/resources/app/static/logos"
-    # Icon is named "gh-desktop-plus" rather than "desktop-plus" to avoid the freedesktop dash-stripping fallback
+    # Icon is named "gh-blackfin" rather than "blackfin" to avoid the freedesktop dash-stripping fallback
     # ('desktop' exists in many icon themes, so that icon would be used instead of ours).
-    install -Dm0644 "1024x1024.png" "$pkgdir/usr/share/icons/hicolor/1024x1024/apps/gh-desktop-plus.png"
-    install -Dm0644 "512x512.png" "$pkgdir/usr/share/icons/hicolor/512x512/apps/gh-desktop-plus.png"
-    install -Dm0644 "256x256.png" "$pkgdir/usr/share/icons/hicolor/256x256/apps/gh-desktop-plus.png"
+    install -Dm0644 "1024x1024.png" "$pkgdir/usr/share/icons/hicolor/1024x1024/apps/gh-blackfin.png"
+    install -Dm0644 "512x512.png" "$pkgdir/usr/share/icons/hicolor/512x512/apps/gh-blackfin.png"
+    install -Dm0644 "256x256.png" "$pkgdir/usr/share/icons/hicolor/256x256/apps/gh-blackfin.png"
 
     install -Dm755 "$srcdir/launch-app.sh" "$pkgdir/usr/bin/${_pkgname}"
 
-    chmod +x "$INSTALL_DIR/resources/app/static/desktop-plus-cli"
-    ln -s "/opt/${_pkgname}/resources/app/static/desktop-plus-cli" "$pkgdir/usr/bin/desktop-plus-cli"
+    chmod +x "$INSTALL_DIR/resources/app/static/blackfin-cli"
+    ln -s "/opt/${_pkgname}/resources/app/static/blackfin-cli" "$pkgdir/usr/bin/blackfin-cli"
 
     install -Dm0644 "$srcdir/${_pkgname}.desktop" "$pkgdir/usr/share/applications/${_pkgname}.desktop"
 }

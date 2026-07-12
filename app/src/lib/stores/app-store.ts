@@ -104,6 +104,7 @@ import {
   isForkedRepositoryContributingToParent,
 } from '../../models/repository'
 import { AppSection } from '../../models/app-section'
+import { discoverRepositories } from '../workspace/discover-repositories'
 import {
   CommittedFileChange,
   WorkingDirectoryFileChange,
@@ -1365,6 +1366,28 @@ export class AppStore extends TypedBaseStore<IAppState> {
       .catch(e => this.emitError(e))
   }
 
+  /**
+   * Point Blackfin at a folder and let it find the projects inside. The premise
+   * of a control center is that you hand it your work, not that you add your
+   * projects one at a time.
+   *
+   * Returns the repositories that were newly added.
+   */
+  public async _addRepositoriesFromFolder(
+    path: string
+  ): Promise<ReadonlyArray<Repository>> {
+    const paths = await discoverRepositories(path)
+
+    if (paths.length === 0) {
+      return []
+    }
+
+    const added = await this._addRepositories(paths, null)
+    await this._rescanWorkspace()
+
+    return added
+  }
+
   public async _rescanWorkspace(): Promise<void> {
     const repositories = this.repositories.filter(
       (r): r is Repository => r instanceof Repository
@@ -1416,6 +1439,7 @@ export class AppStore extends TypedBaseStore<IAppState> {
       repositories,
       selectedAppSection: this.selectedAppSection,
       workspaceInventories: this.workspaceStore.getInventories(),
+      globalAgentContext: this.workspaceStore.getGlobalContext(),
       workspaceScanProgress: this.workspaceStore.getProgress(),
       recentRepositories: this.recentRepositories,
       localRepositoryStateLookup: this.localRepositoryStateLookup,
@@ -8645,7 +8669,7 @@ export class AppStore extends TypedBaseStore<IAppState> {
         if (match === null) {
           this.emitError(
             new ExternalEditorError(
-              `No suitable editors installed for Desktop Plus to launch. Install ${suggestedExternalEditor.name} for your platform and restart Desktop Plus to try again.`,
+              `No suitable editors installed for Blackfin to launch. Install ${suggestedExternalEditor.name} for your platform and restart Blackfin to try again.`,
               { suggestDefaultEditor: true }
             )
           )
@@ -8679,7 +8703,7 @@ export class AppStore extends TypedBaseStore<IAppState> {
       if (match === null) {
         this.emitError(
           new ExternalEditorError(
-            `No suitable editors installed for Desktop Plus to launch. Install ${suggestedExternalEditor.name} for your platform and restart Desktop Plus to try again.`,
+            `No suitable editors installed for Blackfin to launch. Install ${suggestedExternalEditor.name} for your platform and restart Blackfin to try again.`,
             { suggestDefaultEditor: true }
           )
         )

@@ -1,11 +1,9 @@
 import { readdir, readFile, lstat, stat } from 'fs/promises'
 import * as Path from 'path'
 import {
-  AgentId,
-  ContextRole,
+  ContextScope,
   IArtifactDirectory,
   IContextFile,
-  IContextReference,
   IDocFile,
   IRepositoryInventory,
   emptyInventory,
@@ -18,27 +16,17 @@ import {
   isNeverWalked,
 } from './catalog'
 import {
-  countLines,
-  countRules,
-  extractReferences,
-  parseFrontmatter,
-  parseHeadings,
-  parseTitle,
-} from './parse'
+  MaxParsedFileSize,
+  readContextFile,
+  resolveReferences,
+} from './context-file-reader'
+import { countLines, parseTitle } from './parse'
 
 /**
  * Scanning a repository: the I/O boundary. Everything interesting is in
  * `catalog.ts` and `parse.ts`, which are pure. This file walks a disk and
  * refuses to throw while doing it.
  */
-
-/**
- * Files above this are reported with their size but not parsed. The same limit
- * the Copilot conflict context uses (`copilot-conflict-context.ts`), for the
- * same reason: nobody's CLAUDE.md is a megabyte, and if one is, reading it into
- * memory to count its bullet points is not a service to anyone.
- */
-const MaxParsedFileSize = 1024 * 1024
 
 export interface IScanOptions {
   /**
@@ -99,14 +87,12 @@ export async function scanRepository(
     }
   }
 
-  const resolved = await resolveReferences(repositoryPath, contextFiles)
-
   return {
     repositoryId,
     repositoryPath,
     scannedAt,
     status: { kind: 'ok' },
-    contextFiles: resolved,
+    contextFiles: await resolveReferences(repositoryPath, contextFiles),
     docs,
     artifacts,
   }
@@ -158,14 +144,15 @@ async function walk(
         const measured = options.measureArtifacts
           ? await measureDirectory(absolutePath, options)
           : { byteLength: 0, fileCount: 0 }
-        const modifiedAt = await modifiedTime(absolutePath)
+
         artifacts.push({
           kind: artifactKind,
           relativePath,
           byteLength: measured.byteLength,
           fileCount: measured.fileCount,
-          modifiedAt,
+          modifiedAt: await modifiedTime(absolutePath),
         })
+
         // Deliberately do not descend. Nobody's agent context lives inside
         // node_modules, and pretending otherwise would make a scan cost minutes.
         continue
@@ -196,7 +183,8 @@ async function walk(
         absolutePath,
         relativePath,
         classification.agent,
-        classification.role
+        classification.role,
+        ContextScope.Project
       )
       if (file !== null) {
         contextFiles.push(file)
@@ -210,75 +198,6 @@ async function walk(
         docs.push(doc)
       }
     }
-  }
-}
-
-async function readContextFile(
-  absolutePath: string,
-  relativePath: string,
-  agent: AgentId,
-  role: ContextRole
-): Promise<IContextFile | null> {
-  let info
-  try {
-    info = await lstat(absolutePath)
-  } catch {
-    return null
-  }
-
-  const base = {
-    agent,
-    role,
-    relativePath,
-    byteLength: info.size,
-    modifiedAt: info.mtimeMs,
-  }
-
-  if (info.size > MaxParsedFileSize) {
-    return {
-      ...base,
-      lineCount: 0,
-      name: null,
-      description: null,
-      headings: [],
-      ruleCount: 0,
-      references: [],
-      skippedReason: 'File exceeds the 1 MB parse limit',
-    }
-  }
-
-  let content: string
-  try {
-    content = await readFile(absolutePath, 'utf8')
-  } catch {
-    return {
-      ...base,
-      lineCount: 0,
-      name: null,
-      description: null,
-      headings: [],
-      ruleCount: 0,
-      references: [],
-      skippedReason: 'File could not be read',
-    }
-  }
-
-  const frontmatter = parseFrontmatter(content)
-
-  return {
-    ...base,
-    lineCount: countLines(content),
-    name: frontmatter.name,
-    description: frontmatter.description,
-    headings: parseHeadings(content),
-    ruleCount: countRules(content),
-    // Resolved against the filesystem in a second pass, once the walk is done.
-    references: extractReferences(content).map(target => ({
-      raw: target,
-      target,
-      exists: false,
-    })),
-    skippedReason: null,
   }
 }
 
@@ -319,60 +238,6 @@ async function readDocFile(
   }
 }
 
-/**
- * Resolve every reference against the filesystem, so that a context file
- * pointing at a document somebody deleted shows up as pointing at nothing.
- *
- * References are relative to the directory of the file that made them, which is
- * what both Claude's `@import` and a markdown link mean.
- */
-async function resolveReferences(
-  repositoryPath: string,
-  files: ReadonlyArray<IContextFile>
-): Promise<ReadonlyArray<IContextFile>> {
-  const cache = new Map<string, Promise<boolean>>()
-
-  const existsCached = (absolutePath: string): Promise<boolean> => {
-    const hit = cache.get(absolutePath)
-    if (hit !== undefined) {
-      return hit
-    }
-    const promise = lstat(absolutePath).then(
-      () => true,
-      () => false
-    )
-    cache.set(absolutePath, promise)
-    return promise
-  }
-
-  return Promise.all(
-    files.map(async file => {
-      if (file.references.length === 0) {
-        return file
-      }
-
-      const fileDir = Path.dirname(Path.join(repositoryPath, file.relativePath))
-
-      const references = await Promise.all(
-        file.references.map(async (reference): Promise<IContextReference> => {
-          const absolutePath = Path.resolve(fileDir, reference.target)
-
-          // A reference that escapes the repository is not one we resolve. It
-          // isn't necessarily broken — it just isn't ours to judge.
-          const relative = Path.relative(repositoryPath, absolutePath)
-          if (relative.startsWith('..') || Path.isAbsolute(relative)) {
-            return { ...reference, exists: true }
-          }
-
-          return { ...reference, exists: await existsCached(absolutePath) }
-        })
-      )
-
-      return { ...file, references }
-    })
-  )
-}
-
 interface IMeasurement {
   readonly byteLength: number
   readonly fileCount: number
@@ -395,9 +260,6 @@ async function measureDirectory(
   } catch {
     return { byteLength: 0, fileCount: 0 }
   }
-
-  let byteLength = 0
-  let fileCount = 0
 
   const nested = await Promise.all(
     entries.map(async (entry): Promise<IMeasurement> => {
@@ -423,6 +285,9 @@ async function measureDirectory(
       }
     })
   )
+
+  let byteLength = 0
+  let fileCount = 0
 
   for (const measurement of nested) {
     byteLength += measurement.byteLength

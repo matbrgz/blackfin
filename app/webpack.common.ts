@@ -110,7 +110,7 @@ export const crash = merge({}, commonConfig, {
   target: 'electron-renderer',
   plugins: [
     new HtmlWebpackPlugin({
-      title: 'Desktop Plus',
+      title: 'Blackfin',
       filename: 'crash.html',
       chunks: ['crash'],
     }),

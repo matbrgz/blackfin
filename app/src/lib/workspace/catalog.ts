@@ -153,6 +153,15 @@ const AgentDirectories = new Map<string, AgentId>([
   ['.agents', AgentId.Shared],
 ])
 
+/**
+ * The directories to look in when scanning the user's home for global agent
+ * context. We walk these and only these — walking somebody's entire home folder
+ * would be both slow and rude.
+ */
+export const AgentHomeDirectories: ReadonlyArray<string> = [
+  ...AgentDirectories.keys(),
+]
+
 /** Subdirectory name within an agent home directory, and what it holds. */
 const AgentSubdirectoryRoles = new Map<string, ContextRole>([
   ['skills', ContextRole.Skill],

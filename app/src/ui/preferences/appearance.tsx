@@ -92,7 +92,7 @@ interface IAppearanceState {
 function getTitleBarStyleDescription(titleBarStyle: TitleBarStyle): string {
   switch (titleBarStyle) {
     case 'custom':
-      return 'Uses the menu system provided by Desktop Plus, hiding the default chrome provided by your window manager.'
+      return 'Uses the menu system provided by Blackfin, hiding the default chrome provided by your window manager.'
     case 'native':
       return 'Uses the menu system and chrome provided by your window manager.'
     case 'native-without-menu-bar':

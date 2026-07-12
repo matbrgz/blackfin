@@ -203,7 +203,7 @@ export class TestNotifications extends React.Component<
           <LinkButton onClick={this.onGrantNotificationPermission}>
             grant permission
           </LinkButton>{' '}
-          to display these notifications from Desktop Plus.
+          to display these notifications from Blackfin.
         </>
       )
     }
@@ -217,7 +217,7 @@ export class TestNotifications extends React.Component<
     if (warnNotificationsDenied) {
       return (
         <>
-          <span className="warning-icon">⚠️</span> Desktop Plus has no
+          <span className="warning-icon">⚠️</span> Blackfin has no
           permission to display notifications. Please, enable them in the{' '}
           <LinkButton uri={notificationSettingsURL}>
             Notifications Settings
@@ -233,7 +233,7 @@ export class TestNotifications extends React.Component<
 
     return (
       <>
-        Make sure notifications are {verb} for Desktop Plus in the{' '}
+        Make sure notifications are {verb} for Blackfin in the{' '}
         <LinkButton uri={notificationSettingsURL}>
           Notifications Settings
         </LinkButton>
