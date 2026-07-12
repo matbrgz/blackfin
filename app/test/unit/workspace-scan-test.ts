@@ -192,7 +192,7 @@ describe('scanRepository', () => {
     await write('AGENTS.md', '# b\n')
     await write('.cursor/rules/style.mdc', '# c\n')
 
-    const agents = configuredAgents(await scan()).sort()
+    const agents = [...configuredAgents(await scan())].sort()
 
     assert.deepEqual(
       agents,

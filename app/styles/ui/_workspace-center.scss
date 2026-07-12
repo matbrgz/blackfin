@@ -1,0 +1,281 @@
+#workspace-center {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--background-color);
+
+  .workspace-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--spacing-double);
+    padding: var(--spacing-double);
+    border-bottom: var(--base-border);
+  }
+
+  .workspace-title {
+    h1 {
+      margin: 0;
+      font-size: var(--font-size-lg);
+      font-weight: var(--font-weight-semibold);
+    }
+
+    p {
+      margin: var(--spacing-half) 0 0;
+      color: var(--text-secondary-color);
+    }
+  }
+
+  .workspace-summary {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing);
+    flex-shrink: 0;
+  }
+
+  .workspace-reclaimable {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+
+    strong {
+      font-size: var(--font-size-md);
+    }
+
+    span {
+      color: var(--text-secondary-color);
+      font-size: var(--font-size-sm);
+    }
+  }
+
+  .workspace-progress {
+    color: var(--text-secondary-color);
+  }
+
+  .workspace-controls {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--spacing);
+    padding: var(--spacing) var(--spacing-double);
+    border-bottom: var(--base-border);
+  }
+
+  .workspace-lenses {
+    display: flex;
+    gap: var(--spacing-half);
+  }
+
+  .workspace-lens {
+    padding: var(--spacing-half) var(--spacing);
+    border: none;
+    border-radius: var(--border-radius);
+    background: transparent;
+    color: var(--text-secondary-color);
+    cursor: pointer;
+
+    &:hover {
+      background: var(--background-color);
+    }
+
+    &.selected {
+      background: var(--box-selected-background-color);
+      color: var(--box-selected-text-color);
+    }
+  }
+
+  .workspace-filter {
+    width: 240px;
+    padding: var(--spacing-half);
+    border: var(--base-border);
+    border-radius: var(--border-radius);
+    background: var(--box-background-color);
+    color: var(--text-color);
+  }
+
+  .workspace-list {
+    flex-grow: 1;
+    overflow-y: auto;
+    padding: var(--spacing);
+  }
+
+  .workspace-repository {
+    border: var(--base-border);
+    border-radius: var(--border-radius);
+    margin-bottom: var(--spacing-half);
+    background: var(--box-background-color);
+  }
+
+  .workspace-repository-header {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-half);
+    width: 100%;
+    padding: var(--spacing);
+    border: none;
+    background: transparent;
+    color: var(--text-color);
+    cursor: pointer;
+    text-align: left;
+
+    &:hover {
+      background: var(--box-alt-background-color);
+    }
+  }
+
+  .workspace-repository-name {
+    font-weight: var(--font-weight-semibold);
+    margin-right: auto;
+  }
+
+  .workspace-badge {
+    padding: 2px var(--spacing-half);
+    border-radius: var(--border-radius);
+    font-size: var(--font-size-sm);
+    background: var(--box-alt-background-color);
+    color: var(--text-secondary-color);
+    white-space: nowrap;
+
+    &.agent {
+      background: var(--box-selected-background-color);
+      color: var(--box-selected-text-color);
+    }
+
+    // A project with no agent context at all is the finding this feature
+    // exists to surface. It gets to shout.
+    &.warning {
+      background: var(--dialog-warning-background);
+      color: var(--text-color);
+    }
+
+    &.error,
+    &.missing {
+      background: var(--dialog-error-background);
+      color: var(--text-color);
+    }
+
+    &.disk {
+      font-variant-numeric: tabular-nums;
+    }
+
+    &.muted {
+      opacity: 0.6;
+    }
+  }
+
+  .workspace-detail {
+    padding: 0 var(--spacing) var(--spacing) var(--spacing-double);
+    border-top: var(--base-border);
+  }
+
+  .workspace-agent-group {
+    h3 {
+      margin: var(--spacing) 0 var(--spacing-half);
+      font-size: var(--font-size-sm);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--text-secondary-color);
+    }
+  }
+
+  .workspace-files {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .workspace-file {
+    padding: var(--spacing-half) 0;
+
+    & + .workspace-file {
+      border-top: var(--base-border);
+    }
+  }
+
+  .workspace-file-path {
+    padding: 0;
+    border: none;
+    background: transparent;
+    color: var(--link-button-color);
+    font-family: var(--font-family-monospace);
+    cursor: pointer;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+
+  span.workspace-file-path {
+    color: var(--text-color);
+    cursor: default;
+
+    &:hover {
+      text-decoration: none;
+    }
+  }
+
+  .workspace-file-meta {
+    display: flex;
+    gap: var(--spacing);
+    margin-top: 2px;
+    font-size: var(--font-size-sm);
+    color: var(--text-secondary-color);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .workspace-role {
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  .workspace-file-name {
+    font-family: var(--font-family-monospace);
+  }
+
+  .workspace-file-description {
+    margin: 2px 0 0;
+    color: var(--text-secondary-color);
+  }
+
+  .workspace-file-skipped {
+    margin: 2px 0 0;
+    color: var(--text-secondary-color);
+    font-style: italic;
+  }
+
+  .workspace-broken {
+    list-style: none;
+    margin: var(--spacing-half) 0 0;
+    padding: 0;
+
+    li {
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-half);
+      color: var(--text-color);
+      font-size: var(--font-size-sm);
+    }
+
+    .octicon {
+      fill: var(--dialog-error-color);
+      flex-shrink: 0;
+    }
+  }
+
+  .workspace-cleanup {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing);
+    margin-top: var(--spacing);
+  }
+
+  .workspace-cleanup-note {
+    color: var(--text-secondary-color);
+    font-size: var(--font-size-sm);
+  }
+
+  .workspace-empty {
+    padding: var(--spacing);
+    color: var(--text-secondary-color);
+  }
+}

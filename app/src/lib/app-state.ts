@@ -1,3 +1,5 @@
+import { IRepositoryInventory } from '../models/workspace-inventory'
+import { IScanProgress } from './stores/workspace-store'
 import type { CopilotModelSelections } from './stores/copilot-store'
 import type { IBYOKProvider } from './copilot/byok'
 import type { IConflictResolutionModelDisplay } from './copilot/conflict-resolution-model'
@@ -98,6 +100,18 @@ export interface IAppState {
    * The current list of repositories tracked in the application
    */
   readonly repositories: ReadonlyArray<Repository | CloningRepository>
+
+  /**
+   * Whether the cross-project workspace view is taking over the window, in
+   * place of the selected repository.
+   */
+  readonly showWorkspaceCenter: boolean
+
+  /** The workspace inventory for each repository, keyed by repository id. */
+  readonly workspaceInventories: ReadonlyMap<number, IRepositoryInventory>
+
+  /** Progress of the workspace scan currently in flight, if there is one. */
+  readonly workspaceScanProgress: IScanProgress
 
   /**
    * List of IDs of the most recently opened repositories (most recent first)

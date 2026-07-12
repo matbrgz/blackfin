@@ -31,6 +31,7 @@ import {
   GitHubUserStore,
   GitStore,
   IssuesStore,
+  WorkspaceStore,
   PullRequestCoordinator,
   RepositoriesStore,
   SignInResult,
@@ -829,7 +830,8 @@ export class AppStore extends TypedBaseStore<IAppState> {
     private readonly repositoryStateCache: RepositoryStateCache,
     private readonly apiRepositoriesStore: ApiRepositoriesStore,
     private readonly notificationsStore: NotificationsStore,
-    private readonly copilotStore: CopilotStore
+    private readonly copilotStore: CopilotStore,
+    private readonly workspaceStore: WorkspaceStore
   ) {
     super()
 
@@ -1129,6 +1131,12 @@ export class AppStore extends TypedBaseStore<IAppState> {
   }
 
   private wireupStoreEventHandlers() {
+    this.workspaceStore.onDidUpdate(() => {
+      this.emitUpdate()
+    })
+
+    this.workspaceStore.onDidError(e => this.emitError(e))
+
     this.gitHubUserStore.onDidUpdate(() => {
       this.emitUpdate()
     })
@@ -1319,6 +1327,66 @@ export class AppStore extends TypedBaseStore<IAppState> {
     }
   }
 
+  /** Whether the cross-project workspace view is taking over the window. */
+  private showWorkspaceCenter: boolean = false
+
+  public _setShowWorkspaceCenter(show: boolean): Promise<void> {
+    this.showWorkspaceCenter = show
+    this.emitUpdate()
+
+    if (show) {
+      // Paint from the cache first — the screen fills immediately — and only
+      // then go back to disk. Awaiting the rescan here would give the user a
+      // blank screen for as long as their largest node_modules takes to walk.
+      this.workspaceStore
+        .loadFromCache()
+        .then(() => this._rescanWorkspace())
+        .catch(e => this.emitError(e))
+    }
+
+    return Promise.resolve()
+  }
+
+  public async _rescanWorkspace(): Promise<void> {
+    const repositories = this.repositories.filter(
+      (r): r is Repository => r instanceof Repository
+    )
+
+    await this.workspaceStore.rescanAll(
+      repositories.map(r => ({ id: r.id, path: r.path }))
+    )
+  }
+
+  public async _cleanUpWorkspace(
+    repository: Repository,
+    relativePaths: ReadonlyArray<string>
+  ): Promise<void> {
+    const outcomes = await this.workspaceStore.cleanUp(
+      { id: repository.id, path: repository.path },
+      relativePaths,
+      { moveToTrash: true, moveItemToTrash: shell.moveItemToTrash }
+    )
+
+    // Refusals and failures are silent otherwise, and a cleanup that quietly
+    // did nothing is worse than one that says why.
+    const problems = outcomes.filter(o => o.kind !== 'deleted')
+    if (problems.length > 0) {
+      this.emitError(
+        new Error(
+          problems
+            .map(o =>
+              o.kind === 'refused'
+                ? `Skipped ${o.relativePath}: ${o.reason}`
+                : o.kind === 'failed'
+                ? `Failed to delete ${o.relativePath}: ${o.message}`
+                : ''
+            )
+            .join('\n')
+        )
+      )
+    }
+  }
+
   public getState(): IAppState {
     const repositories = [
       ...this.repositories,
@@ -1328,6 +1396,9 @@ export class AppStore extends TypedBaseStore<IAppState> {
     return {
       accounts: this.accounts,
       repositories,
+      showWorkspaceCenter: this.showWorkspaceCenter,
+      workspaceInventories: this.workspaceStore.getInventories(),
+      workspaceScanProgress: this.workspaceStore.getProgress(),
       recentRepositories: this.recentRepositories,
       localRepositoryStateLookup: this.localRepositoryStateLookup,
       windowState: this.windowState,

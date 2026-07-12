@@ -372,6 +372,24 @@ export class Dispatcher {
     return this.appStore._changeRepositorySection(repository, section)
   }
 
+  /** Show or hide the cross-project workspace view. */
+  public setShowWorkspaceCenter(show: boolean): Promise<void> {
+    return this.appStore._setShowWorkspaceCenter(show)
+  }
+
+  /** Rescan every repository's workspace inventory. */
+  public rescanWorkspace(): Promise<void> {
+    return this.appStore._rescanWorkspace()
+  }
+
+  /** Move the given reclaimable directories to the trash. */
+  public cleanUpWorkspace(
+    repository: Repository,
+    relativePaths: ReadonlyArray<string>
+  ): Promise<void> {
+    return this.appStore._cleanUpWorkspace(repository, relativePaths)
+  }
+
   /**
    * Changes the selection in the changes view to the working directory and
    * optionally selects one or more files from the working directory.

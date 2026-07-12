@@ -58,6 +58,7 @@ import { CantDeleteMainBranch } from './delete-branch/cant-delete-main-branch'
 import { CloningRepositoryView } from './cloning-repository'
 import {
   Toolbar,
+  ToolbarButton,
   ToolbarDropdown,
   DropdownState,
   PushPullButton,
@@ -104,6 +105,7 @@ import { Publish } from './publish-repository'
 import { Acknowledgements } from './acknowledgements'
 import { UntrustedCertificate } from './untrusted-certificate'
 import { NoRepositoriesView } from './no-repositories'
+import { WorkspaceCenter } from './workspace/workspace-center'
 import { ConfirmRemoveRepository } from './remove-repository'
 import { TermsAndConditions } from './terms-and-conditions'
 import { PushBranchCommits } from './branches'
@@ -4069,6 +4071,7 @@ export class App extends React.Component<IAppProps, IAppState> {
         <div className="sidebar-section" style={{ width }}>
           {this.renderRepositoryToolbarButton()}
         </div>
+        {this.renderWorkspaceToolbarButton()}
         {this.renderWorktreeToolbarButton()}
         {this.renderBranchToolbarButton()}
         {this.renderPushPullToolbarButton()}
@@ -4076,8 +4079,79 @@ export class App extends React.Component<IAppProps, IAppState> {
     )
   }
 
+  private onShowWorkspaceCenter = () => {
+    this.props.dispatcher.setShowWorkspaceCenter(
+      !this.state.showWorkspaceCenter
+    )
+  }
+
+  private renderWorkspaceToolbarButton(): JSX.Element {
+    return (
+      <ToolbarButton
+        className="workspace-button"
+        icon={octicons.telescope}
+        title="Workspace"
+        description="Agent context, docs and disk"
+        onClick={this.onShowWorkspaceCenter}
+      />
+    )
+  }
+
+  private onCloseWorkspaceCenter = () => {
+    this.props.dispatcher.setShowWorkspaceCenter(false)
+  }
+
+  private onRescanWorkspace = () => {
+    this.props.dispatcher.rescanWorkspace()
+  }
+
+  private onWorkspaceSelectRepository = (repository: Repository) => {
+    this.props.dispatcher.setShowWorkspaceCenter(false)
+    this.props.dispatcher.selectRepository(repository)
+  }
+
+  private onWorkspaceCleanUp = (
+    repository: Repository,
+    relativePaths: ReadonlyArray<string>
+  ) => {
+    this.props.dispatcher.cleanUpWorkspace(repository, relativePaths)
+  }
+
+  private onWorkspaceOpenFile = (
+    repository: Repository,
+    relativePath: string
+  ) => {
+    this.props.dispatcher.openInExternalEditor(
+      repository,
+      Path.join(repository.path, relativePath)
+    )
+  }
+
+  private renderWorkspaceCenter() {
+    const repositories = this.state.repositories.filter(
+      (r): r is Repository => r instanceof Repository
+    )
+
+    return (
+      <WorkspaceCenter
+        repositories={repositories}
+        inventories={this.state.workspaceInventories}
+        progress={this.state.workspaceScanProgress}
+        onRescan={this.onRescanWorkspace}
+        onSelectRepository={this.onWorkspaceSelectRepository}
+        onCleanUp={this.onWorkspaceCleanUp}
+        onOpenFile={this.onWorkspaceOpenFile}
+        onClose={this.onCloseWorkspaceCenter}
+      />
+    )
+  }
+
   private renderRepository() {
     const { accounts } = this.state
+
+    if (this.state.showWorkspaceCenter) {
+      return this.renderWorkspaceCenter()
+    }
 
     if (this.inNoRepositoriesViewState()) {
       return (
