@@ -166,6 +166,73 @@ describe('parseConventionalCommit', () => {
     )
   })
 
+  it('keeps an autosquash prefix as left side text and badges the nested type', () => {
+    assert.deepStrictEqual(
+      parseConventionalCommit('fixup! fix(parser): handle empty input'),
+      {
+        rawType: 'fix',
+        label: 'Fix',
+        scope: 'parser',
+        leftSideText: 'fixup! ',
+        rightSideText: 'handle empty input',
+      }
+    )
+    assert.deepStrictEqual(
+      parseConventionalCommit('squash! feat(ui): add keyboard shortcut'),
+      {
+        rawType: 'feat',
+        label: 'Feat',
+        scope: 'ui',
+        leftSideText: 'squash! ',
+        rightSideText: 'add keyboard shortcut',
+      }
+    )
+    assert.deepStrictEqual(
+      parseConventionalCommit('amend! refactor(list): simplify row rendering'),
+      {
+        rawType: 'refactor',
+        label: 'Refactor',
+        scope: 'list',
+        leftSideText: 'amend! ',
+        rightSideText: 'simplify row rendering',
+      }
+    )
+  })
+
+  it('keeps chained autosquash prefixes as left side text', () => {
+    assert.deepStrictEqual(
+      parseConventionalCommit('fixup! squash! fix(parser): handle empty input'),
+      {
+        rawType: 'fix',
+        label: 'Fix',
+        scope: 'parser',
+        leftSideText: 'fixup! squash! ',
+        rightSideText: 'handle empty input',
+      }
+    )
+  })
+
+  it('combines an autosquash prefix with a revert wrapper', () => {
+    assert.deepStrictEqual(
+      parseConventionalCommit('fixup! Revert "feat: a thing"'),
+      {
+        rawType: 'feat',
+        label: 'Feat',
+        scope: null,
+        leftSideText: 'fixup! Revert "',
+        rightSideText: 'a thing"',
+      }
+    )
+  })
+
+  it('does not badge autosquash commits without a nested type', () => {
+    assert.strictEqual(parseConventionalCommit('fixup! update readme'), null)
+    assert.strictEqual(
+      parseConventionalCommit('squash! just a normal commit'),
+      null
+    )
+  })
+
   it('does not badge Merge/Revert/Reapply commits without a nested type', () => {
     assert.strictEqual(parseConventionalCommit("Merge branch 'main'"), null)
     assert.strictEqual(

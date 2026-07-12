@@ -45,13 +45,16 @@ const conventionalCommitLabelsByType = new Map<string, string>(
   conventionalCommitTypeLabels.map(label => [label.toLowerCase(), label])
 )
 
+const autosquashPrefixes = '(?:(?:fixup|squash|amend)!\\s+)*'
+const mergeRevertPrefix = '(?:(?:Merge|Revert|Reapply)\\s+"?)?'
+const conventionalPrefix = '(\\w+)(?:\\((.+?)\\))?(!)?: *'
 /**
  * Matches the Conventional Commits prefix `type(scope)!: ` at the start of a
  * commit summary, capturing the type, the optional scope and the optional
  * breaking-change (`!`) marker.
  */
 const conventionalCommitPattern = RE2JS.compile(
-  '^(\\s*(?:Merge|Revert|Reapply)\\s+"?)?\\s*(\\w+)(?:\\((.+?)\\))?(!)?: *'
+  `^\\s*(${autosquashPrefixes}${mergeRevertPrefix})\\s*${conventionalPrefix}`
 )
 
 /** A parsed Conventional Commit prefix. */
@@ -65,7 +68,7 @@ export interface IConventionalCommit {
   /** The optional scope (the text inside the parentheses), or null. */
   readonly scope: string | null
 
-  /** Plain text rendered before the badge: `Merge`/`Revert`/`Reapply` */
+  /** Plain text rendered before the badge: `Merge`/`Revert`..., autosquash prefixes, etc. */
   readonly leftSideText: string
 
   /** The remainder of the summary rendered after the badge, with the prefix stripped. */

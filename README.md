@@ -22,16 +22,16 @@ This is an **up-to-date** fork of [GitHub Desktop](https://desktop.github.com) w
 
 ### General:
 
-- Support for **multiple accounts** of the same endpoint (e.g. multiple GitHub accounts).  
+- Support for **multiple accounts** of the same endpoint (e.g., multiple GitHub accounts).  
   Simply add as many accounts as you want in the "Accounts" settings page. If a repository is using an incorrect account, you can change it in the repository settings.
 
-- Support for **multiple windows**: open multiple repositories in separate windows, or the same repository in multiple windows (e.g. to view different files at the same time).  
+- Support for **multiple windows**: open multiple repositories in separate windows, or the same repository in multiple windows (e.g., to view different files at the same time).  
   Select "File" > "Open new window" or press `Ctrl+Alt+N`/`Cmd+Alt+N`. You can also right-click on a repository in the list and select "Open repository in new window".
 
 - **Bitbucket** and **GitLab** integration:
   - Clone repositories from within the app.
   - Preview and create pull requests.
-  - View pull requests status, including checks.
+  - View pull request status, including checks.
   - Display a commit or PR in Bitbucket/GitLab (web browser).
   - Correctly set repository owner (instead of displaying "Other").
 
@@ -45,7 +45,7 @@ This is an **up-to-date** fork of [GitHub Desktop](https://desktop.github.com) w
 
 - Buttons with destructive actions have a red background to make them more visually distinct.
 
-- Allow generating **branch name presets** by calling an external script (e.g. fetching ticket numbers from an issue tracker).  
+- Allow generating **branch name presets** by calling an external script (e.g., fetching ticket numbers from an issue tracker).  
   [Click here for more details](docs/branch-name-presets.md).
 
 - Allow showing the effective **Git name and email** used for commits more prominently above the commit message input.
@@ -61,7 +61,7 @@ This is an **up-to-date** fork of [GitHub Desktop](https://desktop.github.com) w
 - Allow **hiding** the "Recent" repositories section.
 
 - Allow customizing the **repository groups** to better organize your repositories.  
-  Right click on a repository and select "Change group name".
+  Right-click on a repository and select "Change group name".
 
 - Allow **pinning** repositories to the top of the list.
 
@@ -70,7 +70,7 @@ This is an **up-to-date** fork of [GitHub Desktop](https://desktop.github.com) w
 - Added a warning indicator to **local-only branches** (branches that have not been pushed to the remote, or that have been deleted automatically after a PR).
 
 - Allow manually setting which is the **default branch** for a repository (even if it doesn't match the one configured in the remote).  
-  Right click on a branch and select "Set as default branch". The default branch is used as the base when creating new branches.
+  Right-click on a branch and select "Set as default branch". The default branch is used as the base when creating new branches.
 
 - Allow changing the **sort order** of the branch list to either "Recently updated" or "Alphabetical".
 
@@ -90,7 +90,7 @@ This is an **up-to-date** fork of [GitHub Desktop](https://desktop.github.com) w
 
 ### Changes tab:
 
-- Added the option to **permanently discard changes** without sending to trash. This is useful when the there are many changed files and the regular "Discard" is extremely slow.
+- Added the option to **permanently discard changes** without sending to trash. This is useful when there are many changed files and the regular "Discard" is extremely slow.
 
 ---
 
@@ -122,10 +122,10 @@ Download and execute the installer from the [releases page](https://github.com/d
 | **.EXE Installer** | `-win-x64.exe` | `-win-arm64.exe` |
 | **.MSI Installer ⚠️** | `-win-x64.msi` | `-win-arm64.msi` |
 
-Please note that the app doesn't autoupdate like the official GitHub Desktop, so you will need to manually download and install it every time you want to update.  
+Please note that the app doesn't auto-update like the official GitHub Desktop, so you will need to manually download and install it every time you want to update.  
 For this reason, **I recommend using Winget instead of the manual download**.
 
-⚠️ The MSI installer is meant for enterprise deployments and is not recommended for regular users. If you want to use it, keep in mind that that you will need to reboot your computer to finish the installation. The MSI installer only registers a hook that will install the app on login.
+⚠️ The MSI installer is meant for enterprise deployments and is not recommended for regular users. If you want to use it, keep in mind that you will need to reboot your computer to finish the installation. The MSI installer only registers a hook that will install the app on login.
 
 ---
 
@@ -153,7 +153,7 @@ If you encounter the error "Apple could not verify this app is free of malware",
 | --- | --- |
 | `-macOS-x64.zip` | `-macOS-arm64.zip` |
 
-Please note that the app doesn't autoupdate like the official GitHub Desktop, so you will need to manually download it every time you want to update.  
+Please note that the app doesn't auto-update like the official GitHub Desktop, so you will need to manually download it every time you want to update.  
 For this reason, I recommend using Homebrew instead of the manual download.
 
 ---
@@ -261,10 +261,10 @@ You can also build from source by installing `desktop-plus` or `desktop-plus-git
 <summary>Click to expand</summary>
 <br>
 
-Simply install Desktop Plus from [Flathub](https://flathub.org/en/apps/io.github.pol_rivero.github-desktop-plus):
+Simply install Desktop Plus from [Flathub](https://flathub.org/en/apps/org.desktop_plus.desktop-plus):
 
 ```bash
-flatpak install flathub io.github.pol_rivero.github-desktop-plus
+flatpak install flathub org.desktop_plus.desktop-plus
 ```
 
 > **NOTE:** Git hooks will run inside the Flatpak sandbox and cannot access programs installed on your system (such as version managers,
@@ -280,7 +280,7 @@ flatpak install flathub io.github.pol_rivero.github-desktop-plus
 <summary>Click to expand</summary>
 <br>
 
-**IMPORTANT:** I strongly recommend using your distribution's native package (APT, RPM and AUR packages above) or Flatpak instead of the AppImage, as it requires some manual setup for the sign-in feature to work.  
+**IMPORTANT:** I strongly recommend using your distribution's native package (APT, RPM, and AUR packages above) or Flatpak instead of the AppImage, as it requires some manual setup for the sign-in feature to work.  
 If you need to use the AppImage, follow these steps:
 1. Manually [create a `desktop-plus.desktop` entry](https://wiki.archlinux.org/title/Desktop_entries).
 2. Link the MIME type:
@@ -368,7 +368,7 @@ yarn test:docker
 
 ## Why this fork?
 
-First of all, because [shiftkey's fork](https://github.com/shiftkey/desktop) is currently unmaintained (last commit was in February 2025), so all Linux users are no longer getting the latest features and fixes from the official GitHub Desktop repository.
+First, because [shiftkey's fork](https://github.com/shiftkey/desktop) is currently unmaintained (the last commit was in February 2025), so all Linux users are no longer getting the latest features and fixes from the official GitHub Desktop repository.
 
 Secondly, I think the official GitHub Desktop app is very slow in terms of updates and lacks some advanced features that I'd like. This fork has low code quality requirements compared to the official repo, so I (and hopefully you as well) can add features and improvements quickly.  
 This fork also focuses on integrating nicely with Bitbucket, since I use it for work and haven't found a good Linux GUI client for it.

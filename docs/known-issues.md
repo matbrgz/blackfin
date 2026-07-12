@@ -263,7 +263,7 @@ xdg-mime query default x-scheme-handler/x-github-desktop-auth
 xdg-mime default desktop-plus.desktop x-scheme-handler/x-github-desktop-auth
 
 # Alternatively, if you are using the flatpak:
-xdg-mime default io.github.pol_rivero.github-desktop-plus.desktop x-scheme-handler/x-github-desktop-auth
+xdg-mime default org.desktop_plus.desktop-plus.desktop x-scheme-handler/x-github-desktop-auth
 ```
 
 

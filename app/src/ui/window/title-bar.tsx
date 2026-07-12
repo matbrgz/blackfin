@@ -2,8 +2,8 @@ import * as React from 'react'
 import memoizeOne from 'memoize-one'
 import { WindowState } from '../../lib/window-state'
 import { WindowControls } from './window-controls'
+import { desktopPlusLogo } from '../octicons/desktop-plus-logo'
 import { Octicon } from '../octicons/octicon'
-import * as octicons from '../octicons/octicons.generated'
 import { isMacOSBigSurOrLater, isMacOSTahoeOrLater } from '../../lib/get-os'
 import {
   getAppleActionOnDoubleClick,
@@ -112,7 +112,7 @@ export class TitleBar extends React.Component<ITitleBarProps> {
       this.props.titleBarStyle === 'light' ? 'light-title-bar' : ''
 
     const appIcon = this.props.showAppIcon ? (
-      <Octicon className="app-icon" symbol={octicons.markGithub} />
+      <Octicon className="app-icon" symbol={desktopPlusLogo} />
     ) : null
 
     const onTitlebarDoubleClick = __DARWIN__
