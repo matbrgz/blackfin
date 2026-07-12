@@ -1225,7 +1225,7 @@ function toIAPIFullIdentityFromCodeberg(
     login: identity.login,
     avatar_url: identity.avatar_url,
     html_url: identity.html_url,
-    name: identity.full_name || identity.login,
+    name: identity.full_name || null,
     email: identity.email || null,
     type: 'User',
   }
@@ -1244,7 +1244,7 @@ interface ICodebergAPIRepository {
   readonly has_issues: boolean
   readonly archived: boolean
   readonly parent: ICodebergAPIRepository | null
-  readonly permissions: {
+  readonly permissions?: {
     readonly admin: boolean
     readonly push: boolean
     readonly pull: boolean
@@ -1273,7 +1273,7 @@ function toIAPIFullRepositoryFromCodeberg(
   return {
     ...toIAPIRepositoryFromCodeberg(repo),
     parent: repo.parent ? toIAPIRepositoryFromCodeberg(repo.parent) : undefined,
-    permissions: repo.permissions,
+    permissions: repo.permissions ?? { admin: true, push: true, pull: true },
   }
 }
 
@@ -1281,6 +1281,15 @@ interface ICodebergAPIPullRequestRef {
   readonly ref: string
   readonly sha: string
   readonly repo: ICodebergAPIRepository | null
+}
+function toIAPIPullRequestRefFromCodeberg(
+  ref: ICodebergAPIPullRequestRef
+): IAPIPullRequestRef {
+  return {
+    ref: ref.ref,
+    sha: ref.sha,
+    repo: ref.repo ? toIAPIRepositoryFromCodeberg(ref.repo) : null,
+  }
 }
 interface ICodebergAPIPullRequest {
   readonly number: number
@@ -1303,16 +1312,8 @@ function toIAPIPullRequestFromCodeberg(
     created_at: pr.created_at,
     updated_at: pr.updated_at,
     user: toIAPIIdentityFromCodeberg(pr.user),
-    head: {
-      ref: pr.head.ref,
-      sha: pr.head.sha,
-      repo: pr.head.repo ? toIAPIFullRepositoryFromCodeberg(pr.head.repo) : null,
-    },
-    base: {
-      ref: pr.base.ref,
-      sha: pr.base.sha,
-      repo: pr.base.repo ? toIAPIFullRepositoryFromCodeberg(pr.base.repo) : null,
-    },
+    head: toIAPIPullRequestRefFromCodeberg(pr.head),
+    base: toIAPIPullRequestRefFromCodeberg(pr.base),
     body: pr.body,
     state: pr.state,
     draft: pr.draft,
