@@ -21,8 +21,7 @@ async function write(relativePath: string, content: string): Promise<void> {
   await writeFile(absolute, content, 'utf8')
 }
 
-const scan = () =>
-  scanRepository(1, root, 1234, { measureArtifacts: true })
+const scan = () => scanRepository(1, root, 1234, { measureArtifacts: true })
 
 describe('scanRepository', () => {
   beforeEach(async () => {
@@ -44,7 +43,10 @@ describe('scanRepository', () => {
   it('finds context, docs and artifacts across a repository', async () => {
     await write('CLAUDE.md', '# Project\n\n- Run tests before pushing\n')
     await write('packages/api/CLAUDE.md', '# API\n\n- Use postgres\n')
-    await write('.claude/skills/deploy/SKILL.md', '---\nname: deploy\n---\n# Deploy\n')
+    await write(
+      '.claude/skills/deploy/SKILL.md',
+      '---\nname: deploy\n---\n# Deploy\n'
+    )
     await write('.github/copilot-instructions.md', '# Copilot\n')
     await write('README.md', '# The Readme\n')
     await write('docs/architecture.md', '# Architecture\n')
@@ -130,12 +132,16 @@ describe('scanRepository', () => {
     await write('docs/exists.md', '# Here\n')
     await write(
       'CLAUDE.md',
-      ['# Project', '', 'See @docs/exists.md.', 'And @docs/deleted.md.'].join('\n')
+      ['# Project', '', 'See @docs/exists.md.', 'And @docs/deleted.md.'].join(
+        '\n'
+      )
     )
 
     const inventory = await scan()
 
-    const claude = inventory.contextFiles.find(f => f.relativePath === 'CLAUDE.md')!
+    const claude = inventory.contextFiles.find(
+      f => f.relativePath === 'CLAUDE.md'
+    )!
     const byTarget = new Map(claude.references.map(r => [r.target, r.exists]))
 
     assert.equal(byTarget.get('docs/exists.md'), true)
@@ -188,7 +194,10 @@ describe('scanRepository', () => {
 
     const agents = configuredAgents(await scan()).sort()
 
-    assert.deepEqual(agents, [AgentId.ClaudeCode, AgentId.Cursor, AgentId.Shared].sort())
+    assert.deepEqual(
+      agents,
+      [AgentId.ClaudeCode, AgentId.Cursor, AgentId.Shared].sort()
+    )
   })
 
   it('skips the git directory', async () => {

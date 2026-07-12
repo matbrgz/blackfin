@@ -59,8 +59,16 @@ const ArtifactRules: ReadonlyArray<IArtifactRule> = [
     name: 'build',
     requiresSibling: 'package.json',
   },
-  { kind: ArtifactKind.BuildOutput, name: 'out', requiresSibling: 'package.json' },
-  { kind: ArtifactKind.BuildOutput, name: 'target', requiresSibling: 'Cargo.toml' },
+  {
+    kind: ArtifactKind.BuildOutput,
+    name: 'out',
+    requiresSibling: 'package.json',
+  },
+  {
+    kind: ArtifactKind.BuildOutput,
+    name: 'target',
+    requiresSibling: 'Cargo.toml',
+  },
   { kind: ArtifactKind.BuildOutput, name: '.next' },
   { kind: ArtifactKind.BuildOutput, name: '.nuxt' },
   { kind: ArtifactKind.BuildOutput, name: '.svelte-kit' },
@@ -104,7 +112,10 @@ export function classifyArtifact(
   if (rule === undefined) {
     return null
   }
-  if (rule.requiresSibling !== undefined && !siblingExists(rule.requiresSibling)) {
+  if (
+    rule.requiresSibling !== undefined &&
+    !siblingExists(rule.requiresSibling)
+  ) {
     return null
   }
   return rule.kind
@@ -191,7 +202,10 @@ export function classifyContext(
     if (basename === 'copilot-instructions.md') {
       return { agent: AgentId.Copilot, role: ContextRole.Instructions }
     }
-    if (segments[1] === 'instructions' && basename.endsWith('.instructions.md')) {
+    if (
+      segments[1] === 'instructions' &&
+      basename.endsWith('.instructions.md')
+    ) {
       return { agent: AgentId.Copilot, role: ContextRole.Instructions }
     }
     if (segments[1] === 'prompts' && basename.endsWith('.prompt.md')) {

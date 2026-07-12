@@ -27,9 +27,12 @@ describe('parseFrontmatter', () => {
   })
 
   it('strips surrounding quotes', () => {
-    const content = ['---', 'name: "quoted"', "description: 'also quoted'", '---'].join(
-      '\n'
-    )
+    const content = [
+      '---',
+      'name: "quoted"',
+      "description: 'also quoted'",
+      '---',
+    ].join('\n')
     assert.deepEqual(parseFrontmatter(content), {
       name: 'quoted',
       description: 'also quoted',
@@ -51,7 +54,10 @@ describe('parseFrontmatter', () => {
   it('yields nothing when the frontmatter block never closes', () => {
     // Rather than swallowing the entire file as frontmatter.
     const content = ['---', 'name: unterminated', '', '# A heading'].join('\n')
-    assert.deepEqual(parseFrontmatter(content), { name: null, description: null })
+    assert.deepEqual(parseFrontmatter(content), {
+      name: null,
+      description: null,
+    })
   })
 
   it('yields nothing when there is no frontmatter at all', () => {
@@ -77,7 +83,9 @@ describe('parseHeadings', () => {
   })
 
   it('strips closing hashes', () => {
-    assert.deepEqual(parseHeadings('## Middle ##'), [{ level: 2, text: 'Middle' }])
+    assert.deepEqual(parseHeadings('## Middle ##'), [
+      { level: 2, text: 'Middle' },
+    ])
   })
 
   it('ignores hashes inside fenced code, which are comments and not headings', () => {
@@ -147,9 +155,13 @@ describe('countRules', () => {
   })
 
   it('does not count bullets inside fenced code', () => {
-    const content = ['- a real rule', '', '```diff', '- removed line', '```'].join(
-      '\n'
-    )
+    const content = [
+      '- a real rule',
+      '',
+      '```diff',
+      '- removed line',
+      '```',
+    ].join('\n')
     assert.equal(countRules(content), 1)
   })
 
@@ -160,9 +172,10 @@ describe('countRules', () => {
 
 describe('extractReferences', () => {
   it('finds claude-style imports', () => {
-    assert.deepEqual(extractReferences('See @docs/architecture.md for details.'), [
-      'docs/architecture.md',
-    ])
+    assert.deepEqual(
+      extractReferences('See @docs/architecture.md for details.'),
+      ['docs/architecture.md']
+    )
   })
 
   it('finds relative markdown links', () => {
@@ -185,7 +198,10 @@ describe('extractReferences', () => {
   })
 
   it('ignores bare anchors and absolute paths', () => {
-    assert.deepEqual(extractReferences('[here](#section) and [there](/etc/passwd)'), [])
+    assert.deepEqual(
+      extractReferences('[here](#section) and [there](/etc/passwd)'),
+      []
+    )
   })
 
   it('does not swallow the punctuation ending the sentence', () => {

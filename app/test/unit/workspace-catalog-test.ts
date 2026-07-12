@@ -108,10 +108,13 @@ describe('classifyContext', () => {
       agent: AgentId.Copilot,
       role: ContextRole.Instructions,
     })
-    assert.deepEqual(classifyContext('.github/instructions/api.instructions.md'), {
-      agent: AgentId.Copilot,
-      role: ContextRole.Instructions,
-    })
+    assert.deepEqual(
+      classifyContext('.github/instructions/api.instructions.md'),
+      {
+        agent: AgentId.Copilot,
+        role: ContextRole.Instructions,
+      }
+    )
     assert.deepEqual(classifyContext('.github/prompts/fix.prompt.md'), {
       agent: AgentId.Copilot,
       role: ContextRole.Prompt,
@@ -136,14 +139,23 @@ describe('classifyArtifact', () => {
       classifyArtifact('node_modules', noSiblings),
       ArtifactKind.Dependencies
     )
-    assert.equal(classifyArtifact('Pods', noSiblings), ArtifactKind.Dependencies)
+    assert.equal(
+      classifyArtifact('Pods', noSiblings),
+      ArtifactKind.Dependencies
+    )
   })
 
   it('recognises caches and virtual environments', () => {
-    assert.equal(classifyArtifact('__pycache__', noSiblings), ArtifactKind.Cache)
+    assert.equal(
+      classifyArtifact('__pycache__', noSiblings),
+      ArtifactKind.Cache
+    )
     assert.equal(classifyArtifact('.turbo', noSiblings), ArtifactKind.Cache)
     assert.equal(classifyArtifact('.venv', noSiblings), ArtifactKind.VirtualEnv)
-    assert.equal(classifyArtifact('coverage', noSiblings), ArtifactKind.Coverage)
+    assert.equal(
+      classifyArtifact('coverage', noSiblings),
+      ArtifactKind.Coverage
+    )
   })
 
   it('only calls dist build output when a manifest says a build tool owns it', () => {
@@ -166,7 +178,10 @@ describe('classifyArtifact', () => {
 
   it('recognises framework output directories unconditionally', () => {
     // .next is never anything but build output.
-    assert.equal(classifyArtifact('.next', noSiblings), ArtifactKind.BuildOutput)
+    assert.equal(
+      classifyArtifact('.next', noSiblings),
+      ArtifactKind.BuildOutput
+    )
   })
 
   it('returns null for ordinary directories', () => {

@@ -34,7 +34,9 @@ export function parseFrontmatter(content: string): IFrontmatter {
     return empty
   }
 
-  const end = lines.findIndex((line, i) => i > 0 && FrontmatterDelimiter.test(line))
+  const end = lines.findIndex(
+    (line, i) => i > 0 && FrontmatterDelimiter.test(line)
+  )
   if (end === -1) {
     return empty
   }
@@ -101,7 +103,11 @@ function blankOutCodeFences(lines: ReadonlyArray<string>): Array<string> {
 
     // Inside a fence. It closes on a delimiter of the same character that is at
     // least as long as the one that opened it.
-    if (match !== null && match[1][0] === fence[0] && match[1].length >= fence.length) {
+    if (
+      match !== null &&
+      match[1][0] === fence[0] &&
+      match[1].length >= fence.length
+    ) {
       fence = null
     }
     out.push('')
