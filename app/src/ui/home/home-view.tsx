@@ -14,6 +14,7 @@ import {
   reclaimableBytes,
 } from '../../models/workspace-inventory'
 import { agentDisplayName } from '../../lib/workspace/catalog'
+import { isCountable } from '../workspace/display'
 import { IScanProgress } from '../../lib/stores/workspace-store'
 
 interface IHomeStatProps {
@@ -77,9 +78,14 @@ class ProjectCard extends React.Component<IProjectCardProps> {
 
   public render() {
     const { repository, inventory } = this.props
-    const agents = inventory === undefined ? [] : configuredAgents(inventory)
-    const reclaimable =
-      inventory === undefined ? 0 : reclaimableBytes(inventory)
+
+    // An unscanned project is not a project without agent context. Saying "No
+    // agent context" about a project nobody has read is the card asserting the
+    // very thing this screen exists to find out.
+    const scanned = inventory !== undefined && isCountable(inventory)
+
+    const agents = scanned ? configuredAgents(inventory) : []
+    const reclaimable = scanned ? reclaimableBytes(inventory) : 0
 
     return (
       <button className="home-project" onClick={this.onClick}>
@@ -88,7 +94,9 @@ class ProjectCard extends React.Component<IProjectCardProps> {
         </span>
 
         <span className="home-project-agents">
-          {agents.length === 0 ? (
+          {!scanned ? (
+            <span className="home-project-unknown">Not scanned yet</span>
+          ) : agents.length === 0 ? (
             <span className="home-project-none">No agent context</span>
           ) : (
             agents.map(agent => (
@@ -171,6 +179,11 @@ export class HomeView extends React.Component<IHomeViewProps> {
     const { repositories, onNavigate } = this.props
     const inventories = this.knownInventories()
 
+    // Every count below is over scanned projects only. When that is fewer than
+    // all of them, the numbers say so — an unqualified "12 without agent
+    // context" over a partially-scanned workspace is a number that means nothing.
+    const unscanned = repositories.length - inventories.length
+
     const withoutContext = inventories.filter(
       i => configuredAgents(i).length === 0
     ).length
@@ -194,7 +207,11 @@ export class HomeView extends React.Component<IHomeViewProps> {
         />
         <HomeStat
           value={String(withoutContext)}
-          label="without agent context"
+          label={
+            unscanned > 0
+              ? `without agent context (of ${inventories.length} scanned)`
+              : 'without agent context'
+          }
           section={AppSection.Agents}
           alarming={withoutContext > 0}
           onNavigate={onNavigate}
@@ -310,9 +327,18 @@ export class HomeView extends React.Component<IHomeViewProps> {
     )
   }
 
+  /**
+   * The inventories we may actually make claims about.
+   *
+   * A repository that was never scanned has no entry at all, and one whose scan
+   * failed has an entry we cannot trust — `configuredAgents` on it returns an
+   * empty array, which would silently land it in the "without agent context"
+   * count. Neither belongs in a statistic.
+   */
   private knownInventories(): ReadonlyArray<IRepositoryInventory> {
     return this.props.repositories
       .map(r => this.props.inventories.get(r.id))
       .filter((i): i is IRepositoryInventory => i !== undefined)
+      .filter(isCountable)
   }
 }

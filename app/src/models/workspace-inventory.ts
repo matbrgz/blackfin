@@ -131,7 +131,17 @@ export interface IArtifactDirectory {
 }
 
 export type InventoryStatus =
+  /** Scanned. What you see is what is there. */
   | { readonly kind: 'ok' }
+  /**
+   * Never scanned. We have not looked, so we know nothing — which is different
+   * from having looked and found nothing, and must never be rendered as if it
+   * were. A project we have not read is not a project without agent context; it
+   * is a project we cannot speak about, and it stays out of every count that
+   * claims to.
+   */
+  | { readonly kind: 'never-scanned' }
+  /** The repository path is gone from disk. */
   | { readonly kind: 'missing' }
   | { readonly kind: 'error'; readonly message: string }
 

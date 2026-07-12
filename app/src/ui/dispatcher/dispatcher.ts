@@ -58,6 +58,7 @@ import type {
 } from '../../lib/stores/copilot-store'
 import type { IBYOKProvider } from '../../lib/copilot/byok'
 import { RepositoryStateCache } from '../../lib/stores/repository-state-cache'
+import { CleanupOutcome } from '../../lib/workspace/cleanup'
 import { getTipSha } from '../../lib/tip'
 
 import { Account } from '../../models/account'
@@ -390,11 +391,18 @@ export class Dispatcher {
     return this.appStore._addRepositoriesFromFolder(path)
   }
 
-  /** Move the given reclaimable directories to the trash. */
+  /**
+   * Move the given reclaimable directories to the trash, and report what
+   * happened to each one.
+   *
+   * The outcomes are the point. Every path is revalidated against the disk at
+   * the moment of deletion, and one that has become a symlink, or escaped the
+   * repository root, is refused — a refusal the caller is expected to show.
+   */
   public cleanUpWorkspace(
     repository: Repository,
     relativePaths: ReadonlyArray<string>
-  ): Promise<void> {
+  ): Promise<ReadonlyArray<CleanupOutcome>> {
     return this.appStore._cleanUpWorkspace(repository, relativePaths)
   }
 

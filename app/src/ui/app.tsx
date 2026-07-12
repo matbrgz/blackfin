@@ -106,12 +106,14 @@ import { Acknowledgements } from './acknowledgements'
 import { UntrustedCertificate } from './untrusted-certificate'
 import { NoRepositoriesView } from './no-repositories'
 import { WorkspaceCenter } from './workspace/workspace-center'
+import { ConfirmCleanupDialog } from './workspace/confirm-cleanup-dialog'
 import { HomeView } from './home/home-view'
 import { AppRail } from './rail/app-rail'
 import { AppSection } from '../models/app-section'
 import {
   brokenReferences,
   configuredAgents,
+  IArtifactDirectory,
 } from '../models/workspace-inventory'
 import { ConfirmRemoveRepository } from './remove-repository'
 import { TermsAndConditions } from './terms-and-conditions'
@@ -3084,6 +3086,17 @@ export class App extends React.Component<IAppProps, IAppState> {
           />
         )
       }
+      case PopupType.ConfirmWorkspaceCleanup: {
+        return (
+          <ConfirmCleanupDialog
+            key="confirm-workspace-cleanup"
+            dispatcher={this.props.dispatcher}
+            repository={popup.repository}
+            artifacts={popup.artifacts}
+            onDismissed={onPopupDismissedFn}
+          />
+        )
+      }
       case PopupType.ManageRemotes:
         return (
           <ManageRemotesDialog
@@ -4194,11 +4207,17 @@ export class App extends React.Component<IAppProps, IAppState> {
     this.props.dispatcher.setAppSection(AppSection.Code)
   }
 
+  // Opens the confirmation rather than deleting. Nothing on this path touches
+  // the disk; only a confirmed dialog calls `cleanUpWorkspace`.
   private onWorkspaceCleanUp = (
     repository: Repository,
-    relativePaths: ReadonlyArray<string>
+    artifacts: ReadonlyArray<IArtifactDirectory>
   ) => {
-    this.props.dispatcher.cleanUpWorkspace(repository, relativePaths)
+    this.props.dispatcher.showPopup({
+      type: PopupType.ConfirmWorkspaceCleanup,
+      repository,
+      artifacts,
+    })
   }
 
   private onWorkspaceOpenFile = (

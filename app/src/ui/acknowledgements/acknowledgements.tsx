@@ -121,9 +121,9 @@ export class Acknowledgements extends React.Component<
       >
         <DialogContent>
           <p>
-            <LinkButton uri={WebsiteURL}>Blackfin</LinkButton> is an open
-            source project published under the MIT License. You can view the
-            source code and contribute to this project on{' '}
+            <LinkButton uri={WebsiteURL}>Blackfin</LinkButton> is an open source
+            project published under the MIT License. You can view the source
+            code and contribute to this project on{' '}
             <LinkButton uri={RepositoryURL}>GitHub</LinkButton>.
           </p>
 

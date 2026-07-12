@@ -217,8 +217,8 @@ export class TestNotifications extends React.Component<
     if (warnNotificationsDenied) {
       return (
         <>
-          <span className="warning-icon">⚠️</span> Blackfin has no
-          permission to display notifications. Please, enable them in the{' '}
+          <span className="warning-icon">⚠️</span> Blackfin has no permission to
+          display notifications. Please, enable them in the{' '}
           <LinkButton uri={notificationSettingsURL}>
             Notifications Settings
           </LinkButton>

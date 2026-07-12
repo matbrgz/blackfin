@@ -9,6 +9,7 @@ import { Repository } from '../../models/repository'
 import { AppSection } from '../../models/app-section'
 import {
   ContextScope,
+  IArtifactDirectory,
   IGlobalContext,
   IRepositoryInventory,
   reclaimableBytes,
@@ -27,7 +28,7 @@ interface IWorkspaceCenterProps {
   readonly onRescan: () => void
   readonly onCleanUp: (
     repository: Repository,
-    relativePaths: ReadonlyArray<string>
+    artifacts: ReadonlyArray<IArtifactDirectory>
   ) => void
   readonly onOpenFile: (repository: Repository, relativePath: string) => void
   readonly onOpenPath: (absolutePath: string) => void
@@ -187,6 +188,16 @@ export class WorkspaceCenter extends React.Component<
     const repositories = this.visibleRepositories()
 
     if (repositories.length === 0) {
+      // With no projects at all there is no filter to have excluded them, and
+      // “No projects match ””” is a sentence about nothing.
+      if (this.props.repositories.length === 0) {
+        return (
+          <div className="workspace-empty">
+            <p>No projects yet. Add a folder to see what is in it.</p>
+          </div>
+        )
+      }
+
       return (
         <div className="workspace-empty">
           <p>No projects match “{this.state.filter}”.</p>
@@ -231,13 +242,16 @@ export class WorkspaceCenter extends React.Component<
     )
   }
 
+  // A repository with no cached inventory has never been scanned. Saying `ok`
+  // here would be the screen asserting a fact it never established — a project
+  // full of skills would render exactly like one with none.
   private inventoryFor(repository: Repository): IRepositoryInventory {
     return (
       this.props.inventories.get(repository.id) ?? {
         repositoryId: repository.id,
         repositoryPath: repository.path,
         scannedAt: 0,
-        status: { kind: 'ok' },
+        status: { kind: 'never-scanned' },
         contextFiles: [],
         docs: [],
         artifacts: [],

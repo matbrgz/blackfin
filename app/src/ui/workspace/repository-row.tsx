@@ -6,6 +6,7 @@ import { formatBytes } from '../lib/bytes'
 import { Repository } from '../../models/repository'
 import { AppSection } from '../../models/app-section'
 import {
+  IArtifactDirectory,
   IRepositoryInventory,
   brokenReferences,
   configuredAgents,
@@ -15,7 +16,7 @@ import { agentDisplayName } from '../../lib/workspace/catalog'
 import { ContextFileList } from './context-file-list'
 import { DocFileList } from './doc-file-list'
 import { ArtifactList } from './artifact-list'
-import { plural } from './display'
+import { explainStatus, plural } from './display'
 
 interface IRepositoryRowProps {
   readonly section: AppSection
@@ -26,7 +27,7 @@ interface IRepositoryRowProps {
   readonly onOpenFile: (repository: Repository, relativePath: string) => void
   readonly onCleanUp: (
     repository: Repository,
-    relativePaths: ReadonlyArray<string>
+    artifacts: ReadonlyArray<IArtifactDirectory>
   ) => void
 }
 
@@ -70,6 +71,11 @@ export class RepositoryRow extends React.Component<IRepositoryRowProps> {
 
     if (inventory.status.kind === 'error') {
       return <span className="workspace-badge error">Scan failed</span>
+    }
+
+    // Not the same as an empty project, and it does not get to look like one.
+    if (inventory.status.kind === 'never-scanned') {
+      return <span className="workspace-badge muted">Not scanned yet</span>
     }
 
     switch (section) {
@@ -128,11 +134,7 @@ export class RepositoryRow extends React.Component<IRepositoryRowProps> {
     if (inventory.status.kind !== 'ok') {
       return (
         <div className="workspace-detail">
-          <p className="workspace-empty">
-            {inventory.status.kind === 'missing'
-              ? 'This project is no longer on disk.'
-              : inventory.status.message}
-          </p>
+          <p className="workspace-empty">{explainStatus(inventory.status)}</p>
         </div>
       )
     }

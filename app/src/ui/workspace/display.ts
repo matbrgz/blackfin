@@ -1,7 +1,36 @@
 import { AppSection } from '../../models/app-section'
-import { ContextRole, ContextScope } from '../../models/workspace-inventory'
+import {
+  ContextRole,
+  ContextScope,
+  InventoryStatus,
+  IRepositoryInventory,
+} from '../../models/workspace-inventory'
 
 /** Human-readable names for the workspace UI. Pure, so they live apart. */
+
+export function explainStatus(status: InventoryStatus): string {
+  switch (status.kind) {
+    case 'ok':
+      return ''
+    case 'never-scanned':
+      return 'This project has not been scanned yet, so we do not know what is in it.'
+    case 'missing':
+      return 'This project is no longer on disk.'
+    case 'error':
+      return status.message
+  }
+}
+
+/**
+ * Whether this inventory may be counted in a statistic.
+ *
+ * A never-scanned project must not be. "12 projects have no agent context" is a
+ * claim, and a claim that silently includes projects nobody looked at is false.
+ * Blackfin does not present absence of data as absence of the thing.
+ */
+export function isCountable(inventory: IRepositoryInventory): boolean {
+  return inventory.status.kind === 'ok'
+}
 
 export function sectionTitle(section: AppSection): string {
   switch (section) {
@@ -57,6 +86,16 @@ export function scopeDisplayName(scope: ContextScope): string {
   }
 }
 
-export function plural(count: number, word: string): string {
-  return count === 1 ? word : `${word}s`
+/**
+ * Pluralize `word` for `count`.
+ *
+ * Pass `plural` explicitly when appending an `s` would be wrong — "directorys",
+ * "wass". English has enough of these that guessing is not an option.
+ */
+export function plural(count: number, word: string, plural?: string): string {
+  if (count === 1) {
+    return word
+  }
+
+  return plural ?? `${word}s`
 }

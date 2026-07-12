@@ -571,9 +571,7 @@ export function buildDefaultMenuTemplate({
     label: __DARWIN__ ? 'Report Issue…' : 'Report issue…',
     click() {
       shell
-        .openExternal(
-          'https://github.com/matbrgz/blackfin/issues/new/choose'
-        )
+        .openExternal('https://github.com/matbrgz/blackfin/issues/new/choose')
         .catch(err => log.error('Failed opening issue creation page', err))
     },
   }

@@ -62,8 +62,8 @@ export class TutorialDone extends React.Component<ITutorialDoneProps, {}> {
             <div className="text">
               <h1 ref={this.header}>You're done!</h1>
               <p>
-                You’ve learned the basics on how to use Blackfin. Here are
-                some suggestions for what to do next.
+                You’ve learned the basics on how to use Blackfin. Here are some
+                suggestions for what to do next.
               </p>
             </div>
             <img

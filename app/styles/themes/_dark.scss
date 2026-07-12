@@ -391,6 +391,11 @@ body.theme-dark {
   --dialog-information-color: #{$blue-400};
   --dialog-error-color: #{$red-600};
 
+  // Dark surfaces, not the light theme's tints. Inheriting those would put
+  // near-white behind text that is already light.
+  --dialog-warning-background: #272216;
+  --dialog-error-background: #{darken($red-900, 3%)};
+
   /** Banner */
   --banner-warning-background: #272216;
   --banner-warning-text-color: var(--text-color);

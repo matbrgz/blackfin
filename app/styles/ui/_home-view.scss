@@ -194,6 +194,16 @@
     font-size: var(--font-size-sm);
   }
 
+  // Not knowing is not the same as knowing there is nothing, and it must not
+  // borrow the warning colour — there is nothing here to warn about yet.
+  .home-project-unknown {
+    padding: 1px var(--spacing-half);
+    border-radius: var(--border-radius);
+    background: var(--box-alt-background-color);
+    color: var(--text-secondary-color);
+    font-size: var(--font-size-sm);
+  }
+
   .home-project-disk {
     color: var(--text-secondary-color);
     font-size: var(--font-size-sm);

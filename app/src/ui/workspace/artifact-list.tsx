@@ -14,23 +14,23 @@ import { plural } from './display'
 
 interface ICleanUpButtonProps {
   readonly repository: Repository
-  readonly relativePaths: ReadonlyArray<string>
+  readonly artifacts: ReadonlyArray<IArtifactDirectory>
   readonly bytes: number
   readonly onCleanUp: (
     repository: Repository,
-    relativePaths: ReadonlyArray<string>
+    artifacts: ReadonlyArray<IArtifactDirectory>
   ) => void
 }
 
 class CleanUpButton extends React.Component<ICleanUpButtonProps> {
   private onClick = () =>
-    this.props.onCleanUp(this.props.repository, this.props.relativePaths)
+    this.props.onCleanUp(this.props.repository, this.props.artifacts)
 
   public render() {
     return (
       <Button onClick={this.onClick}>
         <Octicon symbol={octicons.trash} /> Reclaim{' '}
-        {formatBytes(this.props.bytes)}
+        {formatBytes(this.props.bytes)}…
       </Button>
     )
   }
@@ -56,9 +56,15 @@ function renderArtifact(artifact: IArtifactDirectory) {
 interface IArtifactListProps {
   readonly repository: Repository
   readonly inventory: IRepositoryInventory
+
+  /**
+   * Opens the confirmation. Nothing is deleted on this path — the artifacts go
+   * to a dialog that shows what will be removed, and only a confirmed dialog
+   * calls the cleanup.
+   */
   readonly onCleanUp: (
     repository: Repository,
-    relativePaths: ReadonlyArray<string>
+    artifacts: ReadonlyArray<IArtifactDirectory>
   ) => void
 }
 
@@ -87,12 +93,12 @@ export class ArtifactList extends React.Component<IArtifactListProps> {
         <div className="workspace-cleanup">
           <CleanUpButton
             repository={repository}
-            relativePaths={sorted.map(a => a.relativePath)}
+            artifacts={sorted}
             bytes={reclaimableBytes(inventory)}
             onCleanUp={onCleanUp}
           />
           <span className="workspace-cleanup-note">
-            Moves these directories to the trash.
+            Asks first, then moves these directories to the trash.
           </span>
         </div>
       </div>

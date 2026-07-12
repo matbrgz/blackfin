@@ -6,9 +6,9 @@ body:
     attributes:
       label: The problem
       description:
-        Describe the issue you are experiencing with Blackfin. Provide a
-        clear and concise description of what you were trying to do and what
-        happened, along with any error messages you encountered.
+        Describe the issue you are experiencing with Blackfin. Provide a clear
+        and concise description of what you were trying to do and what happened,
+        along with any error messages you encountered.
     validations:
       required: true
   - type: input

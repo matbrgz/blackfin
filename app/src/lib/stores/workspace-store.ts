@@ -51,13 +51,6 @@ export class WorkspaceStore extends BaseStore {
   /** Aborts the scan in flight, if there is one. */
   private abortController: AbortController | null = null
 
-  public constructor(
-    private readonly db: WorkspaceDatabase,
-    private readonly now: () => number = () => Date.now()
-  ) {
-    super()
-  }
-
   /**
    * The agent context in the user's home directory. Held in memory only — it is
    * one directory tree, it scans in milliseconds, and caching it would buy
@@ -66,6 +59,13 @@ export class WorkspaceStore extends BaseStore {
   private globalContext: IGlobalContext = emptyGlobalContext(homedir(), 0, {
     kind: 'ok',
   })
+
+  public constructor(
+    private readonly db: WorkspaceDatabase,
+    private readonly now: () => number = () => Date.now()
+  ) {
+    super()
+  }
 
   public getInventories(): ReadonlyMap<number, IRepositoryInventory> {
     return this.inventories

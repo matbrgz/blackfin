@@ -49,8 +49,8 @@ export class MoveToApplicationsFolder extends React.Component<
             the app, including impacting your ability to sign in.
           </p>
           <p>
-            Do you want to move Blackfin to the Applications folder now?
-            This will also restart the app.
+            Do you want to move Blackfin to the Applications folder now? This
+            will also restart the app.
           </p>
           <div>
             <Checkbox

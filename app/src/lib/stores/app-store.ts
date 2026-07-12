@@ -105,6 +105,7 @@ import {
 } from '../../models/repository'
 import { AppSection } from '../../models/app-section'
 import { discoverRepositories } from '../workspace/discover-repositories'
+import { CleanupOutcome } from '../workspace/cleanup'
 import {
   CommittedFileChange,
   WorkingDirectoryFileChange,
@@ -820,6 +821,15 @@ export class AppStore extends TypedBaseStore<IAppState> {
   private copilotModels: ReadonlyArray<Model> | null = null
   private byokProviders: ReadonlyArray<IBYOKProvider> = []
 
+  /**
+   * The app opens on Home, not on a repository. That is the whole point: the
+   * first thing Blackfin shows you is the state of your work, not a diff.
+   */
+  private selectedAppSection: AppSection = AppSection.Home
+
+  /** Whether the workspace has been scanned at least once this session. */
+  private workspaceLoaded: boolean = false
+
   public constructor(
     private readonly gitHubUserStore: GitHubUserStore,
     private readonly cloningRepositoriesStore: CloningRepositoriesStore,
@@ -1329,15 +1339,6 @@ export class AppStore extends TypedBaseStore<IAppState> {
     }
   }
 
-  /**
-   * The app opens on Home, not on a repository. That is the whole point: the
-   * first thing Blackfin shows you is the state of your work, not a diff.
-   */
-  private selectedAppSection: AppSection = AppSection.Home
-
-  /** Whether the workspace has been scanned at least once this session. */
-  private workspaceLoaded: boolean = false
-
   public _setAppSection(section: AppSection): Promise<void> {
     this.selectedAppSection = section
     this.emitUpdate()
@@ -1398,34 +1399,24 @@ export class AppStore extends TypedBaseStore<IAppState> {
     )
   }
 
-  public async _cleanUpWorkspace(
+  /**
+   * Returns what actually happened, one outcome per path.
+   *
+   * A refusal is not an application error and must not be routed through
+   * `emitError`: an error banner collapses several distinct refusals into one
+   * string and throws away which path each belonged to. The caller renders
+   * these, so a `node_modules` that turned out to be a symlink is something the
+   * user is told about rather than something that silently stays on disk.
+   */
+  public _cleanUpWorkspace(
     repository: Repository,
     relativePaths: ReadonlyArray<string>
-  ): Promise<void> {
-    const outcomes = await this.workspaceStore.cleanUp(
+  ): Promise<ReadonlyArray<CleanupOutcome>> {
+    return this.workspaceStore.cleanUp(
       { id: repository.id, path: repository.path },
       relativePaths,
       { moveToTrash: true, moveItemToTrash: shell.moveItemToTrash }
     )
-
-    // Refusals and failures are silent otherwise, and a cleanup that quietly
-    // did nothing is worse than one that says why.
-    const problems = outcomes.filter(o => o.kind !== 'deleted')
-    if (problems.length > 0) {
-      this.emitError(
-        new Error(
-          problems
-            .map(o =>
-              o.kind === 'refused'
-                ? `Skipped ${o.relativePath}: ${o.reason}`
-                : o.kind === 'failed'
-                ? `Failed to delete ${o.relativePath}: ${o.message}`
-                : ''
-            )
-            .join('\n')
-        )
-      )
-    }
   }
 
   public getState(): IAppState {

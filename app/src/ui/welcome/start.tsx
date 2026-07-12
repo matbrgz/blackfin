@@ -39,9 +39,9 @@ export class Start extends React.Component<IStartProps, {}> {
           {!this.props.loadingBrowserAuth ? (
             <>
               <p id="start-description" className="welcome-text">
-                Blackfin is a seamless way to contribute to projects on
-                GitHub and other platforms. Sign in below to get started with
-                your existing projects.
+                Blackfin is a seamless way to contribute to projects on GitHub
+                and other platforms. Sign in below to get started with your
+                existing projects.
               </p>
             </>
           ) : (

@@ -119,16 +119,16 @@ export class UpdateAvailable extends React.Component<IUpdateAvailableProps> {
             'important updates'
           )}
           . Please{' '}
-          <LinkButton onClick={this.updateNow}>restart Blackfin</LinkButton>{' '}
-          now to install pending updates.
+          <LinkButton onClick={this.updateNow}>restart Blackfin</LinkButton> now
+          to install pending updates.
         </span>
       )
     }
 
     return (
       <span onSubmit={this.updateNow}>
-        An updated version of Blackfin is available and will be installed at
-        the next launch. See{' '}
+        An updated version of Blackfin is available and will be installed at the
+        next launch. See{' '}
         <LinkButton onClick={this.showReleaseNotes}>what's new</LinkButton> or{' '}
         <LinkButton onClick={this.updateNow}>restart Blackfin</LinkButton>.
       </span>
