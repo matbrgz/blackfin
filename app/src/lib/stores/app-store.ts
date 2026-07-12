@@ -103,6 +103,7 @@ import {
   getNonForkGitHubRepository,
   isForkedRepositoryContributingToParent,
 } from '../../models/repository'
+import { AppSection } from '../../models/app-section'
 import {
   CommittedFileChange,
   WorkingDirectoryFileChange,
@@ -1327,24 +1328,41 @@ export class AppStore extends TypedBaseStore<IAppState> {
     }
   }
 
-  /** Whether the cross-project workspace view is taking over the window. */
-  private showWorkspaceCenter: boolean = false
+  /**
+   * The app opens on Home, not on a repository. That is the whole point: the
+   * first thing Blackfin shows you is the state of your work, not a diff.
+   */
+  private selectedAppSection: AppSection = AppSection.Home
 
-  public _setShowWorkspaceCenter(show: boolean): Promise<void> {
-    this.showWorkspaceCenter = show
+  /** Whether the workspace has been scanned at least once this session. */
+  private workspaceLoaded: boolean = false
+
+  public _setAppSection(section: AppSection): Promise<void> {
+    this.selectedAppSection = section
     this.emitUpdate()
 
-    if (show) {
-      // Paint from the cache first — the screen fills immediately — and only
-      // then go back to disk. Awaiting the rescan here would give the user a
-      // blank screen for as long as their largest node_modules takes to walk.
-      this.workspaceStore
-        .loadFromCache()
-        .then(() => this._rescanWorkspace())
-        .catch(e => this.emitError(e))
+    if (section !== AppSection.Code) {
+      this.ensureWorkspaceLoaded()
     }
 
     return Promise.resolve()
+  }
+
+  /**
+   * Paint from the cache first — the screen fills immediately — and only then
+   * go back to disk. Awaiting the rescan would give the user a blank screen for
+   * as long as their largest node_modules takes to walk.
+   */
+  private ensureWorkspaceLoaded(): void {
+    if (this.workspaceLoaded) {
+      return
+    }
+    this.workspaceLoaded = true
+
+    this.workspaceStore
+      .loadFromCache()
+      .then(() => this._rescanWorkspace())
+      .catch(e => this.emitError(e))
   }
 
   public async _rescanWorkspace(): Promise<void> {
@@ -1396,7 +1414,7 @@ export class AppStore extends TypedBaseStore<IAppState> {
     return {
       accounts: this.accounts,
       repositories,
-      showWorkspaceCenter: this.showWorkspaceCenter,
+      selectedAppSection: this.selectedAppSection,
       workspaceInventories: this.workspaceStore.getInventories(),
       workspaceScanProgress: this.workspaceStore.getProgress(),
       recentRepositories: this.recentRepositories,

@@ -1,0 +1,199 @@
+#home-view {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--background-color);
+
+  .home-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--spacing-double);
+    border-bottom: var(--base-border);
+
+    h1 {
+      margin: 0;
+      font-size: var(--font-size-lg);
+      font-weight: var(--font-weight-semibold);
+    }
+
+    p {
+      margin: var(--spacing-half) 0 0;
+      color: var(--text-secondary-color);
+    }
+  }
+
+  .home-progress {
+    color: var(--text-secondary-color);
+  }
+
+  .home-scroll {
+    flex-grow: 1;
+    overflow-y: auto;
+    padding: var(--spacing-double);
+  }
+
+  .home-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: var(--spacing);
+    margin-bottom: var(--spacing-double);
+  }
+
+  .home-stat {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-half);
+
+    padding: var(--spacing);
+    border: var(--base-border);
+    border-radius: var(--border-radius);
+
+    background: var(--box-background-color);
+    color: var(--text-color);
+    text-align: left;
+    cursor: pointer;
+
+    &:hover {
+      background: var(--box-alt-background-color);
+    }
+
+    strong {
+      font-size: var(--font-size-xl);
+      font-variant-numeric: tabular-nums;
+    }
+
+    span {
+      color: var(--text-secondary-color);
+      font-size: var(--font-size-sm);
+    }
+
+    // A count of zero is good news and should look like nothing. A count above
+    // zero is the reason this screen exists.
+    &.alarming strong {
+      color: var(--dialog-error-color);
+    }
+  }
+
+  .home-attention {
+    margin-bottom: var(--spacing-double);
+
+    h2 {
+      margin: 0 0 var(--spacing-half);
+      font-size: var(--font-size-sm);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--text-secondary-color);
+    }
+
+    ul {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+    }
+
+    li {
+      margin-bottom: var(--spacing-half);
+    }
+
+    button {
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-half);
+      width: 100%;
+
+      padding: var(--spacing);
+      border: var(--base-border);
+      border-radius: var(--border-radius);
+
+      background: var(--box-background-color);
+      color: var(--text-color);
+      text-align: left;
+      cursor: pointer;
+
+      &:hover {
+        background: var(--box-alt-background-color);
+      }
+    }
+
+    .octicon {
+      fill: var(--dialog-warning-color);
+      flex-shrink: 0;
+    }
+
+    span {
+      color: var(--text-secondary-color);
+    }
+  }
+
+  .home-projects {
+    h2 {
+      margin: 0 0 var(--spacing-half);
+      font-size: var(--font-size-sm);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--text-secondary-color);
+    }
+  }
+
+  .home-project-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: var(--spacing);
+  }
+
+  .home-project {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--spacing-half);
+
+    padding: var(--spacing);
+    border: var(--base-border);
+    border-radius: var(--border-radius);
+
+    background: var(--box-background-color);
+    color: var(--text-color);
+    text-align: left;
+    cursor: pointer;
+
+    &:hover {
+      background: var(--box-alt-background-color);
+    }
+  }
+
+  .home-project-name {
+    font-weight: var(--font-weight-semibold);
+  }
+
+  .home-project-agents {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-half);
+  }
+
+  .home-project-agent {
+    padding: 1px var(--spacing-half);
+    border-radius: var(--border-radius);
+    background: var(--box-selected-background-color);
+    color: var(--box-selected-text-color);
+    font-size: var(--font-size-sm);
+  }
+
+  .home-project-none {
+    padding: 1px var(--spacing-half);
+    border-radius: var(--border-radius);
+    background: var(--dialog-warning-background);
+    font-size: var(--font-size-sm);
+  }
+
+  .home-project-disk {
+    color: var(--text-secondary-color);
+    font-size: var(--font-size-sm);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .home-empty {
+    color: var(--text-secondary-color);
+  }
+}

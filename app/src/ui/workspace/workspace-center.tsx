@@ -22,29 +22,104 @@ import {
 } from '../../lib/workspace/catalog'
 import { IScanProgress } from '../../lib/stores/workspace-store'
 
-/** Which slice of the inventory the user is looking at. */
-enum Lens {
+/**
+ * Which slice of the inventory the user is looking at. Chosen by the rail, not
+ * by tabs inside this view — Agents, Docs and Disk are top-level destinations
+ * of the app, and burying them as tabs inside a screen would demote them.
+ */
+export enum Lens {
   Agents = 'agents',
   Docs = 'docs',
   Disk = 'disk',
 }
 
+interface IRepositoryHeaderProps {
+  readonly repositoryId: number
+  readonly name: string
+  readonly expanded: boolean
+  readonly onToggle: (repositoryId: number) => void
+  readonly children?: React.ReactNode
+}
+
+class RepositoryHeader extends React.Component<IRepositoryHeaderProps> {
+  private onClick = () => this.props.onToggle(this.props.repositoryId)
+
+  public render() {
+    const { name, expanded, children } = this.props
+
+    return (
+      <button
+        className="workspace-repository-header"
+        onClick={this.onClick}
+        aria-expanded={expanded}
+      >
+        <Octicon
+          symbol={expanded ? octicons.chevronDown : octicons.chevronRight}
+        />
+        <span className="workspace-repository-name">{name}</span>
+        {children}
+      </button>
+    )
+  }
+}
+
+interface IFileButtonProps {
+  readonly repository: Repository
+  readonly relativePath: string
+  readonly onOpen: (repository: Repository, relativePath: string) => void
+}
+
+class FileButton extends React.Component<IFileButtonProps> {
+  private onClick = () =>
+    this.props.onOpen(this.props.repository, this.props.relativePath)
+
+  public render() {
+    return (
+      <button className="workspace-file-path" onClick={this.onClick}>
+        {this.props.relativePath}
+      </button>
+    )
+  }
+}
+
+interface ICleanUpButtonProps {
+  readonly repository: Repository
+  readonly relativePaths: ReadonlyArray<string>
+  readonly bytes: number
+  readonly onCleanUp: (
+    repository: Repository,
+    relativePaths: ReadonlyArray<string>
+  ) => void
+}
+
+class CleanUpButton extends React.Component<ICleanUpButtonProps> {
+  private onClick = () =>
+    this.props.onCleanUp(this.props.repository, this.props.relativePaths)
+
+  public render() {
+    return (
+      <Button onClick={this.onClick}>
+        <Octicon symbol={octicons.trash} /> Reclaim{' '}
+        {formatBytes(this.props.bytes)}
+      </Button>
+    )
+  }
+}
+
 interface IWorkspaceCenterProps {
+  readonly lens: Lens
   readonly repositories: ReadonlyArray<Repository>
   readonly inventories: ReadonlyMap<number, IRepositoryInventory>
   readonly progress: IScanProgress
   readonly onRescan: () => void
-  readonly onSelectRepository: (repository: Repository) => void
   readonly onCleanUp: (
     repository: Repository,
     relativePaths: ReadonlyArray<string>
   ) => void
   readonly onOpenFile: (repository: Repository, relativePath: string) => void
-  readonly onClose: () => void
 }
 
 interface IWorkspaceCenterState {
-  readonly lens: Lens
   readonly filter: string
   readonly expanded: ReadonlySet<number>
 }
@@ -60,21 +135,34 @@ export class WorkspaceCenter extends React.Component<
 > {
   public constructor(props: IWorkspaceCenterProps) {
     super(props)
-    this.state = { lens: Lens.Agents, filter: '', expanded: new Set() }
+    this.state = { filter: '', expanded: new Set() }
   }
 
   public render() {
     return (
       <UiView id="workspace-center">
         {this.renderHeader()}
-        {this.renderLenses()}
         <div className="workspace-list">{this.renderRepositories()}</div>
       </UiView>
     )
   }
 
+  private onFilterChanged = (event: React.FormEvent<HTMLInputElement>) => {
+    this.setState({ filter: event.currentTarget.value })
+  }
+
+  private onToggle = (repositoryId: number) => {
+    const expanded = new Set(this.state.expanded)
+    if (expanded.has(repositoryId)) {
+      expanded.delete(repositoryId)
+    } else {
+      expanded.add(repositoryId)
+    }
+    this.setState({ expanded })
+  }
+
   private renderHeader() {
-    const { progress } = this.props
+    const { progress, lens } = this.props
     const total = this.visibleRepositories().reduce(
       (sum, r) => sum + reclaimableBytes(this.inventoryFor(r)),
       0
@@ -83,20 +171,26 @@ export class WorkspaceCenter extends React.Component<
     return (
       <header className="workspace-header">
         <div className="workspace-title">
-          <h1>Workspace</h1>
-          <p>
-            Agent context, documentation and reclaimable disk across every
-            project.
-          </p>
+          <h1>{titleFor(lens)}</h1>
+          <p>{subtitleFor(lens)}</p>
         </div>
 
         <div className="workspace-summary">
-          {total > 0 && (
+          {lens === Lens.Disk && total > 0 && (
             <div className="workspace-reclaimable">
               <strong>{formatBytes(total)}</strong>
               <span>reclaimable</span>
             </div>
           )}
+
+          <input
+            type="search"
+            className="workspace-filter"
+            placeholder="Filter projects"
+            value={this.state.filter}
+            onChange={this.onFilterChanged}
+            aria-label="Filter projects"
+          />
 
           {progress.scanning ? (
             <span className="workspace-progress">
@@ -107,47 +201,8 @@ export class WorkspaceCenter extends React.Component<
               <Octicon symbol={octicons.sync} /> Rescan
             </Button>
           )}
-
-          <Button onClick={this.props.onClose}>Done</Button>
         </div>
       </header>
-    )
-  }
-
-  private renderLenses() {
-    const lenses: ReadonlyArray<[Lens, string]> = [
-      [Lens.Agents, 'Agents'],
-      [Lens.Docs, 'Docs'],
-      [Lens.Disk, 'Disk'],
-    ]
-
-    return (
-      <div className="workspace-controls">
-        <div className="workspace-lenses" role="tablist">
-          {lenses.map(([lens, label]) => (
-            <button
-              key={lens}
-              role="tab"
-              aria-selected={this.state.lens === lens}
-              className={classNames('workspace-lens', {
-                selected: this.state.lens === lens,
-              })}
-              onClick={() => this.setState({ lens })}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
-
-        <input
-          type="search"
-          className="workspace-filter"
-          placeholder="Filter projects"
-          value={this.state.filter}
-          onChange={e => this.setState({ filter: e.currentTarget.value })}
-          aria-label="Filter projects"
-        />
-      </div>
     )
   }
 
@@ -178,19 +233,14 @@ export class WorkspaceCenter extends React.Component<
         key={repository.id}
         className={classNames('workspace-repository', { expanded })}
       >
-        <button
-          className="workspace-repository-header"
-          onClick={() => this.toggle(repository.id)}
-          aria-expanded={expanded}
+        <RepositoryHeader
+          repositoryId={repository.id}
+          name={repository.alias ?? repository.name}
+          expanded={expanded}
+          onToggle={this.onToggle}
         >
-          <Octicon
-            symbol={expanded ? octicons.chevronDown : octicons.chevronRight}
-          />
-          <span className="workspace-repository-name">
-            {repository.alias ?? repository.name}
-          </span>
           {this.renderRepositorySummary(inventory)}
-        </button>
+        </RepositoryHeader>
 
         {expanded && this.renderDetail(repository, inventory)}
       </section>
@@ -203,17 +253,10 @@ export class WorkspaceCenter extends React.Component<
     }
 
     if (inventory.status.kind === 'error') {
-      return (
-        <span
-          className="workspace-badge error"
-          title={inventory.status.message}
-        >
-          Scan failed
-        </span>
-      )
+      return <span className="workspace-badge error">Scan failed</span>
     }
 
-    switch (this.state.lens) {
+    switch (this.props.lens) {
       case Lens.Agents:
         return this.renderAgentSummary(inventory)
       case Lens.Docs:
@@ -276,7 +319,7 @@ export class WorkspaceCenter extends React.Component<
       )
     }
 
-    switch (this.state.lens) {
+    switch (this.props.lens) {
       case Lens.Agents:
         return this.renderAgentDetail(repository, inventory)
       case Lens.Docs:
@@ -327,12 +370,11 @@ export class WorkspaceCenter extends React.Component<
 
     return (
       <li key={file.relativePath} className="workspace-file">
-        <button
-          className="workspace-file-path"
-          onClick={() => this.props.onOpenFile(repository, file.relativePath)}
-        >
-          {file.relativePath}
-        </button>
+        <FileButton
+          repository={repository}
+          relativePath={file.relativePath}
+          onOpen={this.props.onOpenFile}
+        />
 
         <span className="workspace-file-meta">
           <span className="workspace-role">{roleDisplayName(file.role)}</span>
@@ -386,14 +428,11 @@ export class WorkspaceCenter extends React.Component<
         <ul className="workspace-files">
           {inventory.docs.map(doc => (
             <li key={doc.relativePath} className="workspace-file">
-              <button
-                className="workspace-file-path"
-                onClick={() =>
-                  this.props.onOpenFile(repository, doc.relativePath)
-                }
-              >
-                {doc.relativePath}
-              </button>
+              <FileButton
+                repository={repository}
+                relativePath={doc.relativePath}
+                onOpen={this.props.onOpenFile}
+              />
               <span className="workspace-file-meta">
                 {doc.title !== null && (
                   <span className="workspace-file-name">{doc.title}</span>
@@ -433,17 +472,12 @@ export class WorkspaceCenter extends React.Component<
         </ul>
 
         <div className="workspace-cleanup">
-          <Button
-            onClick={() =>
-              this.props.onCleanUp(
-                repository,
-                sorted.map(a => a.relativePath)
-              )
-            }
-          >
-            <Octicon symbol={octicons.trash} /> Reclaim{' '}
-            {formatBytes(reclaimableBytes(inventory))}
-          </Button>
+          <CleanUpButton
+            repository={repository}
+            relativePaths={sorted.map(a => a.relativePath)}
+            bytes={reclaimableBytes(inventory)}
+            onCleanUp={this.props.onCleanUp}
+          />
           <span className="workspace-cleanup-note">
             Moves these directories to the trash.
           </span>
@@ -479,7 +513,7 @@ export class WorkspaceCenter extends React.Component<
             (r.alias ?? r.name).toLowerCase().includes(filter)
           )
 
-    if (this.state.lens !== Lens.Disk) {
+    if (this.props.lens !== Lens.Disk) {
       return matching
     }
 
@@ -505,15 +539,27 @@ export class WorkspaceCenter extends React.Component<
       }
     )
   }
+}
 
-  private toggle(repositoryId: number): void {
-    const expanded = new Set(this.state.expanded)
-    if (expanded.has(repositoryId)) {
-      expanded.delete(repositoryId)
-    } else {
-      expanded.add(repositoryId)
-    }
-    this.setState({ expanded })
+function titleFor(lens: Lens): string {
+  switch (lens) {
+    case Lens.Agents:
+      return 'Agents'
+    case Lens.Docs:
+      return 'Docs'
+    case Lens.Disk:
+      return 'Disk'
+  }
+}
+
+function subtitleFor(lens: Lens): string {
+  switch (lens) {
+    case Lens.Agents:
+      return 'What steers the agents writing your code, across every project.'
+    case Lens.Docs:
+      return 'Documentation across every project.'
+    case Lens.Disk:
+      return 'What your projects are sitting on, and what you can take back.'
   }
 }
 

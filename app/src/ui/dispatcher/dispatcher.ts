@@ -87,6 +87,7 @@ import {
   isRepositoryWithForkedGitHubRepository,
   getNonForkGitHubRepository,
 } from '../../models/repository'
+import { AppSection } from '../../models/app-section'
 import { RetryAction, RetryActionType } from '../../models/retry-actions'
 import {
   CommittedFileChange,
@@ -372,9 +373,9 @@ export class Dispatcher {
     return this.appStore._changeRepositorySection(repository, section)
   }
 
-  /** Show or hide the cross-project workspace view. */
-  public setShowWorkspaceCenter(show: boolean): Promise<void> {
-    return this.appStore._setShowWorkspaceCenter(show)
+  /** Navigate to a top-level section of the app. */
+  public setAppSection(section: AppSection): Promise<void> {
+    return this.appStore._setAppSection(section)
   }
 
   /** Rescan every repository's workspace inventory. */

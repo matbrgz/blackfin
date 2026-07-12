@@ -1,0 +1,80 @@
+.app-rail {
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  width: 68px;
+  padding: var(--spacing-half) 0;
+  gap: 2px;
+
+  background: var(--box-alt-background-color);
+  border-right: var(--base-border);
+  -webkit-app-region: no-drag;
+}
+
+.app-rail-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+
+  margin: 0 var(--spacing-half);
+  padding: var(--spacing-half) 0;
+  border: none;
+  border-radius: var(--border-radius);
+
+  background: transparent;
+  color: var(--text-secondary-color);
+  cursor: pointer;
+
+  &:hover {
+    background: var(--box-background-color);
+    color: var(--text-color);
+  }
+
+  &.selected {
+    background: var(--box-selected-background-color);
+    color: var(--box-selected-text-color);
+
+    .octicon {
+      fill: var(--box-selected-text-color);
+    }
+  }
+
+  &:focus-visible {
+    outline: var(--focus-border-width) solid var(--focus-color);
+    outline-offset: -1px;
+  }
+
+  .octicon {
+    fill: currentColor;
+    width: 18px;
+    height: 18px;
+  }
+}
+
+.app-rail-icon {
+  position: relative;
+  display: flex;
+}
+
+.app-rail-badge {
+  position: absolute;
+  top: -6px;
+  right: -10px;
+
+  min-width: 15px;
+  padding: 0 3px;
+  border-radius: 8px;
+
+  background: var(--dialog-error-color);
+  color: #fff;
+  font-size: 10px;
+  line-height: 15px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.app-rail-label {
+  font-size: 10px;
+  line-height: 1.2;
+}

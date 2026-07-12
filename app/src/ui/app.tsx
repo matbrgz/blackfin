@@ -58,7 +58,6 @@ import { CantDeleteMainBranch } from './delete-branch/cant-delete-main-branch'
 import { CloningRepositoryView } from './cloning-repository'
 import {
   Toolbar,
-  ToolbarButton,
   ToolbarDropdown,
   DropdownState,
   PushPullButton,
@@ -105,7 +104,14 @@ import { Publish } from './publish-repository'
 import { Acknowledgements } from './acknowledgements'
 import { UntrustedCertificate } from './untrusted-certificate'
 import { NoRepositoriesView } from './no-repositories'
-import { WorkspaceCenter } from './workspace/workspace-center'
+import { WorkspaceCenter, Lens } from './workspace/workspace-center'
+import { HomeView } from './home/home-view'
+import { AppRail } from './rail/app-rail'
+import { AppSection } from '../models/app-section'
+import {
+  brokenReferences,
+  configuredAgents,
+} from '../models/workspace-inventory'
 import { ConfirmRemoveRepository } from './remove-repository'
 import { TermsAndConditions } from './terms-and-conditions'
 import { PushBranchCommits } from './branches'
@@ -3419,12 +3425,82 @@ export class App extends React.Component<IAppProps, IAppState> {
         id="desktop-app-contents"
         className={this.getDesktopAppContentsClassNames()}
       >
-        {this.renderToolbar()}
-        {this.renderBanner()}
-        {this.renderRepository()}
+        <AppRail
+          selectedSection={this.state.selectedAppSection}
+          onSelectSection={this.onSelectAppSection}
+          attentionCount={this.attentionCount()}
+        />
+        <div className="app-main">
+          {this.renderToolbar()}
+          {this.renderBanner()}
+          {this.renderSection()}
+        </div>
         {this.renderPopups()}
         {this.renderDragElement()}
       </div>
+    )
+  }
+
+  private onSelectAppSection = (section: AppSection) => {
+    this.props.dispatcher.setAppSection(section)
+  }
+
+  /**
+   * How many projects have something wrong with their agent context: none at
+   * all, or instructions pointing at files that no longer exist.
+   */
+  private attentionCount(): number {
+    let count = 0
+
+    for (const repository of this.state.repositories) {
+      if (!(repository instanceof Repository)) {
+        continue
+      }
+      const inventory = this.state.workspaceInventories.get(repository.id)
+      if (inventory === undefined || inventory.status.kind !== 'ok') {
+        continue
+      }
+      if (
+        configuredAgents(inventory).length === 0 ||
+        brokenReferences(inventory).length > 0
+      ) {
+        count++
+      }
+    }
+
+    return count
+  }
+
+  private renderSection() {
+    switch (this.state.selectedAppSection) {
+      case AppSection.Home:
+        return this.renderHome()
+      case AppSection.Code:
+        return this.renderRepository()
+      case AppSection.Agents:
+        return this.renderWorkspaceCenter(Lens.Agents)
+      case AppSection.Docs:
+        return this.renderWorkspaceCenter(Lens.Docs)
+      case AppSection.Disk:
+        return this.renderWorkspaceCenter(Lens.Disk)
+      default:
+        return assertNever(
+          this.state.selectedAppSection,
+          `Unknown section: ${this.state.selectedAppSection}`
+        )
+    }
+  }
+
+  private renderHome() {
+    return (
+      <HomeView
+        repositories={this.workspaceRepositories()}
+        inventories={this.state.workspaceInventories}
+        progress={this.state.workspaceScanProgress}
+        onRescan={this.onRescanWorkspace}
+        onOpenRepository={this.onWorkspaceSelectRepository}
+        onNavigate={this.onSelectAppSection}
+      />
     )
   }
 
@@ -4057,6 +4133,14 @@ export class App extends React.Component<IAppProps, IAppState> {
   }
 
   private renderToolbar() {
+    // The toolbar is the git client's chrome — repository picker, branch,
+    // push/pull. It has nothing to say on Home, Agents, Docs or Disk, and
+    // leaving it up there would keep implying the git client is the frame the
+    // rest of the app lives inside.
+    if (this.state.selectedAppSection !== AppSection.Code) {
+      return null
+    }
+
     /**
      * No toolbar if we're in the blank slate view.
      */
@@ -4071,7 +4155,6 @@ export class App extends React.Component<IAppProps, IAppState> {
         <div className="sidebar-section" style={{ width }}>
           {this.renderRepositoryToolbarButton()}
         </div>
-        {this.renderWorkspaceToolbarButton()}
         {this.renderWorktreeToolbarButton()}
         {this.renderBranchToolbarButton()}
         {this.renderPushPullToolbarButton()}
@@ -4079,35 +4162,14 @@ export class App extends React.Component<IAppProps, IAppState> {
     )
   }
 
-  private onShowWorkspaceCenter = () => {
-    this.props.dispatcher.setShowWorkspaceCenter(
-      !this.state.showWorkspaceCenter
-    )
-  }
-
-  private renderWorkspaceToolbarButton(): JSX.Element {
-    return (
-      <ToolbarButton
-        className="workspace-button"
-        icon={octicons.telescope}
-        title="Workspace"
-        description="Agent context, docs and disk"
-        onClick={this.onShowWorkspaceCenter}
-      />
-    )
-  }
-
-  private onCloseWorkspaceCenter = () => {
-    this.props.dispatcher.setShowWorkspaceCenter(false)
-  }
-
   private onRescanWorkspace = () => {
     this.props.dispatcher.rescanWorkspace()
   }
 
+  /** Opening a project from anywhere lands you in the git client, on it. */
   private onWorkspaceSelectRepository = (repository: Repository) => {
-    this.props.dispatcher.setShowWorkspaceCenter(false)
     this.props.dispatcher.selectRepository(repository)
+    this.props.dispatcher.setAppSection(AppSection.Code)
   }
 
   private onWorkspaceCleanUp = (
@@ -4127,31 +4189,28 @@ export class App extends React.Component<IAppProps, IAppState> {
     )
   }
 
-  private renderWorkspaceCenter() {
-    const repositories = this.state.repositories.filter(
+  private workspaceRepositories(): ReadonlyArray<Repository> {
+    return this.state.repositories.filter(
       (r): r is Repository => r instanceof Repository
     )
+  }
 
+  private renderWorkspaceCenter(lens: Lens) {
     return (
       <WorkspaceCenter
-        repositories={repositories}
+        lens={lens}
+        repositories={this.workspaceRepositories()}
         inventories={this.state.workspaceInventories}
         progress={this.state.workspaceScanProgress}
         onRescan={this.onRescanWorkspace}
-        onSelectRepository={this.onWorkspaceSelectRepository}
         onCleanUp={this.onWorkspaceCleanUp}
         onOpenFile={this.onWorkspaceOpenFile}
-        onClose={this.onCloseWorkspaceCenter}
       />
     )
   }
 
   private renderRepository() {
     const { accounts } = this.state
-
-    if (this.state.showWorkspaceCenter) {
-      return this.renderWorkspaceCenter()
-    }
 
     if (this.inNoRepositoriesViewState()) {
       return (

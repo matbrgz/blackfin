@@ -1,4 +1,5 @@
 import { IRepositoryInventory } from '../models/workspace-inventory'
+import { AppSection } from '../models/app-section'
 import { IScanProgress } from './stores/workspace-store'
 import type { CopilotModelSelections } from './stores/copilot-store'
 import type { IBYOKProvider } from './copilot/byok'
@@ -102,10 +103,10 @@ export interface IAppState {
   readonly repositories: ReadonlyArray<Repository | CloningRepository>
 
   /**
-   * Whether the cross-project workspace view is taking over the window, in
-   * place of the selected repository.
+   * The top-level destination the app is showing. `Code` is the git client;
+   * the others take over the window in its place.
    */
-  readonly showWorkspaceCenter: boolean
+  readonly selectedAppSection: AppSection
 
   /** The workspace inventory for each repository, keyed by repository id. */
   readonly workspaceInventories: ReadonlyMap<number, IRepositoryInventory>
