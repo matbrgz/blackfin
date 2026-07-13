@@ -127,6 +127,7 @@ import { ReleaseNotes } from './release-notes'
 import { DeletePullRequest } from './delete-branch/delete-pull-request-dialog'
 import { CommitConflictsWarning } from './merge-conflicts'
 import { AppTheme } from './app-theme'
+import { AppDensity } from './app-density'
 import { ApplicationTheme } from './lib/application-theme'
 import { RepositoryStateCache } from '../lib/stores/repository-state-cache'
 import { PopupType, Popup } from '../models/popup'
@@ -1871,6 +1872,7 @@ export class App extends React.Component<IAppProps, IAppState> {
             showDiffCheckMarks={this.state.showDiffCheckMarks}
             showBranchNameInRepoList={this.state.showBranchNameInRepoList}
             branchSortOrder={this.state.branchSortOrder}
+            density={this.state.density}
             copyPathNormalization={this.state.copyPathNormalization}
             selectedCopilotModels={this.state.selectedCopilotModels}
             copilotModels={this.state.copilotModels}
@@ -4421,6 +4423,7 @@ export class App extends React.Component<IAppProps, IAppState> {
     return (
       <div id="desktop-app-chrome" className={className} style={appStyle}>
         <AppTheme theme={currentTheme} />
+        <AppDensity density={this.state.density} />
         {this.renderTitlebar()}
         {this.state.showWelcomeFlow
           ? this.renderWelcomeFlow()

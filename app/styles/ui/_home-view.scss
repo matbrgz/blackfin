@@ -67,7 +67,7 @@
 
     strong {
       font-size: var(--font-size-xl);
-      font-variant-numeric: tabular-nums;
+      font-variant-numeric: var(--numeric-font-variant);
     }
 
     span {
@@ -78,7 +78,7 @@
     // A count of zero is good news and should look like nothing. A count above
     // zero is the reason this screen exists.
     &.alarming strong {
-      color: var(--dialog-error-color);
+      color: var(--health-broken-fg);
     }
   }
 
@@ -124,7 +124,7 @@
     }
 
     .octicon {
-      fill: var(--dialog-warning-color);
+      fill: var(--health-attention-fg);
       flex-shrink: 0;
     }
 
@@ -188,26 +188,29 @@
   }
 
   .home-project-none {
-    padding: 1px var(--spacing-half);
+    padding: 1px var(--space-2);
+    border: 1px solid var(--health-attention-border);
     border-radius: var(--border-radius);
-    background: var(--dialog-warning-background);
+    background: var(--health-attention-bg);
+    color: var(--health-attention-fg);
     font-size: var(--font-size-sm);
   }
 
   // Not knowing is not the same as knowing there is nothing, and it must not
   // borrow the warning colour — there is nothing here to warn about yet.
   .home-project-unknown {
-    padding: 1px var(--spacing-half);
+    padding: 1px var(--space-2);
+    border: 1px dashed var(--health-unknown-border);
     border-radius: var(--border-radius);
-    background: var(--box-alt-background-color);
-    color: var(--text-secondary-color);
+    background: var(--health-unknown-bg);
+    color: var(--health-unknown-fg);
     font-size: var(--font-size-sm);
   }
 
   .home-project-disk {
     color: var(--text-secondary-color);
     font-size: var(--font-size-sm);
-    font-variant-numeric: tabular-nums;
+    font-variant-numeric: var(--numeric-font-variant);
   }
 
   .home-empty {

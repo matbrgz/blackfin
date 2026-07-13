@@ -1,9 +1,14 @@
 .app-rail {
+  // Wide enough for the longest label at --font-size-2xs without wrapping. It
+  // is a component-level token rather than a bare number so the label size and
+  // the rail width cannot drift apart silently.
+  --rail-width: 68px;
+
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
-  width: 68px;
-  padding: var(--spacing-half) 0;
+  width: var(--rail-width);
+  padding: var(--space-1) 0;
   gap: 2px;
 
   background: var(--box-alt-background-color);
@@ -64,17 +69,19 @@
 
   min-width: 15px;
   padding: 0 3px;
-  border-radius: 8px;
+  border-radius: 999px;
 
-  background: var(--dialog-error-color);
-  color: #fff;
-  font-size: 10px;
+  // The count of things that are actually wrong. Broken, not merely worth a
+  // look — so it borrows the health scale rather than a dialog colour.
+  background: var(--health-broken-fg);
+  color: var(--background-color);
+  font-size: var(--font-size-2xs);
   line-height: 15px;
   text-align: center;
-  font-variant-numeric: tabular-nums;
+  font-variant-numeric: var(--numeric-font-variant);
 }
 
 .app-rail-label {
-  font-size: 10px;
+  font-size: var(--font-size-2xs);
   line-height: 1.2;
 }

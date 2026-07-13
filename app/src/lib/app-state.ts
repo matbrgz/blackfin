@@ -58,6 +58,7 @@ import { UncommittedChangesStrategy } from '../models/uncommitted-changes-strate
 import { ShowBranchNameInRepoListSetting } from '../models/show-branch-name-in-repo-list'
 import { CopyPathNormalization } from '../models/copy-path-normalization'
 import { BranchSortOrder } from '../models/branch-sort-order'
+import { Density } from '../models/density'
 import { DiffFontFamily } from '../models/diff-font'
 import { DragElement } from '../models/drag-drop'
 import { ILastThankYou } from '../models/last-thank-you'
@@ -469,6 +470,9 @@ export interface IAppState {
 
   /** Controls the sort order for branch lists in branch-selection views */
   readonly branchSortOrder: BranchSortOrder
+
+  /** How much room a row of the control center gets. */
+  readonly density: Density
 
   /** Whether the user prefers absolute dates over relative time in lists */
   readonly preferAbsoluteDates: boolean

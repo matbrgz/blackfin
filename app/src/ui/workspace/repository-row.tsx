@@ -73,9 +73,10 @@ export class RepositoryRow extends React.Component<IRepositoryRowProps> {
       return <span className="workspace-badge error">Scan failed</span>
     }
 
-    // Not the same as an empty project, and it does not get to look like one.
+    // Not the same as an empty project, and it does not get to look like one —
+    // nor like a clean one, which is why this is `unknown` and not `muted`.
     if (inventory.status.kind === 'never-scanned') {
-      return <span className="workspace-badge muted">Not scanned yet</span>
+      return <span className="workspace-badge unknown">Not scanned yet</span>
     }
 
     switch (section) {

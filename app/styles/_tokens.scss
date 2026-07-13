@@ -1,0 +1,190 @@
+// Blackfin's semantic layer.
+//
+// `_variables.scss` is the vocabulary of a git client, inherited from GitHub
+// Desktop and, under it, Primer. It is not wrong — for the `Code` screens it is
+// still right — but it has no word for anything this product is about. There is
+// no colour for a CLAUDE.md reference pointing at a file that no longer exists,
+// for a global rule reaching into a project from outside it, for a project rule
+// shadowing that global one, or for a project nobody has scanned yet.
+//
+// Those ideas are the subject of the product. This file names them.
+//
+// Three rules govern what goes where:
+//
+//   1. Primitives (`$gray-500`, `$blue-100`, …) stay in Primer. They are not
+//      redefined here and not replaced. Hundreds of declarations depend on them.
+//   2. Tokens that do NOT vary by theme — scales, sizes, durations — live in
+//      `:root`, below.
+//   3. Tokens that DO vary by theme also live in `:root`, holding their light
+//      value, and are overridden in `themes/_dark.scss`.
+//
+// Rule 3 deserves an explanation, because #17 originally proposed a
+// `themes/_light.scss` holding `body.theme-light`, and that would be a bug.
+// `AppTheme.ensureTheme()` (`app/src/ui/app-theme.tsx:44`) adds the theme class
+// when React mounts, and awaits an async lookup first when the theme is
+// `System`. `app/static/index.html` ships a `<body>` with no class at all. So
+// there is a window, on every cold start, where neither `theme-light` nor
+// `theme-dark` is on the body — and a token that lived only inside
+// `body.theme-light` would be unresolved during it. That is exactly the bug #83
+// fixed (a badge with no background), just transient.
+//
+// So light lives in `:root`, as it already does. The danger that creates — a new
+// colour added here and forgotten in the dark theme, silently inheriting a light
+// value onto a dark surface — is not defended against by a file layout. It is
+// defended against by a test: `app/test/unit/styles-tokens-test.ts` fails if any
+// token in the THEME-VARYING block below has no dark override.
+
+// Imported explicitly rather than relying on `desktop.scss` having pulled in
+// `_variables.scss` first — `_dark.scss` does the same, and a file that only
+// compiles in one import order is a trap for whoever reorders them.
+@import '~primer-support/lib/variables/color-system.scss';
+
+:root {
+  // ---------------------------------------------------------------------------
+  // Context health — the reason this file exists
+  // ---------------------------------------------------------------------------
+  //
+  // Seven states, each with a foreground, a background and a border. Four of
+  // them — inherited, overridden, stale, unknown — have no equivalent anywhere
+  // in GitHub Desktop's vocabulary, because a git client never needed to say
+  // them.
+  //
+  // THEME-VARYING BLOCK BEGIN
+
+  // Scanned, and nothing is wrong. Deliberately quiet: good news should look
+  // like nothing. A control center that shouts about health teaches you to stop
+  // reading it.
+  --health-ok-fg: #{$gray-600};
+  --health-ok-bg: #{$gray-100};
+  --health-ok-border: #{$gray-200};
+
+  // Nothing steers what gets written here. The finding the product exists to
+  // produce, so it is the one state allowed to be loud.
+  --health-attention-fg: #{$yellow-900};
+  --health-attention-bg: #{$yellow-100};
+  --health-attention-border: #{$yellow-300};
+
+  // An instruction points at a file that is not there. This is not a warning —
+  // it is already wrong, and an agent is reading it right now.
+  --health-broken-fg: #{$red-800};
+  --health-broken-bg: #{$red-100};
+  --health-broken-border: #{$red-200};
+
+  // Comes from the global scope and reaches into this project. Informational,
+  // not alarming — but it must be *visible*, because its whole problem is that
+  // today it is invisible from inside the project it governs.
+  --health-inherited-fg: #{$blue-800};
+  --health-inherited-bg: #{$blue-100};
+  --health-inherited-border: #{$blue-200};
+
+  // This project shadows the global rule. Distinct from inherited on purpose:
+  // "a rule reaches you" and "a rule reaches you and you overruled it" are
+  // different facts, and a user debugging agent behaviour needs to tell them
+  // apart at a glance.
+  --health-overridden-fg: #{$purple-700};
+  --health-overridden-bg: #{$purple-100};
+  --health-overridden-border: #{$purple-200};
+
+  // From the cache, not yet revalidated against disk. It was true; it may not be
+  // now.
+  --health-stale-fg: #{$orange-900};
+  --health-stale-bg: #{$orange-100};
+  --health-stale-border: #{$orange-200};
+
+  // Never scanned. Not the same as empty, and it must never be allowed to look
+  // like it — that confusion is the bug #84 fixed. Neutral, because there is
+  // nothing to warn about: we simply have not looked.
+  --health-unknown-fg: #{$gray-600};
+  --health-unknown-bg: #{$gray-000};
+  --health-unknown-border: #{$gray-200};
+
+  // ---------------------------------------------------------------------------
+  // Elevation
+  // ---------------------------------------------------------------------------
+  //
+  // Shadows are colour, so they vary by theme. In dark they cannot be "black,
+  // more transparent" — on a dark surface that is invisible — so the dark theme
+  // overrides them with something with more contrast.
+
+  --elevation-1: 0 1px 3px #{rgba($gray-900, 0.12)};
+  --elevation-2: 0 4px 12px #{rgba($gray-900, 0.15)};
+
+  // THEME-VARYING BLOCK END
+
+  // ---------------------------------------------------------------------------
+  // Spacing — a base-4 numeric scale
+  // ---------------------------------------------------------------------------
+  //
+  // `--spacing: 10px` and its `calc()` derivatives stay exactly where they are.
+  // Hundreds of declarations consume them and rewriting those is pure risk for
+  // no return. This scale sits beside them, for new surfaces. The two coexist.
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+
+  // ---------------------------------------------------------------------------
+  // Type
+  // ---------------------------------------------------------------------------
+  //
+  // The inherited scale jumps from `md` (14px) straight to `lg` (28px). Nothing
+  // lives in between, which is why `_app-rail.scss` hardcodes `10px` and why a
+  // section heading had to borrow the 28px meant for a page title. Fill the gap.
+
+  --font-size-2xs: 10px;
+  --font-size-heading-sm: 16px;
+  --font-size-heading-md: 20px;
+  --font-size-heading-lg: 24px;
+
+  // The control center counts bytes, projects and files. Columns of numbers that
+  // shift width as the digits change are unreadable, and every list in this
+  // product has one.
+  --numeric-font-variant: tabular-nums;
+
+  // ---------------------------------------------------------------------------
+  // Motion
+  // ---------------------------------------------------------------------------
+
+  --duration-instant: 80ms;
+  --duration-fast: 140ms;
+  --duration-slow: 240ms;
+
+  // ---------------------------------------------------------------------------
+  // Density
+  // ---------------------------------------------------------------------------
+  //
+  // A git client shows one diff: one thing, large. A control center shows forty
+  // projects times N context files times M MCP servers. The same row height
+  // cannot serve both, and today one token tries to.
+  //
+  // `comfortable` is the default. `compact` exists because Agents with forty
+  // projects expanded is a machine for producing rows, and #32 (search) and #57
+  // (fleet) will make that worse.
+
+  --row-height: 32px;
+  --row-padding-y: var(--space-2);
+  --row-gap: var(--space-2);
+  --row-font-size: var(--font-size);
+}
+
+body.density-compact {
+  --row-height: 24px;
+  --row-padding-y: var(--space-1);
+  --row-gap: var(--space-1);
+  --row-font-size: var(--font-size-sm);
+}
+
+// Everything above that animates must stop when the user has asked for less
+// motion. `prefers-reduced-motion` appears nowhere in the inherited stylesheet,
+// which means today the app ignores that request entirely.
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --duration-instant: 0ms;
+    --duration-fast: 0ms;
+    --duration-slow: 0ms;
+  }
+}

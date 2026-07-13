@@ -106,6 +106,7 @@ import {
 import { AppSection } from '../../models/app-section'
 import { discoverRepositories } from '../workspace/discover-repositories'
 import { CleanupOutcome } from '../workspace/cleanup'
+import { Density, DefaultDensity } from '../../models/density'
 import {
   CommittedFileChange,
   WorkingDirectoryFileChange,
@@ -602,6 +603,7 @@ export const showDiffCheckMarksKey = 'diff-check-marks-visible'
 export const showBranchNameInRepoListKey = 'show-branch-name-in-repo-list'
 const copyPathNormalizationKey = 'copy-path-normalization'
 const branchSortOrderKey = 'branch-sort-order'
+const densityKey = 'ui-density'
 
 const commitMessageGenerationDisclaimerLastSeenKey =
   'commit-message-generation-disclaimer-last-seen'
@@ -798,6 +800,8 @@ export class AppStore extends TypedBaseStore<IAppState> {
     defaultCopyPathNormalization
 
   private branchSortOrder: BranchSortOrder = DEFAULT_BRANCH_SORT_ORDER
+
+  private density: Density = DefaultDensity
 
   private preferAbsoluteDates: boolean = false
 
@@ -1526,6 +1530,7 @@ export class AppStore extends TypedBaseStore<IAppState> {
       showBranchNameInRepoList: this.showBranchNameInRepoList,
       copyPathNormalization: this.copyPathNormalization,
       branchSortOrder: this.branchSortOrder,
+      density: this.density,
       preferAbsoluteDates: this.preferAbsoluteDates,
       updateState: updateStore.state,
       commitMessageGenerationDisclaimerLastSeen:
@@ -3206,6 +3211,8 @@ export class AppStore extends TypedBaseStore<IAppState> {
 
     this.branchSortOrder =
       getEnum(branchSortOrderKey, BranchSortOrder) ?? DEFAULT_BRANCH_SORT_ORDER
+
+    this.density = getEnum(densityKey, Density) ?? DefaultDensity
 
     this.commitMessageGenerationDisclaimerLastSeen =
       getNumber(commitMessageGenerationDisclaimerLastSeenKey) ?? null
@@ -11425,6 +11432,18 @@ export class AppStore extends TypedBaseStore<IAppState> {
     if (branchSortOrder !== this.branchSortOrder) {
       this.branchSortOrder = branchSortOrder
       localStorage.setItem(branchSortOrderKey, branchSortOrder)
+      this.emitUpdate()
+    }
+  }
+
+  /**
+   * A preference, not a cache — so it lives in local storage beside the other
+   * UI preferences, and not in a Dexie database.
+   */
+  public _setDensity(density: Density) {
+    if (density !== this.density) {
+      this.density = density
+      localStorage.setItem(densityKey, density)
       this.emitUpdate()
     }
   }

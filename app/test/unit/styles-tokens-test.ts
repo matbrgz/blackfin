@@ -90,9 +90,59 @@ describe('styles custom properties', () => {
   })
 
   it('defines every theme-varying token in the dark theme too', async () => {
-    // A color defined only in :root is inherited by the dark theme. That is
-    // almost never right, and it fails invisibly — the rule applies, it is just
-    // the wrong color on the wrong surface. These are the ones we rely on.
+    // Light lives in :root — it has to, because the body carries no theme class
+    // during first paint (see the header of _tokens.scss). The cost of that is
+    // this failure mode: a color added to :root and forgotten in the dark theme
+    // does not break, it just inherits the light value and paints a near-white
+    // tint behind text that is already light. Nothing throws. It only looks
+    // wrong, on a theme the author was not looking at.
+    //
+    // Nothing about the file layout prevents that. This test does.
+    const tokens = await readFile(Path.join(stylesRoot, '_tokens.scss'), 'utf8')
+    const dark = await readFile(
+      Path.join(stylesRoot, 'themes', '_dark.scss'),
+      'utf8'
+    )
+
+    const block = tokens.match(
+      /THEME-VARYING BLOCK BEGIN([\s\S]*?)THEME-VARYING BLOCK END/
+    )
+    assert.ok(
+      block !== null,
+      'the THEME-VARYING markers are gone from _tokens.scss — without them ' +
+        'this test silently checks nothing'
+    )
+
+    const declared = [...block[1].matchAll(/^\s*(--[\w-]+)\s*:/gm)].map(
+      m => m[1]
+    )
+
+    // Guards the guard: if the block is emptied, or the marker survives a
+    // refactor that moved every token out of it, this test would pass while
+    // checking nothing at all.
+    assert.ok(
+      declared.length >= 20,
+      `expected the theme-varying block to hold the health scale and ` +
+        `elevation, found only ${declared.length} tokens`
+    )
+
+    const missing = declared
+      .filter(token => !new RegExp(`^\\s*${token}\\s*:`, 'm').test(dark))
+      .sort()
+
+    assert.deepStrictEqual(
+      missing,
+      [],
+      `These tokens vary by theme but have no dark override, so the dark ` +
+        `theme silently inherits their light value:\n` +
+        missing.map(t => `  ${t}`).join('\n')
+    )
+  })
+
+  it('keeps the legacy dialog backgrounds defined in both themes', async () => {
+    // Not part of the semantic layer — these are the patch #83 applied before
+    // --health-* existed, and _workspace-center/_home-view still lean on them.
+    // They stay tested until the last consumer moves off them.
     const dark = await readFile(
       Path.join(stylesRoot, 'themes', '_dark.scss'),
       'utf8'

@@ -59,6 +59,7 @@ import type {
 import type { IBYOKProvider } from '../../lib/copilot/byok'
 import { RepositoryStateCache } from '../../lib/stores/repository-state-cache'
 import { CleanupOutcome } from '../../lib/workspace/cleanup'
+import { Density } from '../../models/density'
 import { getTipSha } from '../../lib/tip'
 
 import { Account } from '../../models/account'
@@ -404,6 +405,11 @@ export class Dispatcher {
     relativePaths: ReadonlyArray<string>
   ): Promise<ReadonlyArray<CleanupOutcome>> {
     return this.appStore._cleanUpWorkspace(repository, relativePaths)
+  }
+
+  /** Set how much room a row of the control center gets. */
+  public setDensity(density: Density): void {
+    this.appStore._setDensity(density)
   }
 
   /**
