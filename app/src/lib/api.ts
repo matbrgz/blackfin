@@ -42,6 +42,10 @@ if (envAdditionalCookies !== undefined) {
   document.cookie += '; ' + envAdditionalCookies
 }
 
+const oauthRedirectUri = __DEV_SECRETS__
+  ? 'https://desktop-plus.org/oauth?dev=1'
+  : 'https://desktop-plus.org/oauth'
+
 type AffiliationFilter =
   | 'owner'
   | 'collaborator'
@@ -3432,34 +3436,19 @@ export function getOAuthAuthorizationURL(
   ).toString()
 }
 
-export function getBitbucketOAuthAuthorizationURL(): string {
-  return `https://bitbucket.org/site/oauth2/authorize?client_id=${ClientIDBitbucket}&response_type=code`
+export function getBitbucketOAuthAuthorizationURL(state: string): string {
+  return `https://bitbucket.org/site/oauth2/authorize?client_id=${ClientIDBitbucket}&response_type=code&state=${state}`
 }
 
-export function getGitLabOAuthAuthorizationURL(redirectUri: string): string {
+export function getGitLabOAuthAuthorizationURL(state: string): string {
   const scope = encodeURIComponent('read_user read_api read_repository')
-  const encodedRedirectUri = encodeURIComponent(redirectUri)
-  return `https://gitlab.com/oauth/authorize?client_id=${ClientIDGitLab}&redirect_uri=${encodedRedirectUri}&response_type=code&scope=${scope}`
+  const encodedRedirectUri = encodeURIComponent(oauthRedirectUri)
+  return `https://gitlab.com/oauth/authorize?client_id=${ClientIDGitLab}&redirect_uri=${encodedRedirectUri}&response_type=code&scope=${scope}&state=${state}`
 }
 
-export function getGitLabOAuthRedirectUri(): string {
-  return __DEV_SECRETS__
-    ? 'x-github-desktop-dev-auth://oauth'
-    : 'x-github-desktop-auth://oauth'
-}
-
-export function getCodebergOAuthAuthorizationURL(
-  redirectUri: string,
-  state: string
-): string {
-  const encodedRedirectUri = encodeURIComponent(redirectUri)
+export function getCodebergOAuthAuthorizationURL(state: string): string {
+  const encodedRedirectUri = encodeURIComponent(oauthRedirectUri)
   return `https://codeberg.org/login/oauth/authorize?client_id=${ClientIDCodeberg}&redirect_uri=${encodedRedirectUri}&response_type=code&state=${state}`
-}
-
-export function getCodebergOAuthRedirectUri(): string {
-  return __DEV_SECRETS__
-    ? 'https://desktop-plus.org/oauth?dev=1'
-    : 'https://desktop-plus.org/oauth'
 }
 
 export async function requestOAuthToken(
@@ -3515,8 +3504,7 @@ export async function requestOAuthTokenBitbucket(
 }
 
 export async function requestOAuthTokenGitLab(
-  code: string,
-  redirectUri: string
+  code: string
 ): Promise<[string, string, number] | null> {
   try {
     const response = await fetch('https://gitlab.com/oauth/token', {
@@ -3529,7 +3517,7 @@ export async function requestOAuthTokenGitLab(
         client_secret: ClientSecretGitLab,
         code: code,
         grant_type: 'authorization_code',
-        redirect_uri: redirectUri,
+        redirect_uri: oauthRedirectUri,
       }),
     })
 
@@ -3543,8 +3531,7 @@ export async function requestOAuthTokenGitLab(
 }
 
 export async function requestOAuthTokenCodeberg(
-  code: string,
-  redirectUri: string
+  code: string
 ): Promise<[string, string, number] | null> {
   try {
     const response = await fetch(
@@ -3559,7 +3546,7 @@ export async function requestOAuthTokenCodeberg(
           client_secret: ClientSecretCodeberg,
           code: code,
           grant_type: 'authorization_code',
-          redirect_uri: redirectUri,
+          redirect_uri: oauthRedirectUri,
         }),
       }
     )

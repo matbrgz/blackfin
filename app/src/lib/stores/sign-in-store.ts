@@ -20,10 +20,8 @@ import {
   getCodebergOAuthAuthorizationURL,
   getGitLabAPIEndpoint,
   getGitLabOAuthAuthorizationURL,
-  getGitLabOAuthRedirectUri,
   requestOAuthTokenCodeberg,
   requestOAuthTokenGitLab,
-  getCodebergOAuthRedirectUri,
 } from '../../lib/api'
 
 import { TypedBaseStore } from './base-store'
@@ -344,13 +342,11 @@ export class SignInStore extends TypedBaseStore<SignInState | null> {
       case 'github':
         return getOAuthAuthorizationURL(endpoint, csrfToken)
       case 'bitbucket':
-        return getBitbucketOAuthAuthorizationURL()
+        return getBitbucketOAuthAuthorizationURL(csrfToken)
       case 'gitlab':
-        const gitlabRedirectUri = getGitLabOAuthRedirectUri()
-        return getGitLabOAuthAuthorizationURL(gitlabRedirectUri)
+        return getGitLabOAuthAuthorizationURL(csrfToken)
       case 'codeberg':
-        const codebergRedirectUri = getCodebergOAuthRedirectUri()
-        return getCodebergOAuthAuthorizationURL(codebergRedirectUri, csrfToken)
+        return getCodebergOAuthAuthorizationURL(csrfToken)
       default:
         assertNever(oauthProvider, 'Unexpected oauth provider')
     }
@@ -377,10 +373,7 @@ export class SignInStore extends TypedBaseStore<SignInState | null> {
       return
     }
 
-    if (
-      this.oauthProviderUsesState(this.state.oauthState.oauthProvider) &&
-      this.state.oauthState.state !== action.state
-    ) {
+    if (this.state.oauthState.state !== action.state) {
       log.warn(
         'requestAuthenticatedUser was not called with valid OAuth state. This is likely due to a browser reloading the callback URL. Contact GitHub Support if you believe this is an error'
       )
@@ -422,12 +415,9 @@ export class SignInStore extends TypedBaseStore<SignInState | null> {
       case 'bitbucket':
         return await requestOAuthTokenBitbucket(code)
       case 'gitlab':
-        return await requestOAuthTokenGitLab(code, getGitLabOAuthRedirectUri())
+        return await requestOAuthTokenGitLab(code)
       case 'codeberg':
-        return await requestOAuthTokenCodeberg(
-          code,
-          getCodebergOAuthRedirectUri()
-        )
+        return await requestOAuthTokenCodeberg(code)
       default:
         assertNever(oauthProvider, 'Unexpected oauth provider')
     }
@@ -563,18 +553,5 @@ export class SignInStore extends TypedBaseStore<SignInState | null> {
       loading: false,
       resultCallback: currentState.resultCallback,
     })
-  }
-
-  private oauthProviderUsesState(oauthProvider: OAuthProvider) {
-    switch (oauthProvider) {
-      case 'github':
-      case 'codeberg':
-        return true
-      case 'bitbucket':
-      case 'gitlab':
-        return false
-      default:
-        assertNever(oauthProvider, 'Unexpected oauth provider')
-    }
   }
 }
