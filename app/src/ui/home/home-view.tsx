@@ -14,7 +14,7 @@ import {
   reclaimableBytes,
 } from '../../models/workspace-inventory'
 import { agentDisplayName } from '../../lib/workspace/catalog'
-import { isCountable } from '../workspace/display'
+import { isCountable, needsAttention } from '../workspace/display'
 import { IScanProgress } from '../../lib/stores/workspace-store'
 
 interface IHomeStatProps {
@@ -240,7 +240,7 @@ export class HomeView extends React.Component<IHomeViewProps> {
 
     for (const repository of this.props.repositories) {
       const inventory = this.props.inventories.get(repository.id)
-      if (inventory === undefined || inventory.status.kind !== 'ok') {
+      if (inventory === undefined || !needsAttention(inventory)) {
         continue
       }
 

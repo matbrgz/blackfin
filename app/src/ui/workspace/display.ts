@@ -32,6 +32,18 @@ export function isCountable(inventory: IRepositoryInventory): boolean {
   return inventory.status.kind === 'ok'
 }
 
+/**
+ * Whether this project may be put in front of the user as needing attention.
+ *
+ * Only a scanned project can. We do not know whether an unscanned one needs
+ * anything — that is what "unscanned" means — and telling somebody to go look at
+ * a project we never read wastes the one thing this screen is spending: their
+ * attention.
+ */
+export function needsAttention(inventory: IRepositoryInventory): boolean {
+  return isCountable(inventory)
+}
+
 export function sectionTitle(section: AppSection): string {
   switch (section) {
     case AppSection.Agents:

@@ -1,4 +1,6 @@
-import { rm, lstat, readdir } from 'fs/promises'
+// No `rm` here, and that is on purpose: this module has no way to delete
+// anything permanently. Removal happens only through the injected trash.
+import { lstat, readdir } from 'fs/promises'
 import * as Path from 'path'
 import { resolveWithin } from '../path'
 import { classifyArtifact } from './catalog'
@@ -42,12 +44,19 @@ export type DeletableCheck =
 
 export interface ICleanupOptions {
   /**
-   * Move to the trash rather than unlinking. An unrecoverable `rm -rf` of a
-   * directory somebody actually needed is the worst thing this feature could
-   * do, and the trash costs nothing.
+   * The only way this module removes anything.
+   *
+   * There is deliberately no flag to unlink instead. An unrecoverable `rm -rf`
+   * of a directory somebody actually needed is the worst thing this feature
+   * could do, the trash costs nothing, and a boolean that turns the safety off
+   * is a boolean somebody will eventually pass `false` to.
+   *
+   * If trashing fails, the outcome is `failed` and the directory stays on disk.
+   * Blackfin does not fall back to deleting permanently.
+   *
+   * Injected so this module stays free of Electron, and so a test can watch what
+   * would have been trashed without trashing it.
    */
-  readonly moveToTrash: boolean
-  /** Injected so this module stays free of Electron. */
   readonly moveItemToTrash: (path: string) => Promise<void>
 }
 
@@ -139,11 +148,7 @@ export async function deleteArtifact(
   }
 
   try {
-    if (options.moveToTrash) {
-      await options.moveItemToTrash(check.absolutePath)
-    } else {
-      await rm(check.absolutePath, { recursive: true, force: true })
-    }
+    await options.moveItemToTrash(check.absolutePath)
     return { kind: 'deleted', relativePath }
   } catch (e) {
     return {

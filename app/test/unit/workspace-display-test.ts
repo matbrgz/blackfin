@@ -3,6 +3,7 @@ import assert from 'node:assert'
 import {
   explainStatus,
   isCountable,
+  needsAttention,
   plural,
 } from '../../src/ui/workspace/display'
 import {
@@ -56,6 +57,28 @@ describe('isCountable', () => {
 
   it('does not count a project that is gone from disk', () => {
     assert.strictEqual(isCountable(inventory({ kind: 'missing' })), false)
+  })
+})
+
+describe('needsAttention', () => {
+  // Sending someone to look at a project we never read spends the one thing this
+  // screen exists to protect.
+  it('never puts an unscanned project in front of the user', () => {
+    assert.strictEqual(
+      needsAttention(inventory({ kind: 'never-scanned' })),
+      false
+    )
+  })
+
+  it('does not claim a project whose scan failed needs anything', () => {
+    assert.strictEqual(
+      needsAttention(inventory({ kind: 'error', message: 'EACCES' })),
+      false
+    )
+  })
+
+  it('lets a scanned project through', () => {
+    assert.strictEqual(needsAttention(inventory({ kind: 'ok' })), true)
   })
 })
 

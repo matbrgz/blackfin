@@ -11,6 +11,19 @@ let db: WorkspaceDatabase
 let store: WorkspaceStore
 let dbCount = 0
 
+/**
+ * A stand-in for the OS trash. Removal in `cleanup.ts` happens only through the
+ * injected trash — there is no permanent-delete path to fall back to — so a test
+ * that wants a directory gone has to hand one over.
+ */
+function trash() {
+  return {
+    moveItemToTrash: async (path: string) => {
+      await rm(path, { recursive: true, force: true })
+    },
+  }
+}
+
 async function repo(
   name: string,
   files: Record<string, string>
@@ -126,12 +139,11 @@ describe('WorkspaceStore', () => {
     await store.rescanAll([{ id: 1, path: a }])
     assert.equal(store.getInventory(1)?.artifacts.length, 1)
 
-    const outcomes = await store.cleanUp({ id: 1, path: a }, ['node_modules'], {
-      moveToTrash: false,
-      moveItemToTrash: async () => {
-        throw new Error('should not be called')
-      },
-    })
+    const outcomes = await store.cleanUp(
+      { id: 1, path: a },
+      ['node_modules'],
+      trash()
+    )
 
     assert.deepEqual(outcomes, [
       { kind: 'deleted', relativePath: 'node_modules' },
@@ -145,11 +157,60 @@ describe('WorkspaceStore', () => {
     const a = await repo('a', { 'src/index.ts': 'x' })
     await store.rescanAll([{ id: 1, path: a }])
 
-    const outcomes = await store.cleanUp({ id: 1, path: a }, ['src'], {
-      moveToTrash: false,
-      moveItemToTrash: async () => {},
-    })
+    const outcomes = await store.cleanUp({ id: 1, path: a }, ['src'], trash())
 
     assert.equal(outcomes[0].kind, 'refused')
+  })
+
+  // The contract the dispatcher used to throw away: every path gets an outcome,
+  // and a refusal comes back beside the successes rather than replacing them or
+  // aborting them.
+  it('returns one outcome per path, refusals beside successes', async () => {
+    const a = await repo('a', {
+      'package.json': '{}',
+      'node_modules/x/index.js': 'x'.repeat(100),
+      '.cache/y': 'y'.repeat(50),
+      'src/index.ts': 'x',
+    })
+
+    await store.rescanAll([{ id: 1, path: a }])
+
+    const outcomes = await store.cleanUp(
+      { id: 1, path: a },
+      ['node_modules', 'src', '.cache'],
+      trash()
+    )
+
+    assert.equal(outcomes.length, 3)
+    assert.deepEqual(
+      outcomes.map(o => [o.relativePath, o.kind]),
+      [
+        ['node_modules', 'deleted'],
+        ['src', 'refused'],
+        ['.cache', 'deleted'],
+      ]
+    )
+
+    // The refusal in the middle did not abandon the artifact after it.
+    assert.deepEqual(store.getInventory(1)?.artifacts, [])
+  })
+
+  it('leaves everything on disk when the trash is unavailable', async () => {
+    const a = await repo('a', {
+      'package.json': '{}',
+      'node_modules/x/index.js': 'x'.repeat(100),
+    })
+
+    await store.rescanAll([{ id: 1, path: a }])
+
+    const outcomes = await store.cleanUp({ id: 1, path: a }, ['node_modules'], {
+      moveItemToTrash: async () => {
+        throw new Error('trash unavailable')
+      },
+    })
+
+    assert.equal(outcomes[0].kind, 'failed')
+    // Nothing was reclaimed, and the inventory does not pretend otherwise.
+    assert.equal(store.getInventory(1)?.artifacts.length, 1)
   })
 })

@@ -1415,7 +1415,7 @@ export class AppStore extends TypedBaseStore<IAppState> {
     return this.workspaceStore.cleanUp(
       { id: repository.id, path: repository.path },
       relativePaths,
-      { moveToTrash: true, moveItemToTrash: shell.moveItemToTrash }
+      { moveItemToTrash: shell.moveItemToTrash }
     )
   }
 

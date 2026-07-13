@@ -20,11 +20,32 @@ async function exists(relativePath: string): Promise<boolean> {
   )
 }
 
-/** Deleting for real, rather than trashing, so the test needs no Electron. */
-const unlink = {
-  moveToTrash: false,
+/**
+ * A stand-in for the OS trash, so the test needs no Electron.
+ *
+ * It removes the directory, which is what the real trash looks like from the
+ * caller's side, and records what it was handed — so a test can assert not just
+ * that the directory went away but that it went away *through the trash*. There
+ * is no other removal path in `cleanup.ts`.
+ */
+function fakeTrash() {
+  const trashed: Array<string> = []
+
+  return {
+    trashed,
+    options: {
+      moveItemToTrash: async (path: string) => {
+        trashed.push(path)
+        await rm(path, { recursive: true, force: true })
+      },
+    },
+  }
+}
+
+/** Trash that is unavailable — a locked directory, a missing OS integration. */
+const brokenTrash = {
   moveItemToTrash: async () => {
-    throw new Error('should not be called')
+    throw new Error('trash unavailable')
   },
 }
 
@@ -111,40 +132,43 @@ describe('deleteArtifact', () => {
     await rm(root, { recursive: true, force: true })
   })
 
-  it('deletes an artifact directory', async () => {
+  it('deletes an artifact directory, and only through the trash', async () => {
     await write('node_modules/a/index.js', 'x')
+    const trash = fakeTrash()
 
-    const outcome = await deleteArtifact(root, 'node_modules', unlink)
+    const outcome = await deleteArtifact(root, 'node_modules', trash.options)
 
     assert.equal(outcome.kind, 'deleted')
     assert.equal(await exists('node_modules'), false)
+    // The directory is gone *because the trash took it*. There is no other path
+    // through this module that could have removed it.
+    assert.deepEqual(trash.trashed, [Path.join(root, 'node_modules')])
   })
 
   it('reports a refusal rather than throwing', async () => {
     // So a cleanup across twenty repositories does not abandon the other
     // nineteen because one refused.
     await write('src/index.ts', 'x')
+    const trash = fakeTrash()
 
-    const outcome = await deleteArtifact(root, 'src', unlink)
+    const outcome = await deleteArtifact(root, 'src', trash.options)
 
     assert.equal(outcome.kind, 'refused')
     assert.equal(await exists('src'), true)
+    // A refusal never reaches the trash at all.
+    assert.deepEqual(trash.trashed, [])
   })
 
-  it('moves to the trash when asked to', async () => {
+  // The rule this file exists to enforce: when the trash is unavailable, the
+  // directory stays. Blackfin never falls back to deleting permanently, and
+  // there is no flag that makes it.
+  it('leaves the directory alone when the trash is unavailable', async () => {
     await write('node_modules/a/index.js', 'x')
-    const trashed: Array<string> = []
 
-    const outcome = await deleteArtifact(root, 'node_modules', {
-      moveToTrash: true,
-      moveItemToTrash: async path => {
-        trashed.push(path)
-      },
-    })
+    const outcome = await deleteArtifact(root, 'node_modules', brokenTrash)
 
-    assert.equal(outcome.kind, 'deleted')
-    assert.deepEqual(trashed, [Path.join(root, 'node_modules')])
-    // Trashing is the injected function's job; we did not unlink it ourselves.
+    assert.equal(outcome.kind, 'failed')
     assert.equal(await exists('node_modules'), true)
+    assert.equal(await exists('node_modules/a/index.js'), true)
   })
 })
