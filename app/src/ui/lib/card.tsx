@@ -29,6 +29,11 @@ interface ICardProps {
  * A surface with an optional header, a body, and an optional footer. Static by
  * default; a `<button>` the moment it is given an `onClick`. `home-view`'s
  * stats and project cards are the first consumers.
+ *
+ * A clickable card is a single control, so it must not contain other
+ * interactive elements — a button or link nested inside a button is invalid and
+ * unreachable to assistive tech. When a card needs its own actions, use the
+ * static form (no `onClick`) and place the buttons or links inside it.
  */
 export class Card extends React.Component<ICardProps> {
   public render() {
