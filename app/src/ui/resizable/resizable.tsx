@@ -80,7 +80,12 @@ export class Resizable extends React.Component<
       return
     }
 
-    const deltaX = e.clientX - this.startX
+    // A left-edge handle grows the panel as the mouse moves left, so the delta
+    // that widens it is the negation of the pointer delta.
+    const deltaX =
+      this.props.handleSide === 'left'
+        ? this.startX - e.clientX
+        : e.clientX - this.startX
     const newWidth = this.startWidth + deltaX
 
     this.updateResizeMessage(
@@ -196,7 +201,11 @@ export class Resizable extends React.Component<
     return (
       <div
         id={this.props.id}
-        className={resizableComponentClass}
+        className={
+          this.props.handleSide === 'left'
+            ? `${resizableComponentClass} resizable-component--handle-left`
+            : resizableComponentClass
+        }
         style={style}
         ref={this.onResizableRef}
       >
@@ -253,4 +262,15 @@ export interface IResizableProps {
    * on the resize handle).
    */
   readonly onReset: () => void
+
+  /**
+   * Which edge carries the resize handle.
+   *
+   * `right` (the default) is for a panel docked on the left — the sidebar —
+   * that grows rightward as the handle is dragged right. `left` is for a panel
+   * docked on the *right*, such as a `DetailPane`: the handle sits on its inner
+   * edge and dragging it left widens the panel. Absent everywhere but the
+   * detail pane, so every existing consumer is untouched.
+   */
+  readonly handleSide?: 'left' | 'right'
 }

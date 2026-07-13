@@ -47,39 +47,22 @@
     margin-bottom: var(--spacing-double);
   }
 
-  .home-stat {
-    display: flex;
-    flex-direction: column;
-    gap: var(--spacing-half);
-
-    padding: var(--spacing);
-    border: var(--base-border);
-    border-radius: var(--border-radius);
-
-    background: var(--box-background-color);
-    color: var(--text-color);
-    text-align: left;
-    cursor: pointer;
-
-    &:hover {
-      background: var(--box-alt-background-color);
-    }
-
-    strong {
-      font-size: var(--font-size-xl);
-      font-variant-numeric: var(--numeric-font-variant);
-    }
-
-    span {
-      color: var(--text-secondary-color);
-      font-size: var(--font-size-sm);
-    }
+  // The stat tile's surface is now `<Card>` (#18); only the number and label
+  // inside it are styled here.
+  .home-stat-value {
+    font-size: var(--font-size-xl);
+    font-variant-numeric: var(--numeric-font-variant);
 
     // A count of zero is good news and should look like nothing. A count above
     // zero is the reason this screen exists.
-    &.alarming strong {
+    &.home-stat-value--alarming {
       color: var(--health-broken-fg);
     }
+  }
+
+  .home-stat-label {
+    color: var(--text-secondary-color);
+    font-size: var(--font-size-sm);
   }
 
   .home-attention {
@@ -149,26 +132,9 @@
     gap: var(--spacing);
   }
 
-  .home-project {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: var(--spacing-half);
-
-    padding: var(--spacing);
-    border: var(--base-border);
-    border-radius: var(--border-radius);
-
-    background: var(--box-background-color);
-    color: var(--text-color);
-    text-align: left;
-    cursor: pointer;
-
-    &:hover {
-      background: var(--box-alt-background-color);
-    }
-  }
-
+  // The project card's surface is now `<Card>` and its agent chips are
+  // `<Badge>` (#18). Only the name, the chip row's layout, and the disk footer
+  // are styled here.
   .home-project-name {
     font-weight: var(--font-weight-semibold);
   }
@@ -177,34 +143,6 @@
     display: flex;
     flex-wrap: wrap;
     gap: var(--spacing-half);
-  }
-
-  .home-project-agent {
-    padding: 1px var(--spacing-half);
-    border-radius: var(--border-radius);
-    background: var(--box-selected-background-color);
-    color: var(--box-selected-text-color);
-    font-size: var(--font-size-sm);
-  }
-
-  .home-project-none {
-    padding: 1px var(--space-2);
-    border: 1px solid var(--health-attention-border);
-    border-radius: var(--border-radius);
-    background: var(--health-attention-bg);
-    color: var(--health-attention-fg);
-    font-size: var(--font-size-sm);
-  }
-
-  // Not knowing is not the same as knowing there is nothing, and it must not
-  // borrow the warning colour — there is nothing here to warn about yet.
-  .home-project-unknown {
-    padding: 1px var(--space-2);
-    border: 1px dashed var(--health-unknown-border);
-    border-radius: var(--border-radius);
-    background: var(--health-unknown-bg);
-    color: var(--health-unknown-fg);
-    font-size: var(--font-size-sm);
   }
 
   .home-project-disk {

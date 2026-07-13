@@ -128,62 +128,9 @@
     margin-right: auto;
   }
 
-  // Every state below is a word in the product's domain, and each now has a
-  // colour that means it — rather than borrowing `--dialog-*`, which was never
-  // about a project's health and only ever fit by accident.
-  .workspace-badge {
-    padding: 2px var(--space-2);
-    border: 1px solid transparent;
-    border-radius: var(--border-radius);
-    font-size: var(--font-size-sm);
-    background: var(--health-ok-bg);
-    color: var(--health-ok-fg);
-    border-color: var(--health-ok-border);
-    white-space: nowrap;
-
-    &.agent {
-      background: var(--box-selected-background-color);
-      color: var(--box-selected-text-color);
-      border-color: transparent;
-    }
-
-    // A project with no agent context at all is the finding this feature
-    // exists to surface. It gets to shout.
-    &.warning {
-      background: var(--health-attention-bg);
-      color: var(--health-attention-fg);
-      border-color: var(--health-attention-border);
-    }
-
-    &.error,
-    &.missing {
-      background: var(--health-broken-bg);
-      color: var(--health-broken-fg);
-      border-color: var(--health-broken-border);
-    }
-
-    // Never scanned. Neutral on purpose — there is nothing to warn about, we
-    // simply have not looked, and dressing that up as a problem is the lie #84
-    // was about. It is a *different* class from `.muted` because "we found
-    // nothing to clean up" and "we never looked" are opposite facts, and they
-    // shared one class until this issue.
-    &.unknown {
-      background: var(--health-unknown-bg);
-      color: var(--health-unknown-fg);
-      border-color: var(--health-unknown-border);
-      border-style: dashed;
-    }
-
-    // Scanned, nothing to do. Quiet by design: good news should look like
-    // nothing.
-    &.muted {
-      opacity: 0.7;
-    }
-
-    &.disk {
-      font-variant-numeric: var(--numeric-font-variant);
-    }
-  }
+  // The project-summary badges now come from the shared `<Badge>` (#18), which
+  // owns the health palette these used to inline. The old `.workspace-badge`
+  // and its six variants are gone; nothing here should grow a seventh.
 
   .workspace-detail {
     padding: 0 var(--spacing) var(--spacing) var(--spacing-double);

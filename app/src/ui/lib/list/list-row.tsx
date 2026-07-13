@@ -5,6 +5,21 @@ import { Tooltip } from '../tooltip'
 import { createObservableRef, ObservableRef } from '../observable-ref'
 import { enableAccessibleListToolTips } from '../../../lib/feature-flag'
 
+/**
+ * Where a `role="treeitem"` row sits in the tree. Computed by `flattenTree`
+ * and threaded through `List` so the row div carries the correct ARIA.
+ */
+export interface ITreeRowMetadata {
+  /** `aria-level`, 1-based. */
+  readonly level: number
+  /** `aria-posinset` among siblings at this level, 1-based. */
+  readonly posInSet: number
+  /** `aria-setsize` — count of siblings at this level. */
+  readonly setSize: number
+  /** `aria-expanded`, or `undefined` for a leaf that cannot expand. */
+  readonly expanded: boolean | undefined
+}
+
 interface IListRowProps {
   /** whether or not the section to which this row belongs has a header */
   readonly sectionHasHeader: boolean
@@ -116,7 +131,16 @@ interface IListRowProps {
    * meant to be informational as opposed for selection, we should use `list`
    * with `listitem` as the role for the items so browse mode can navigate them.
    */
-  readonly role?: 'option' | 'listitem' | 'presentation'
+  readonly role?: 'option' | 'listitem' | 'presentation' | 'treeitem'
+
+  /**
+   * Tree placement for a row rendered as `role="treeitem"`. When present it
+   * supplies `aria-level`/`aria-expanded` and *overrides* the set metadata the
+   * row would otherwise derive from its flat index — which is wrong for a tree,
+   * where position is relative to a node's siblings, not to the whole list.
+   * Absent for every non-tree list, so those lists are untouched.
+   */
+  readonly treeMetadata?: ITreeRowMetadata
 
   /**
    * Optional render function for tooltip that appears on keyboard and mouse focus
@@ -274,6 +298,8 @@ export class ListRow extends React.Component<IListRowProps, {}> {
     // that width.
     const fullWidthStyle = { ...style, width: '100%' }
 
+    const { treeMetadata } = this.props
+
     let ariaSetSize: number | undefined = rowCount
     let ariaPosInSet: number | undefined = rowIndex.row + 1
     if (sectionHasHeader) {
@@ -284,6 +310,12 @@ export class ListRow extends React.Component<IListRowProps, {}> {
         ariaSetSize -= 1
         ariaPosInSet -= 1
       }
+    }
+    if (treeMetadata !== undefined) {
+      // A tree row's set is its siblings, not the flattened list. Take the
+      // metadata's values wholesale rather than the index-derived ones above.
+      ariaSetSize = treeMetadata.setSize
+      ariaPosInSet = treeMetadata.posInSet
     }
 
     return (
@@ -296,6 +328,8 @@ export class ListRow extends React.Component<IListRowProps, {}> {
         }
         aria-setsize={ariaSetSize}
         aria-posinset={ariaPosInSet}
+        aria-level={treeMetadata?.level}
+        aria-expanded={treeMetadata?.expanded}
         aria-selected={selectable ? selected : undefined}
         aria-label={this.props.ariaLabel}
         className={rowClassName}

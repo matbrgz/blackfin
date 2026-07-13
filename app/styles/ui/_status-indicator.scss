@@ -1,0 +1,58 @@
+// StatusIndicator (#18) — a dot and a word for #17's seven health states.
+// The word carries the meaning; the dot's colour only reinforces it. No hex,
+// no animation — not even under a theme, and never a pulse.
+
+.status-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+
+  .status-indicator-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    // The dot's fill is the state's foreground; its ring is the border. Both
+    // come from #17, so the dot is legible on either theme's surface without a
+    // second rule.
+    background: var(--health-ok-fg);
+    box-shadow: 0 0 0 1px var(--health-ok-border);
+  }
+
+  .status-indicator-label {
+    font-size: var(--font-size-sm);
+    color: var(--text-secondary-color);
+  }
+
+  &.status-indicator--attention .status-indicator-dot {
+    background: var(--health-attention-fg);
+    box-shadow: 0 0 0 1px var(--health-attention-border);
+  }
+
+  &.status-indicator--broken .status-indicator-dot {
+    background: var(--health-broken-fg);
+    box-shadow: 0 0 0 1px var(--health-broken-border);
+  }
+
+  &.status-indicator--inherited .status-indicator-dot {
+    background: var(--health-inherited-fg);
+    box-shadow: 0 0 0 1px var(--health-inherited-border);
+  }
+
+  &.status-indicator--overridden .status-indicator-dot {
+    background: var(--health-overridden-fg);
+    box-shadow: 0 0 0 1px var(--health-overridden-border);
+  }
+
+  &.status-indicator--stale .status-indicator-dot {
+    background: var(--health-stale-fg);
+    box-shadow: 0 0 0 1px var(--health-stale-border);
+  }
+
+  // Hollow on purpose: "never scanned" is an absence, and a filled dot would
+  // assert a state we do not have.
+  &.status-indicator--unknown .status-indicator-dot {
+    background: transparent;
+    box-shadow: inset 0 0 0 1px var(--health-unknown-border);
+  }
+}

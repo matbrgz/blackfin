@@ -2,6 +2,8 @@ import * as React from 'react'
 import classNames from 'classnames'
 import { UiView } from '../ui-view'
 import { Button } from '../lib/button'
+import { Card } from '../lib/card'
+import { Badge } from '../lib/badge'
 import { Octicon, OcticonSymbol } from '../octicons'
 import * as octicons from '../octicons/octicons.generated'
 import { formatBytes } from '../lib/bytes'
@@ -36,13 +38,16 @@ class HomeStat extends React.Component<IHomeStatProps> {
     const { value, label, alarming } = this.props
 
     return (
-      <button
-        className={classNames('home-stat', { alarming })}
-        onClick={this.onClick}
-      >
-        <strong>{value}</strong>
-        <span>{label}</span>
-      </button>
+      <Card onClick={this.onClick} ariaLabel={`${value} ${label}`}>
+        <strong
+          className={classNames('home-stat-value', {
+            'home-stat-value--alarming': alarming,
+          })}
+        >
+          {value}
+        </strong>
+        <span className="home-stat-label">{label}</span>
+      </Card>
     )
   }
 }
@@ -91,32 +96,33 @@ class ProjectCard extends React.Component<IProjectCardProps> {
     const agents = scanned ? configuredAgents(inventory) : []
     const reclaimable = scanned ? reclaimableBytes(inventory) : 0
 
-    return (
-      <button className="home-project" onClick={this.onClick}>
-        <span className="home-project-name">
-          {repository.alias ?? repository.name}
-        </span>
+    const name = repository.alias ?? repository.name
 
+    return (
+      <Card
+        onClick={this.onClick}
+        ariaLabel={name}
+        header={<span className="home-project-name">{name}</span>}
+        footer={
+          reclaimable > 0 ? (
+            <span className="home-project-disk">
+              {formatBytes(reclaimable)} reclaimable
+            </span>
+          ) : undefined
+        }
+      >
         <span className="home-project-agents">
           {!scanned ? (
-            <span className="home-project-unknown">Not scanned yet</span>
+            <Badge kind="health" health="unknown" label="Not scanned yet" />
           ) : agents.length === 0 ? (
-            <span className="home-project-none">No agent context</span>
+            <Badge kind="health" health="attention" label="No agent context" />
           ) : (
             agents.map(agent => (
-              <span key={agent} className="home-project-agent">
-                {agentDisplayName(agent)}
-              </span>
+              <Badge key={agent} kind="agent" label={agentDisplayName(agent)} />
             ))
           )}
         </span>
-
-        {reclaimable > 0 && (
-          <span className="home-project-disk">
-            {formatBytes(reclaimable)} reclaimable
-          </span>
-        )}
-      </button>
+      </Card>
     )
   }
 }

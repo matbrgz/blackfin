@@ -1,0 +1,91 @@
+// Badge — the one badge vocabulary (#18), painted entirely from #17's tokens.
+// No hex here: every colour is a `--health-*` custom property, so light and
+// dark, and any future theme, are already handled the moment the token is.
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 2px var(--space-2);
+  border: 1px solid transparent;
+  border-radius: var(--border-radius);
+  font-size: var(--font-size-sm);
+  line-height: 1.4;
+  white-space: nowrap;
+  vertical-align: middle;
+
+  .badge-icon {
+    // Octicons size to the surrounding font; a badge's icon should read as part
+    // of the label, not tower over it.
+    width: var(--font-size-sm);
+    height: var(--font-size-sm);
+    flex-shrink: 0;
+  }
+
+  &.badge--icon-only {
+    padding: 2px;
+  }
+
+  // Counts are numbers, and numbers in a column must not dance as their digits
+  // change — the reason #17 shipped this token.
+  &.badge--count .badge-text {
+    font-variant-numeric: var(--numeric-font-variant);
+  }
+
+  // An agent is an identity, not a health state, so it does not borrow the
+  // health palette — it uses the app's selected-box colours, the same as the
+  // hand-rolled `.workspace-badge.agent` it replaces.
+  &.badge--agent {
+    background: var(--box-selected-background-color);
+    color: var(--box-selected-text-color);
+    border-color: transparent;
+  }
+
+  // Tone families. Each is a straight read of one #17 health triple. `agent`
+  // above opts out; everything else lands on exactly one of these.
+  &.badge--tone-ok {
+    background: var(--health-ok-bg);
+    color: var(--health-ok-fg);
+    border-color: var(--health-ok-border);
+  }
+
+  &.badge--tone-attention {
+    background: var(--health-attention-bg);
+    color: var(--health-attention-fg);
+    border-color: var(--health-attention-border);
+  }
+
+  &.badge--tone-broken {
+    background: var(--health-broken-bg);
+    color: var(--health-broken-fg);
+    border-color: var(--health-broken-border);
+  }
+
+  &.badge--tone-inherited {
+    background: var(--health-inherited-bg);
+    color: var(--health-inherited-fg);
+    border-color: var(--health-inherited-border);
+  }
+
+  &.badge--tone-overridden {
+    background: var(--health-overridden-bg);
+    color: var(--health-overridden-fg);
+    border-color: var(--health-overridden-border);
+  }
+
+  &.badge--tone-stale {
+    background: var(--health-stale-bg);
+    color: var(--health-stale-fg);
+    border-color: var(--health-stale-border);
+  }
+
+  // Never-looked-at. Dashed border to read as provisional — the same signal the
+  // old `.workspace-badge.unknown` carried, kept so "we have not looked" never
+  // looks like a settled "ok".
+  &.badge--tone-unknown {
+    background: var(--health-unknown-bg);
+    color: var(--health-unknown-fg);
+    border-color: var(--health-unknown-border);
+    border-style: dashed;
+  }
+}

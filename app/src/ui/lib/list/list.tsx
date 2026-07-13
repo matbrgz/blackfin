@@ -3,7 +3,7 @@ import * as ReactDOM from 'react-dom'
 import { Grid, AutoSizer } from 'react-virtualized'
 import { shallowEquals, arrayEquals } from '../../../lib/equality'
 import { FocusContainer } from '../../lib/focus-container'
-import { ListRow } from './list-row'
+import { ListRow, ITreeRowMetadata } from './list-row'
 import {
   findNextSelectableRow,
   SelectionSource,
@@ -305,8 +305,19 @@ interface IListProps {
    * screenreader will only browse to the selected list option. If the list is
    * meant to be a read only list, we should use `list` with `listitem` as the
    * role for the items so browse mode can navigate them.
+   *
+   * `tree` pairs the container with `treeitem` rows and expects
+   * `getRowTreeMetadata` to place each row in the tree. `Tree` (an adapter over
+   * this component) is the only intended user of that role.
    */
-  readonly role?: 'listbox' | 'list'
+  readonly role?: 'listbox' | 'list' | 'tree'
+
+  /**
+   * For a `tree`-role list, the placement of a row in the tree: its level,
+   * expanded state, and position among its siblings. Absent for ordinary
+   * lists, which never call it. Supplied by `Tree` from `flattenTree`.
+   */
+  readonly getRowTreeMetadata?: (row: number) => ITreeRowMetadata | undefined
 
   /**
    * Optional callback for providing an aria label for screen readers for each
@@ -378,6 +389,18 @@ function createSelectionBetween(
   // range is upper bound exclusive
   const end = lastRow > firstRow ? lastRow + 1 : lastRow - 1
   return range(firstRow, end)
+}
+
+/** The row role that pairs with a given container role. */
+function rowRole(role: IListProps['role']): 'option' | 'listitem' | 'treeitem' {
+  switch (role) {
+    case 'list':
+      return 'listitem'
+    case 'tree':
+      return 'treeitem'
+    default:
+      return 'option'
+  }
 }
 
 export class List extends React.Component<IListProps, IListState> {
@@ -1191,11 +1214,14 @@ export class List extends React.Component<IListProps, IListState> {
           ? this.props.getRowAriaLabel(rowIndex)
           : undefined
 
+      const treeMetadata = this.props.getRowTreeMetadata?.(rowIndex)
+
       return (
         <ListRow
           key={params.key}
           id={id}
-          role={this.props.role === 'list' ? 'listitem' : 'option'}
+          role={rowRole(this.props.role)}
+          treeMetadata={treeMetadata}
           onRowRef={this.onRowRef}
           rowCount={this.props.rowCount}
           rowIndex={{ section: 0, row: rowIndex }}

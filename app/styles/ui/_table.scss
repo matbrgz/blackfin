@@ -1,0 +1,49 @@
+// Table (#18) — a real <table>. Tokens only.
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--font-size);
+
+  .table-caption {
+    text-align: left;
+    font-size: var(--font-size-sm);
+    color: var(--text-secondary-color);
+    padding-bottom: var(--space-2);
+  }
+
+  .table-header {
+    text-align: left;
+    font-weight: var(--font-weight-semibold);
+    color: var(--text-secondary-color);
+    padding: var(--space-2) var(--space-3);
+    border-bottom: var(--base-border);
+    white-space: nowrap;
+  }
+
+  .table-cell {
+    padding: var(--space-2) var(--space-3);
+    border-bottom: var(--base-border);
+    vertical-align: top;
+  }
+
+  // Columns of numbers: right-aligned and tabular, so digits line up and the
+  // eye can compare rows.
+  .table-header--numeric,
+  .table-cell--numeric {
+    text-align: right;
+    font-variant-numeric: var(--numeric-font-variant);
+  }
+
+  // The state of a secret, never its value. Muted on purpose — it is metadata
+  // about a value, not the value.
+  .sensitive-state {
+    font-size: var(--font-size-sm);
+    color: var(--text-secondary-color);
+  }
+
+  .sensitive-state--absent {
+    font-style: italic;
+    opacity: 0.8;
+  }
+}
