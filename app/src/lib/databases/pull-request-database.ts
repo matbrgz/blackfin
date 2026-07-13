@@ -257,9 +257,9 @@ export class PullRequestDatabase extends BaseDatabase {
    *
    * Note:
    * This value might differ from max(updated_at) in the pullRequests
-   * table since the most recently updated PR we saw might have
-   * been closed and we only store open PRs in the pullRequests
-   * table.
+   * table since the most recently updated PR we saw might since have
+   * been pruned by retention (closed and merged PRs are stored, but the
+   * oldest are dropped once past the age limit or the per-repo cap).
    */
   public async getLastUpdated(repository: GitHubRepository) {
     const row = await this.pullRequestsLastUpdated.get(repository.dbID)
@@ -281,9 +281,9 @@ export class PullRequestDatabase extends BaseDatabase {
    *
    * Note:
    * This value might differ from max(updated_at) in the pullRequests
-   * table since the most recently updated PR we saw might have
-   * been closed and we only store open PRs in the pullRequests
-   * table.
+   * table since the most recently updated PR we saw might since have
+   * been pruned by retention (closed and merged PRs are stored, but the
+   * oldest are dropped once past the age limit or the per-repo cap).
    */
   public async setLastUpdated(repository: GitHubRepository, lastUpdated: Date) {
     await this.pullRequestsLastUpdated.put({

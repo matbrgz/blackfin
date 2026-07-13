@@ -34,8 +34,13 @@ export interface IPruneOptions {
  * Open PRs are never pruned. A non-open PR is pruned when it is both older than
  * the age limit and not on a branch worth keeping; and, beyond that, the newest
  * non-open PRs are kept up to the per-repo cap, pruning the oldest — but never a
- * branch-matched one, which is exactly the merged PR a board still needs to show
- * as "done".
+ * branch-matched one.
+ *
+ * `knownHeadRefs` is the caller's set of branches worth keeping. Today the store
+ * populates it from the open PRs' head refs, so a long-merged PR whose branch is
+ * only checked out locally (no open PR shares the ref) is not protected by name
+ * and relies on the age limit and cap. Widening the set to the actual checked-
+ * out/worktree branches is #59's to do when it wires them through.
  */
 export function selectPullRequestsToPrune(
   prs: ReadonlyArray<IPrunablePullRequest>,

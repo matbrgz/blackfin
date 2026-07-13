@@ -338,23 +338,28 @@ export class PullRequestStore {
       // Closed and merged PRs are no longer deleted by state — the board needs
       // to know a branch was integrated. They are upserted with their state
       // below, and bounded by retention pruning, not by deletion on sight.
+      const state = toPullRequestState(pr)
 
-      // `pr.head.repo` represents the source of the pull request. It might be
-      // a branch associated with the current repository, or a fork of the
-      // current repository.
-      //
-      // In cases where the user has removed the fork of the repository after
-      // opening a pull request, this can be `null`, and the app will not store
-      // this pull request.
-      if (pr.head.repo == null) {
+      // `pr.head.repo` is the PR's source. It might be a branch of the current
+      // repository, or a fork. It is null when the user deleted the fork the PR
+      // came from. An *open* PR from a vanished fork is not actionable and
+      // matches no local branch, so we still skip it. A closed or merged one is
+      // exactly what this cache now keeps, so we retain it and treat the base
+      // repo — where the branch was integrated — as its head, the fork's own
+      // record being gone. `getPullRequestsForHeadRefs` keys off `head.ref`,
+      // not `head.repoId`, so this fallback matches nothing it shouldn't.
+      if (pr.head.repo == null && state === 'open') {
         log.debug(
-          `Unable to store pull request #${pr.number} for repository ${repository.fullName} as it has no head repository associated with it`
+          `Unable to store open pull request #${pr.number} for repository ${repository.fullName} as it has no head repository associated with it`
         )
         prsToDelete.push(getPullRequestKey(baseGitHubRepo, pr.number))
         continue
       }
 
-      const headRepo = await upsertRepo(endpoint, pr.head.repo, login)
+      const headRepo =
+        pr.head.repo == null
+          ? baseGitHubRepo
+          : await upsertRepo(endpoint, pr.head.repo, login)
 
       prsToUpsert.push({
         number: pr.number,
@@ -374,7 +379,7 @@ export class PullRequestStore {
         body: pr.body,
         author: pr.user.login,
         draft: pr.draft ?? false,
-        state: toPullRequestState(pr),
+        state,
         mergedAt: pr.merged_at ?? null,
         closedAt: pr.closed_at ?? null,
       })
@@ -419,6 +424,10 @@ export class PullRequestStore {
   private async pruneStalePullRequests(repository: GitHubRepository) {
     const rows = await this.db.getAllPullRequestsInRepository(repository)
 
+    // Branches worth keeping by name. Open PRs' head refs are the set we can
+    // build here; the local checked-out/worktree branches a merged PR might
+    // still matter to are #59's to supply once it wires them through. Until
+    // then a long-merged PR on such a branch is bounded only by age and the cap.
     const knownHeadRefs = new Set(
       rows.filter(r => (r.state ?? 'open') === 'open').map(r => r.head.ref)
     )
