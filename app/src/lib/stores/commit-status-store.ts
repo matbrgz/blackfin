@@ -278,10 +278,8 @@ export class CommitStatusStore {
 
     const { endpoint, owner, name, ref, login } = subscription
 
-    const account = this.accounts.find(
-      a => a.endpoint === endpoint && a.login === login
-    )
-    if (account === undefined) {
+    const account = getAccountForEndpoint(this.accounts, endpoint, login, false)
+    if (account === null) {
       return
     }
 

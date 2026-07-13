@@ -852,6 +852,11 @@ export interface IAPIBranch {
   readonly protected: boolean
 }
 
+interface ICodebergAPIBranch {
+  readonly name: string
+  readonly protected: boolean
+}
+
 /** Repository rule information returned by the GitHub API */
 export interface IAPIRepoRule {
   /**
@@ -1231,6 +1236,37 @@ function toIAPIFullIdentityFromCodeberg(
   }
 }
 
+interface ICodebergAPIEmail {
+  readonly email: string
+  readonly verified: boolean
+  readonly primary: boolean
+}
+function toIAPIEmailFromCodeberg(email: ICodebergAPIEmail): IAPIEmail {
+  return {
+    email: email.email,
+    verified: email.verified,
+    primary: email.primary,
+    visibility: 'public',
+  }
+}
+
+interface ICodebergAPIOrganization {
+  readonly id: number
+  readonly name: string
+  readonly username: string
+  readonly avatar_url: string
+}
+function toIAPIOrganizationFromCodeberg(
+  org: ICodebergAPIOrganization
+): IAPIOrganization {
+  return {
+    id: org.id,
+    url: '',
+    login: org.username || org.name,
+    avatar_url: org.avatar_url,
+  }
+}
+
 interface ICodebergAPIRepository {
   readonly name: string
   readonly html_url: string
@@ -1335,52 +1371,64 @@ function toIAPIIssueFromCodeberg(issue: ICodebergAPIIssue): IAPIIssue {
   }
 }
 
+type CodebergAPIStatusState =
+  | 'pending'
+  | 'success'
+  | 'error'
+  | 'failure'
+  | 'warning'
 interface ICodebergAPICommitStatus {
   readonly id: number
-  readonly status: 'pending' | 'success' | 'error' | 'failure' | 'warning'
+  readonly status: CodebergAPIStatusState
   readonly target_url: string | null
   readonly description: string
   readonly context: string
   readonly created_at: string
   readonly updated_at: string
 }
+interface ICodebergAPICombinedStatus {
+  readonly state: CodebergAPIStatusState
+  readonly total_count: number
+  readonly statuses: ReadonlyArray<ICodebergAPICommitStatus> | null
+}
 function toIAPIRefStatusItemFromCodeberg(
   status: ICodebergAPICommitStatus
 ): IAPIRefStatusItem {
   return {
-    state: status.status === 'warning' ? 'error' : status.status,
-    target_url: status.target_url,
+    state: mapRefStateFromCodeberg(status.status),
+    target_url: toCodebergAbsoluteURL(status.target_url),
     description: status.description,
     context: status.context,
     id: status.id,
   }
 }
-function toIAPIRefCheckRunFromCodeberg(
-  status: ICodebergAPICommitStatus
-): IAPIRefCheckRun {
-  const isPending = status.status === 'pending'
-  const conclusion =
-    status.status === 'pending'
-      ? null
-      : status.status === 'success'
-        ? APICheckConclusion.Success
-        : APICheckConclusion.Failure
-  return {
-    id: status.id,
-    url: status.target_url ?? '',
-    status: isPending ? APICheckStatus.InProgress : APICheckStatus.Completed,
-    conclusion,
-    name: status.context,
-    check_suite: {
-      id: status.id,
-    },
-    app: {
-      name: 'Statuses',
-    },
-    completed_at: status.updated_at,
-    started_at: status.created_at,
-    html_url: status.target_url ?? '',
-    pull_requests: [],
+function mapRefStateFromCodeberg(state: CodebergAPIStatusState): APIRefState {
+  switch (state) {
+    case 'pending':
+      return 'pending'
+    case 'success':
+      return 'success'
+    case 'error':
+      return 'error'
+    case 'failure':
+      return 'failure'
+    case 'warning':
+      return 'success'
+    default:
+      return 'pending'
+  }
+}
+function toCodebergAbsoluteURL(url: string | null): string | null {
+  if (!url) {
+    return null
+  }
+  try {
+    // Statuses reported by Forgejo Actions use a target_url that is relative
+    // to the instance root (e.g. /owner/repo/actions/runs/123)
+    const host = new window.URL(getCodebergAPIEndpoint()).host
+    return new window.URL(url, `https://${host}`).toString()
+  } catch {
+    return null
   }
 }
 
@@ -1430,46 +1478,8 @@ interface IGitLabAPIAccessToken {
 }
 interface ICodebergAPIAccessToken {
   readonly access_token: string
-  readonly token_type?: string
-  readonly expires_in?: number
-  readonly refresh_token?: string
-}
-
-function serializeFormBody(values: Record<string, string>) {
-  return new URLSearchParams(values).toString()
-}
-
-async function parseCodebergAccessToken(
-  response: Response
-): Promise<ICodebergAPIAccessToken> {
-  const body = await response.text()
-
-  if (!response.ok) {
-    try {
-      throw new APIError(response, JSON.parse(body))
-    } catch {
-      throw new APIError(response, null)
-    }
-  }
-
-  try {
-    return JSON.parse(body) as ICodebergAPIAccessToken
-  } catch {
-    const params = new URLSearchParams(body)
-    const accessToken = params.get('access_token')
-    if (accessToken === null) {
-      throw new Error('Missing access_token in Codeberg OAuth response')
-    }
-
-    const expiresIn = params.get('expires_in')
-
-    return {
-      access_token: accessToken,
-      token_type: params.get('token_type') ?? undefined,
-      refresh_token: params.get('refresh_token') ?? undefined,
-      expires_in: expiresIn !== null ? Number(expiresIn) : undefined,
-    }
-  }
+  readonly expires_in: number
+  readonly refresh_token: string
 }
 
 /** The response we receive from fetching mentionables. */
@@ -1701,7 +1711,7 @@ export class API {
         )
       case 'codeberg':
         // eslint-disable-next-line @typescript-eslint/no-use-before-define -- a necessary evil if we want to minimize the diff in other files
-        return new CodebergAPI(
+        return CodebergAPI.get(
           account.token,
           account.login,
           account.refreshToken,
@@ -3234,7 +3244,7 @@ export async function fetchUser(
     api = GitLabAPI.get(token, login, refreshToken, expiresAt)
   } else if (endpoint === getCodebergAPIEndpoint()) {
     // eslint-disable-next-line @typescript-eslint/no-use-before-define
-    api = new CodebergAPI(token, login, refreshToken, expiresAt)
+    api = CodebergAPI.get(token, login, refreshToken, expiresAt)
   } else {
     api = new API(endpoint, token, login)
   }
@@ -3428,9 +3438,8 @@ export function getBitbucketOAuthAuthorizationURL(): string {
 
 export function getGitLabOAuthAuthorizationURL(redirectUri: string): string {
   const scope = encodeURIComponent('read_user read_api read_repository')
-  return `https://gitlab.com/oauth/authorize?client_id=${ClientIDGitLab}&redirect_uri=${encodeURIComponent(
-    redirectUri
-  )}&response_type=code&scope=${scope}`
+  const encodedRedirectUri = encodeURIComponent(redirectUri)
+  return `https://gitlab.com/oauth/authorize?client_id=${ClientIDGitLab}&redirect_uri=${encodedRedirectUri}&response_type=code&scope=${scope}`
 }
 
 export function getGitLabOAuthRedirectUri(): string {
@@ -3441,28 +3450,16 @@ export function getGitLabOAuthRedirectUri(): string {
 
 export function getCodebergOAuthAuthorizationURL(
   redirectUri: string,
-  state: string,
-  codeChallenge?: string
+  state: string
 ): string {
-  const params = new URLSearchParams({
-    client_id: ClientIDCodeberg,
-    redirect_uri: redirectUri,
-    response_type: 'code',
-    state,
-  })
-
-  if (codeChallenge !== undefined) {
-    params.set('code_challenge', codeChallenge)
-    params.set('code_challenge_method', 'S256')
-  }
-
-  return `https://codeberg.org/login/oauth/authorize?${params.toString()}`
+  const encodedRedirectUri = encodeURIComponent(redirectUri)
+  return `https://codeberg.org/login/oauth/authorize?client_id=${ClientIDCodeberg}&redirect_uri=${encodedRedirectUri}&response_type=code&state=${state}`
 }
 
 export function getCodebergOAuthRedirectUri(): string {
   return __DEV_SECRETS__
-    ? 'x-github-desktop-dev-auth://oauth'
-    : 'x-github-desktop-auth://oauth'
+    ? 'https://desktop-plus.org/oauth?dev=1'
+    : 'https://desktop-plus.org/oauth'
 }
 
 export async function requestOAuthToken(
@@ -3547,41 +3544,29 @@ export async function requestOAuthTokenGitLab(
 
 export async function requestOAuthTokenCodeberg(
   code: string,
-  redirectUri: string,
-  codeVerifier?: string
+  redirectUri: string
 ): Promise<[string, string, number] | null> {
   try {
-    const body: Record<string, string> = {
-      client_id: ClientIDCodeberg,
-      code,
-      grant_type: 'authorization_code',
-      redirect_uri: redirectUri,
-    }
-
-    if (codeVerifier !== undefined) {
-      body.code_verifier = codeVerifier
-    }
-
-    if (ClientSecretCodeberg.length > 0) {
-      body.client_secret = ClientSecretCodeberg
-    }
-
     const response = await fetch(
       'https://codeberg.org/login/oauth/access_token',
       {
         method: 'POST',
         headers: {
-          Accept: 'application/json',
-          'Content-Type': 'application/x-www-form-urlencoded',
+          'Content-Type': 'application/json',
         },
-        body: serializeFormBody(body),
+        body: JSON.stringify({
+          client_id: ClientIDCodeberg,
+          client_secret: ClientSecretCodeberg,
+          code: code,
+          grant_type: 'authorization_code',
+          redirect_uri: redirectUri,
+        }),
       }
     )
 
-    const result = await parseCodebergAccessToken(response)
-    const expiresAt =
-      result.expires_in !== undefined ? toExpiresAt(result.expires_in) : 0
-    return [result.access_token, result.refresh_token ?? '', expiresAt]
+    const result = await parsedResponse<ICodebergAPIAccessToken>(response)
+    const expiresAt = toExpiresAt(result.expires_in)
+    return [result.access_token, result.refresh_token, expiresAt]
   } catch (e) {
     log.warn('requestOAuthTokenCodeberg failed', e)
     return null
@@ -3615,6 +3600,7 @@ const knownThirdPartyHosts = new Set([
   'dev.azure.com',
   'gitlab.com',
   'bitbucket.org',
+  'codeberg.org',
   'amazonaws.com',
   'visualstudio.com',
 ])
@@ -3685,7 +3671,7 @@ export async function isGitHubHost(url: string) {
   }
 
   // bitbucket.example.com, etc
-  if (/(^|\.)(bitbucket|gitlab)\./.test(hostname)) {
+  if (/(^|\.)(bitbucket|gitlab|codeberg|forgejo|gitea)\./.test(hostname)) {
     return false
   }
 
@@ -4457,10 +4443,34 @@ export class GitLabAPI extends API {
 }
 
 export class CodebergAPI extends API {
+  // Forgejo may invalidate the previous refresh token when refreshing the
+  // access token (depending on the server's INVALIDATE_REFRESH_TOKENS
+  // setting), so use a per-login singleton to guarantee a single
+  // token-refresh chain per account.
+  private static instances: Map<string, CodebergAPI> = new Map()
+
+  public static get(
+    token: string,
+    login: string | UnknownLogin,
+    refreshToken: string,
+    expiresAt: number
+  ): CodebergAPI {
+    if (login === UnknownLogin.InitialAuthFetch) {
+      return new CodebergAPI(token, login, refreshToken, expiresAt)
+    }
+    const instance = this.instances.get(login)
+    if (!instance || !instance.token) {
+      const newInstance = new CodebergAPI(token, login, refreshToken, expiresAt)
+      this.instances.set(login, newInstance)
+      return newInstance
+    }
+    return instance
+  }
+
   private apiRefreshToken: string
   private expiresAt: Date | null = null
 
-  public constructor(
+  private constructor(
     token: string,
     login: string | UnknownLogin,
     refreshToken: string,
@@ -4479,25 +4489,33 @@ export class CodebergAPI extends API {
     return this.expiresAt?.getTime() ?? 0
   }
 
-  protected override getTokenExpiration(): Date | null {
-    return this.expiresAt
+  // https://forgejo.org/docs/latest/user/api-usage/
+  protected override get maxPerPage() {
+    return 50
+  }
+  protected override get perPageParamName() {
+    return 'limit'
+  }
+  protected override get pageParamName() {
+    return 'page'
+  }
+  protected override get paginatorNextPage() {
+    return ''
+  }
+  protected override get paginatorValues() {
+    return ''
   }
 
   protected override async refreshToken() {
-    if (!this.apiRefreshToken.length) {
-      return
-    }
-
     try {
       const response = await fetch(
         'https://codeberg.org/login/oauth/access_token',
         {
           method: 'POST',
           headers: {
-            Accept: 'application/json',
-            'Content-Type': 'application/x-www-form-urlencoded',
+            'Content-Type': 'application/json',
           },
-          body: serializeFormBody({
+          body: JSON.stringify({
             client_id: ClientIDCodeberg,
             client_secret: ClientSecretCodeberg,
             refresh_token: this.apiRefreshToken,
@@ -4506,18 +4524,15 @@ export class CodebergAPI extends API {
         }
       )
 
-      const result = await parseCodebergAccessToken(response)
+      const result = await parsedResponse<ICodebergAPIAccessToken>(response)
       this.token = result.access_token
-      this.apiRefreshToken = result.refresh_token ?? this.apiRefreshToken
-      this.expiresAt =
-        result.expires_in !== undefined
-          ? new Date(toExpiresAt(result.expires_in))
-          : null
+      this.apiRefreshToken = result.refresh_token ?? ''
+      this.expiresAt = new Date(toExpiresAt(result.expires_in))
       API.emitTokenRefreshed(
         this.endpoint,
         this.token,
         this.apiRefreshToken,
-        this.expiresAt?.getTime() ?? 0,
+        this.expiresAt.getTime(),
         this.login
       )
     } catch (e) {
@@ -4525,10 +4540,20 @@ export class CodebergAPI extends API {
     }
   }
 
+  protected override getExtraHeaders(): Object {
+    return {
+      Authorization: `Bearer ${this.token}`,
+    }
+  }
+
   protected override checkTokenInvalidated(response: Response) {
     if (response.status === 401) {
       API.emitTokenInvalidated(this.endpoint, this.token, this.login)
     }
+  }
+
+  protected override getTokenExpiration(): Date | null {
+    return this.expiresAt
   }
 
   public override async fetchAccount(): Promise<IAPIFullIdentity> {
@@ -4540,7 +4565,8 @@ export class CodebergAPI extends API {
 
   public override async fetchEmails(): Promise<ReadonlyArray<IAPIEmail>> {
     try {
-      return await this.fetchAll<IAPIEmail>('user/emails')
+      const emails = await this.fetchAll<ICodebergAPIEmail>('user/emails')
+      return emails.map(toIAPIEmailFromCodeberg)
     } catch (e) {
       if (
         e instanceof APIError &&
@@ -4569,7 +4595,7 @@ export class CodebergAPI extends API {
           avatar_url: user.avatar_url,
           email: user.email || null,
           login: user.login,
-          name: user.full_name || user.login,
+          name: user.full_name || null,
         })),
       }
     } catch (e) {
@@ -4604,13 +4630,12 @@ export class CodebergAPI extends API {
     owner: string,
     name: string
   ): Promise<IAPIPullRequest[]> {
+    const url = urlWithQueryString(`repos/${owner}/${name}/pulls`, {
+      state: 'open',
+    })
     try {
-      const prs = await this.fetchAll<ICodebergAPIPullRequest>(
-        `repos/${owner}/${name}/pulls?state=open&sort=recentupdate`
-      )
-      return prs.filter((pr): pr is ICodebergAPIPullRequest => pr !== null).map(
-        toIAPIPullRequestFromCodeberg
-      )
+      const prs = await this.fetchAll<ICodebergAPIPullRequest>(url)
+      return prs.map(toIAPIPullRequestFromCodeberg)
     } catch (e) {
       log.warn(`failed fetching open PRs for repository ${owner}/${name}`, e)
       throw e
@@ -4624,29 +4649,32 @@ export class CodebergAPI extends API {
     maxResults = 320
   ) {
     const sinceTime = since.getTime()
-    try {
-      const prs = await this.fetchAll<ICodebergAPIPullRequest>(
-        `repos/${owner}/${name}/pulls?state=all&sort=recentupdate`,
-        {
-          perPage: 10,
-          getNextPagePath: response =>
-            getNextPagePathWithIncreasingPageSize(
-              response,
-              this.perPageParamName,
-              this.pageParamName,
-              this.maxPerPage
-            ),
-          continue(results) {
-            if (results.length >= maxResults) {
-              throw new MaxResultsError('got max pull requests, aborting')
-            }
+    const url = urlWithQueryString(`repos/${owner}/${name}/pulls`, {
+      state: 'all',
+      sort: 'recentupdate',
+    })
 
-            const last = results.at(-1)
-            return last !== undefined && Date.parse(last.updated_at) > sinceTime
-          },
-          suppressErrors: false,
-        }
-      )
+    try {
+      const prs = await this.fetchAll<ICodebergAPIPullRequest>(url, {
+        // See explanation for perPage=10 in API.fetchUpdatedPullRequests
+        perPage: 10,
+        getNextPagePath: response =>
+          getNextPagePathWithIncreasingPageSize(
+            response,
+            this.perPageParamName,
+            this.pageParamName,
+            this.maxPerPage
+          ),
+        continue(results) {
+          if (results.length >= maxResults) {
+            throw new MaxResultsError('got max pull requests, aborting')
+          }
+
+          const last = results.at(-1)
+          return last !== undefined && Date.parse(last.updated_at) > sinceTime
+        },
+        suppressErrors: false,
+      })
       return prs
         .filter(pr => Date.parse(pr.updated_at) >= sinceTime)
         .map(toIAPIPullRequestFromCodeberg)
@@ -4662,11 +4690,12 @@ export class CodebergAPI extends API {
     state: 'open' | 'closed' | 'all',
     since: Date | null
   ): Promise<ReadonlyArray<IAPIIssue>> {
-    const params = [`state=${state}`, 'type=issues', 'sort=recentupdate']
-    if (since !== null) {
-      params.push(`since=${encodeURIComponent(since.toISOString())}`)
+    const params: { [key: string]: string } = { state, type: 'issues' }
+    if (since && !isNaN(since.getTime())) {
+      params.since = toGitHubIsoDateString(since)
     }
-    const url = `repos/${owner}/${name}/issues?${params.join('&')}`
+
+    const url = urlWithQueryString(`repos/${owner}/${name}/issues`, params)
     try {
       const issues = await this.fetchAll<ICodebergAPIIssue>(url)
       return issues.map(toIAPIIssueFromCodeberg)
@@ -4682,41 +4711,57 @@ export class CodebergAPI extends API {
     ref: string
   ): Promise<IAPIRefStatus | null> {
     try {
-      const statuses = await this.fetchAll<ICodebergAPICommitStatus>(
-        `repos/${owner}/${name}/commits/${ref}/statuses`
+      const commitRef = await this.ensureCommitRef(owner, name, ref)
+      // Use the combined status endpoint (rather than the plain statuses
+      // list) because it only returns the latest status for each context
+      const path = `repos/${owner}/${name}/commits/${commitRef}/status?limit=${this.maxPerPage}`
+      const response = await this.request(this.endpoint, 'GET', path)
+      const combined = await parsedResponse<ICodebergAPICombinedStatus>(
+        response
       )
-      const mappedStatuses = statuses.map(toIAPIRefStatusItemFromCodeberg)
+      const statuses = (combined.statuses ?? []).map(
+        toIAPIRefStatusItemFromCodeberg
+      )
       return {
-        state: getCombinedRefStatus(mappedStatuses),
-        total_count: mappedStatuses.length,
-        statuses: mappedStatuses,
+        state: mapRefStateFromCodeberg(combined.state),
+        total_count: statuses.length,
+        statuses,
       }
-    } catch (e) {
-      log.debug(`Failed fetching statuses for ref ${ref} (${owner}/${name})`, e)
+    } catch (err) {
+      log.debug(
+        `Failed fetching combined status for ref ${ref} (${owner}/${name})`,
+        err
+      )
       return null
     }
   }
 
-  public override async fetchRefCheckRuns(
+  public override async fetchRefCheckRuns(): Promise<IAPIRefCheckRuns | null> {
+    // Don't call /statuses, otherwise checks will appear twice in the PR view.
+    return null
+  }
+
+  private async ensureCommitRef(
     owner: string,
     name: string,
     ref: string
-  ): Promise<IAPIRefCheckRuns | null> {
-    try {
-      const statuses = await this.fetchAll<ICodebergAPICommitStatus>(
-        `repos/${owner}/${name}/commits/${ref}/statuses`
-      )
-      return {
-        total_count: statuses.length,
-        check_runs: statuses.map(toIAPIRefCheckRunFromCodeberg),
-      }
-    } catch (e) {
-      log.debug(
-        `Failed fetching check runs for ref ${ref} (${owner}/${name})`,
-        e
-      )
-      return null
+  ): Promise<string> {
+    // The ref can be a branch name or a commit SHA, but also the synthetic
+    // refs/pull/{n}/head ref produced by getRefForPullRequest, which
+    // Forgejo's commit status endpoint can't resolve. Look up the pull
+    // request's head SHA in that case.
+    const prMatch = ref.match(/^refs\/pull\/(\d+)\/head$/)
+    if (!prMatch) {
+      return ref
     }
+    const prNumber = prMatch[1]
+    const headSha = await this.fetchPullRequestHeadSha(owner, name, prNumber)
+    if (!headSha) {
+      throw new Error(
+        `Unable to resolve head SHA for PR ${prNumber} (${owner}/${name})`
+      )
+    }
+    return encodeURIComponent(headSha)
   }
 
   public override async fetchRepositoryCloneInfo(
@@ -4756,8 +4801,22 @@ export class CodebergAPI extends API {
     }
   }
 
-  public override async fetchProtectedBranches() {
-    return []
+  public override async fetchProtectedBranches(
+    owner: string,
+    name: string
+  ): Promise<ReadonlyArray<IAPIBranch>> {
+    try {
+      const branches = await this.fetchAll<ICodebergAPIBranch>(
+        `repos/${owner}/${name}/branches`
+      )
+      return branches.filter(branch => branch.protected)
+    } catch (err) {
+      log.info(
+        `[fetchProtectedBranches] unable to list protected branches`,
+        err
+      )
+      return []
+    }
   }
 
   public override async fetchPRWorkflowRunsByBranchName(): Promise<IAPIWorkflowRuns | null> {
@@ -4766,6 +4825,107 @@ export class CodebergAPI extends API {
 
   public override async fetchWorkflowRunJobs(): Promise<IAPIWorkflowJobs | null> {
     return null
+  }
+
+  public override async fetchOrgs(): Promise<ReadonlyArray<IAPIOrganization>> {
+    try {
+      const orgs = await this.fetchAll<ICodebergAPIOrganization>('user/orgs')
+      return orgs.map(toIAPIOrganizationFromCodeberg)
+    } catch (e) {
+      log.warn(`fetchOrgs: failed with endpoint ${this.endpoint}`, e)
+      return []
+    }
+  }
+
+  public override async createRepository(
+    org: IAPIOrganization | null,
+    name: string,
+    description: string,
+    private_: boolean
+  ): Promise<IAPIFullRepository> {
+    try {
+      const apiPath = org ? `orgs/${org.login}/repos` : 'user/repos'
+      const response = await this.request(this.endpoint, 'POST', apiPath, {
+        body: {
+          name,
+          description,
+          private: private_,
+        },
+      })
+      const repo = await parsedResponse<ICodebergAPIRepository>(response)
+      return toIAPIFullRepositoryFromCodeberg(repo)
+    } catch (e) {
+      if (e instanceof APIError) {
+        if (org !== null) {
+          throw new Error(
+            `Unable to create repository for organization '${org.login}'. Verify that the repository does not already exist and that you have permission to create a repository there.`
+          )
+        }
+        throw e
+      }
+
+      log.error(`createRepository: failed with endpoint ${this.endpoint}`, e)
+      throw new Error(
+        `Unable to publish repository. Please check if you have an internet connection and try again.`
+      )
+    }
+  }
+
+  public override async forkRepository(
+    owner: string,
+    name: string
+  ): Promise<IAPIFullRepository> {
+    try {
+      const response = await this.request(
+        this.endpoint,
+        'POST',
+        `repos/${owner}/${name}/forks`,
+        // Forgejo requires a JSON body (CreateForkOption) even if empty
+        { body: {} }
+      )
+      const repo = await parsedResponse<ICodebergAPIRepository>(response)
+      return toIAPIFullRepositoryFromCodeberg(repo)
+    } catch (e) {
+      log.error(
+        `forkRepository: failed to fork ${owner}/${name} at endpoint: ${this.endpoint}`,
+        e
+      )
+      throw e
+    }
+  }
+
+  public async fetchPushControl(): Promise<IAPIPushControl> {
+    return {
+      pattern: null,
+      required_signatures: false,
+      required_status_checks: [],
+      required_approving_review_count: 0,
+      required_linear_history: false,
+      allow_actor: true,
+      allow_deletions: true,
+      allow_force_pushes: true,
+    }
+  }
+
+  public override async getFetchPollInterval(): Promise<number | null> {
+    return null
+  }
+
+  private async fetchPullRequestHeadSha(
+    owner: string,
+    name: string,
+    prNumber: string
+  ): Promise<string | null> {
+    const response = await this.request(
+      this.endpoint,
+      'GET',
+      `repos/${owner}/${name}/pulls/${prNumber}`
+    )
+    if (!response.ok) {
+      return null
+    }
+    const pr = await parsedResponse<ICodebergAPIPullRequest>(response)
+    return pr.head.sha || null
   }
 
   public override async fetchUserCopilotInfo(): Promise<undefined> {
