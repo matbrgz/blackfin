@@ -2,6 +2,7 @@ import { describe, it } from 'node:test'
 import assert from 'node:assert'
 import {
   explainStatus,
+  freshInventoryFor,
   isCountable,
   needsAttention,
   plural,
@@ -57,6 +58,42 @@ describe('isCountable', () => {
 
   it('does not count a project that is gone from disk', () => {
     assert.strictEqual(isCountable(inventory({ kind: 'missing' })), false)
+  })
+})
+
+describe('freshInventoryFor', () => {
+  const inv: IRepositoryInventory = {
+    repositoryId: 7,
+    repositoryPath: '/work/main',
+    scannedAt: 1,
+    status: { kind: 'ok' },
+    contextFiles: [],
+    docs: [],
+    artifacts: [],
+  }
+  const map = new Map([[7, inv]])
+
+  it('returns the inventory when the path still matches', () => {
+    assert.strictEqual(
+      freshInventoryFor({ id: 7, path: '/work/main' }, map),
+      inv
+    )
+  })
+
+  // The worktree-switch bug: same id, mutated path. The cache describes the old
+  // tree and must not be shown as the new one's.
+  it('returns undefined when the path has changed under the same id', () => {
+    assert.strictEqual(
+      freshInventoryFor({ id: 7, path: '/work/feature-x' }, map),
+      undefined
+    )
+  })
+
+  it('returns undefined when nothing is cached', () => {
+    assert.strictEqual(
+      freshInventoryFor({ id: 99, path: '/work/main' }, map),
+      undefined
+    )
   })
 })
 

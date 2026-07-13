@@ -33,6 +33,31 @@ export function isCountable(inventory: IRepositoryInventory): boolean {
 }
 
 /**
+ * The cached inventory for a repository, but only if it describes the tree the
+ * repository currently points at.
+ *
+ * Switching worktrees mutates `Repository.path` in place while keeping the same
+ * `id`, and inventories are keyed by `id`. So after a switch, `inventories.get(id)`
+ * returns the *previous* worktree's scan — its context files, its byte totals,
+ * its agent list — which would then be shown, authoritatively, as the current
+ * worktree's. Comparing the stored `repositoryPath` against the live path is how
+ * we tell the two apart. On a mismatch the caller should treat the project as
+ * unscanned rather than show another tree's contents.
+ */
+export function freshInventoryFor(
+  repository: { readonly id: number; readonly path: string },
+  inventories: ReadonlyMap<number, IRepositoryInventory>
+): IRepositoryInventory | undefined {
+  const inventory = inventories.get(repository.id)
+
+  if (inventory === undefined || inventory.repositoryPath !== repository.path) {
+    return undefined
+  }
+
+  return inventory
+}
+
+/**
  * Whether this project may be put in front of the user as needing attention.
  *
  * Only a scanned project can. We do not know whether an unscanned one needs

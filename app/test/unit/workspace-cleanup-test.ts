@@ -1,6 +1,14 @@
 import { describe, it, beforeEach, afterEach } from 'node:test'
 import assert from 'node:assert'
-import { mkdtemp, mkdir, writeFile, rm, symlink, access } from 'fs/promises'
+import {
+  mkdtemp,
+  mkdir,
+  writeFile,
+  rm,
+  symlink,
+  access,
+  realpath,
+} from 'fs/promises'
 import { tmpdir } from 'os'
 import * as Path from 'path'
 import { checkDeletable, deleteArtifact } from '../../src/lib/workspace/cleanup'
@@ -136,13 +144,19 @@ describe('deleteArtifact', () => {
     await write('node_modules/a/index.js', 'x')
     const trash = fakeTrash()
 
+    // Capture the real path *before* deletion — afterwards the directory is
+    // gone and it can't be resolved. The trash receives the fully-resolved
+    // path (no symlink components for the OS to re-follow); on macOS the tmpdir
+    // is itself a symlink, so a lexical compare would spuriously fail.
+    const expected = await realpath(Path.join(root, 'node_modules'))
+
     const outcome = await deleteArtifact(root, 'node_modules', trash.options)
 
     assert.equal(outcome.kind, 'deleted')
     assert.equal(await exists('node_modules'), false)
     // The directory is gone *because the trash took it*. There is no other path
     // through this module that could have removed it.
-    assert.deepEqual(trash.trashed, [Path.join(root, 'node_modules')])
+    assert.deepEqual(trash.trashed, [expected])
   })
 
   it('reports a refusal rather than throwing', async () => {
@@ -157,6 +171,34 @@ describe('deleteArtifact', () => {
     assert.equal(await exists('src'), true)
     // A refusal never reaches the trash at all.
     assert.deepEqual(trash.trashed, [])
+  })
+
+  it('refuses when a parent directory links out of the repository', async () => {
+    // node_modules is real, but reached through a parent symlink pointing
+    // outside the repo. Deleting it would trash a directory in another tree.
+    // The containment check must resolve the parents and refuse.
+    const outside = await mkdtemp(Path.join(tmpdir(), 'bf-outside-'))
+    await mkdir(Path.join(outside, 'node_modules'))
+    await symlink(outside, Path.join(root, 'link'))
+    const trash = fakeTrash()
+
+    const outcome = await deleteArtifact(
+      root,
+      'link/node_modules',
+      trash.options
+    )
+
+    assert.equal(outcome.kind, 'refused')
+    assert.deepEqual(trash.trashed, [])
+    // The out-of-repo directory is untouched.
+    assert.equal(
+      await access(Path.join(outside, 'node_modules')).then(
+        () => true,
+        () => false
+      ),
+      true
+    )
+    await rm(outside, { recursive: true, force: true })
   })
 
   // The rule this file exists to enforce: when the trash is unavailable, the

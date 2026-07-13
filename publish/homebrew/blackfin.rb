@@ -1,14 +1,14 @@
-cask "desktop-plus" do
+cask "blackfin" do
   arch arm: "arm64", intel: "x64"
 
   version "[[VERSION]]"
   sha256 arm:   "[[SHA256_ARM64]]",
          intel: "[[SHA256_X64]]"
 
-  url "https://github.com/desktop-plus/desktop-plus/releases/download/v#{version}/DesktopPlus-v#{version}-macOS-#{arch}.zip"
-  name "Desktop Plus"
-  desc "GitHub Desktop fork with extra features and improvements"
-  homepage "https://desktop-plus.org/"
+  url "https://github.com/matbrgz/blackfin/releases/download/v#{version}/Blackfin-v#{version}-macOS-#{arch}.zip"
+  name "Blackfin"
+  desc "Agentic control center for developers, built on a GitHub Desktop fork"
+  homepage "https://github.com/matbrgz/blackfin"
 
   livecheck do
     url :url
@@ -17,17 +17,17 @@ cask "desktop-plus" do
 
   depends_on macos: :monterey
 
-  app "Desktop Plus.app"
-  binary "#{appdir}/Desktop Plus.app/Contents/Resources/app/static/desktop-plus-cli.sh",
-         target: "desktop-plus-cli"
+  app "Blackfin.app"
+  binary "#{appdir}/Blackfin.app/Contents/Resources/app/static/blackfin-cli.sh",
+         target: "blackfin-cli"
 
   postflight do
     system_command "/usr/bin/xattr",
-                   args: ["-dr", "com.apple.quarantine", "#{appdir}/Desktop Plus.app"]
+                   args: ["-dr", "com.apple.quarantine", "#{appdir}/Blackfin.app"]
   end
 
   zap trash: [
-    "~/Library/Application Support/Desktop Plus",
-    "~/Library/Logs/Desktop Plus",
+    "~/Library/Application Support/Blackfin",
+    "~/Library/Logs/Blackfin",
   ]
 end

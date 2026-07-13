@@ -4205,8 +4205,8 @@ export class App extends React.Component<IAppProps, IAppState> {
 
   /** Opening a project from anywhere lands you in the git client, on it. */
   private onWorkspaceSelectRepository = (repository: Repository) => {
+    // selectRepository now switches to Code itself, for every selection path.
     this.props.dispatcher.selectRepository(repository)
-    this.props.dispatcher.setAppSection(AppSection.Code)
   }
 
   // Opens the confirmation rather than deleting. Nothing on this path touches

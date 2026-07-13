@@ -219,6 +219,29 @@ describe('extractReferences', () => {
     assert.deepEqual(extractReferences('Ask @claude about it.'), [])
   })
 
+  it('ignores an @scope/package mentioned in prose', () => {
+    // `@tanstack/query` is not a file. Counting it as a broken reference makes
+    // the product assert, in red, that a project has broken agent instructions
+    // because its CLAUDE.md happens to name a dependency.
+    assert.deepEqual(
+      extractReferences('We use @tanstack/query and @scope/pkg here.'),
+      []
+    )
+  })
+
+  it('ignores an @version mentioned in prose', () => {
+    // The `.2` is not a letter-led extension, so it is not a file.
+    assert.deepEqual(extractReferences('Pin to @v1.2 for now.'), [])
+  })
+
+  it('still catches a real import with an extension or a relative prefix', () => {
+    // The tightening must not silence genuine references.
+    assert.deepEqual(extractReferences('See @docs/spec.md and @./local.md.'), [
+      'docs/spec.md',
+      './local.md',
+    ])
+  })
+
   it('deduplicates', () => {
     assert.deepEqual(extractReferences('@a/b.md and again @a/b.md'), ['a/b.md'])
   })

@@ -1,13 +1,13 @@
 [Desktop Entry]
-Name=Desktop Plus
+Name=Blackfin
 GenericName=Git Client
-Comment=GitHub Desktop fork with advanced functionality and improvements.
-Exec=start-desktop-plus %U 
-Icon=org.desktop_plus.desktop-plus
+Comment=Agentic control center for developers, built on a GitHub Desktop fork.
+Exec=start-blackfin %U
+Icon=dev.blackfin.Blackfin
 Type=Application
 Terminal=false
 StartupNotify=true
-StartupWMClass=desktop-plus
+StartupWMClass=blackfin
 MimeType=x-scheme-handler/x-github-client;x-scheme-handler/x-github-desktop-auth;x-scheme-handler/x-github-desktop-dev-auth;
 Categories=Development;
 Keywords=git;github;gitlab;bitbucket;

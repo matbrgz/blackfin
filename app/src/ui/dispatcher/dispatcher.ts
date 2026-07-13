@@ -359,11 +359,25 @@ export class Dispatcher {
     return this.appStore._setRepositoryFilterText(text)
   }
 
-  /** Select the repository. */
+  /**
+   * Select the repository and show it.
+   *
+   * "Show it" is the point: every caller here — the repository list, a clone
+   * finishing, a notification click, a `x-github-client://` open — is a user
+   * asking to look at a repository, so selecting one moves to the Code section.
+   * The app opens on Home instead of a repository, and without this a selection
+   * triggered from any of those paths would leave the user stranded on whatever
+   * section they were on, watching nothing happen.
+   *
+   * Launch-time restoration of the last repository deliberately does not go
+   * through here — it calls the store directly — so restoring a selection on
+   * startup does not yank the user off Home.
+   */
   public selectRepository(
     repository: Repository | CloningRepository,
     persistSelection: boolean = true
   ): Promise<Repository | null> {
+    this.appStore._setAppSection(AppSection.Code)
     return this.appStore._selectRepository(repository, persistSelection)
   }
 

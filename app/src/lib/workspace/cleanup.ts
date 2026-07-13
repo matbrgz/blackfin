@@ -1,6 +1,6 @@
 // No `rm` here, and that is on purpose: this module has no way to delete
 // anything permanently. Removal happens only through the injected trash.
-import { lstat, readdir } from 'fs/promises'
+import { lstat, readdir, realpath } from 'fs/promises'
 import * as Path from 'path'
 import { resolveWithin } from '../path'
 import { classifyArtifact } from './catalog'
@@ -128,7 +128,27 @@ export async function checkDeletable(
     }
   }
 
-  return { ok: true, absolutePath, kind }
+  // `resolveWithin` validated the symlink-resolved path but returns the lexical
+  // one, and the trash re-resolves symlink components at call time. If a parent
+  // is swapped for a symlink between here and the trash IPC, the lexical path
+  // would follow it out of the repository. Handing over the fully-resolved real
+  // path — which has no symlink components left — closes that window: there is
+  // nothing for the OS to re-follow. Re-check containment on it, since a realpath
+  // is where the truth actually is.
+  let realCandidate: string
+  try {
+    realCandidate = await realpath(candidate)
+  } catch {
+    return { ok: false, reason: 'Path could not be resolved safely' }
+  }
+
+  const realRoot = await realpath(root).catch(() => root)
+  const realRelative = Path.relative(realRoot, realCandidate)
+  if (realRelative.startsWith('..') || Path.isAbsolute(realRelative)) {
+    return { ok: false, reason: 'Path is outside the repository' }
+  }
+
+  return { ok: true, absolutePath: realCandidate, kind }
 }
 
 /**

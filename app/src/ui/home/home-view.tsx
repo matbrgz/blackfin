@@ -14,7 +14,11 @@ import {
   reclaimableBytes,
 } from '../../models/workspace-inventory'
 import { agentDisplayName } from '../../lib/workspace/catalog'
-import { isCountable, needsAttention } from '../workspace/display'
+import {
+  freshInventoryFor,
+  isCountable,
+  needsAttention,
+} from '../workspace/display'
 import { IScanProgress } from '../../lib/stores/workspace-store'
 
 interface IHomeStatProps {
@@ -239,7 +243,7 @@ export class HomeView extends React.Component<IHomeViewProps> {
     const rows: Array<JSX.Element> = []
 
     for (const repository of this.props.repositories) {
-      const inventory = this.props.inventories.get(repository.id)
+      const inventory = freshInventoryFor(repository, this.props.inventories)
       if (inventory === undefined || !needsAttention(inventory)) {
         continue
       }
@@ -318,7 +322,7 @@ export class HomeView extends React.Component<IHomeViewProps> {
             <ProjectCard
               key={repository.id}
               repository={repository}
-              inventory={inventories.get(repository.id)}
+              inventory={freshInventoryFor(repository, inventories)}
               onOpen={onOpenRepository}
             />
           ))}
@@ -337,7 +341,7 @@ export class HomeView extends React.Component<IHomeViewProps> {
    */
   private knownInventories(): ReadonlyArray<IRepositoryInventory> {
     return this.props.repositories
-      .map(r => this.props.inventories.get(r.id))
+      .map(r => freshInventoryFor(r, this.props.inventories))
       .filter((i): i is IRepositoryInventory => i !== undefined)
       .filter(isCountable)
   }

@@ -106,6 +106,11 @@ export class ConfirmCleanupDialog extends React.Component<
     const deleted = outcomes.filter(o => o.kind === 'deleted')
     const problems = outcomes.filter(o => o.kind !== 'deleted')
 
+    // The byte figure is the size at last scan, summed over what was deleted —
+    // not a fresh measurement taken at deletion. A directory can grow or shrink
+    // between the scan and the click, so this is honestly "about", not a
+    // verified reclaimed total. The workspace view corrects itself on the
+    // rescan that follows.
     const reclaimed = this.props.artifacts
       .filter(a => deleted.some(d => d.relativePath === a.relativePath))
       .reduce((sum, a) => sum + a.byteLength, 0)
@@ -116,7 +121,7 @@ export class ConfirmCleanupDialog extends React.Component<
           <p>
             Moved {deleted.length}{' '}
             {plural(deleted.length, 'directory', 'directories')} to the trash,
-            reclaiming <strong>{formatBytes(reclaimed)}</strong>.
+            freeing about <strong>{formatBytes(reclaimed)}</strong>.
             {problems.length > 0 && (
               <>
                 {' '}

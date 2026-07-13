@@ -17,7 +17,12 @@ import {
 import { IScanProgress } from '../../lib/stores/workspace-store'
 import { RepositoryRow } from './repository-row'
 import { GlobalContextPanel } from './global-context-panel'
-import { scopeDisplayName, sectionSubtitle, sectionTitle } from './display'
+import {
+  freshInventoryFor,
+  scopeDisplayName,
+  sectionSubtitle,
+  sectionTitle,
+} from './display'
 
 interface IWorkspaceCenterProps {
   readonly section: AppSection
@@ -247,7 +252,7 @@ export class WorkspaceCenter extends React.Component<
   // full of skills would render exactly like one with none.
   private inventoryFor(repository: Repository): IRepositoryInventory {
     return (
-      this.props.inventories.get(repository.id) ?? {
+      freshInventoryFor(repository, this.props.inventories) ?? {
         repositoryId: repository.id,
         repositoryPath: repository.path,
         scannedAt: 0,

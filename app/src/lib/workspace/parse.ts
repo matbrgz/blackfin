@@ -172,7 +172,7 @@ export function extractReferences(content: string): ReadonlyArray<string> {
       // the trailing period literally would report every such reference as
       // broken.
       const target = trimTrailingPunctuation(stripAnchor(match[2]))
-      if (looksLikePath(target)) {
+      if (looksLikeImportPath(target)) {
         found.add(target)
       }
     }
@@ -211,6 +211,28 @@ function looksLikePath(target: string): boolean {
   // An `@mention` of a person is not a path. Requiring a separator or an
   // extension is a heuristic, but it's the one that keeps `@claude` out.
   return target.includes('/') || /\.\w+$/.test(target)
+}
+
+/**
+ * Stricter than `looksLikePath`, for the `@import` syntax specifically.
+ *
+ * `@path/to/file` (a Claude import) is syntactically identical to `@scope/pkg`
+ * (an npm package) and `@v1.2` (a version) — all three are ordinary things to
+ * write in a CLAUDE.md, and the last two are not files. Reporting them as broken
+ * references makes the product's most-trusted number — "N broken references,
+ * needs attention", in red — fire on prose. So an `@import` only counts as a
+ * reference when it is unmistakably a file path: an explicit relative prefix, or
+ * a real file extension. A scoped package and a version number have neither (a
+ * version's `.2` is not a letter-led extension, and `@scope/pkg` has no dot).
+ */
+function looksLikeImportPath(target: string): boolean {
+  if (!looksLikePath(target)) {
+    return false
+  }
+  if (target.startsWith('./') || target.startsWith('../')) {
+    return true
+  }
+  return /\.[a-zA-Z][\w-]*$/.test(target)
 }
 
 export function countLines(content: string): number {

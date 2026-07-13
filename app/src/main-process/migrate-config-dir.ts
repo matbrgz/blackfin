@@ -4,8 +4,17 @@ import { app } from 'electron'
 import * as Fs from 'fs'
 import * as Path from 'path'
 
-/** Base names of previous app versions to migrate from, in priority order. */
-const LegacyAppNames = ['GitHub Blackfin', 'GitHub Desktop']
+/**
+ * Base names of previous app versions to migrate from, in priority order.
+ *
+ * These are directory names under `appData`, derived from each app's
+ * `productName`. Blackfin is a rebrand of Desktop Plus, so a user upgrading from
+ * it stores their profile under `Desktop Plus` — that must come first, or the
+ * upgrade silently opens an empty profile while the real one sits orphaned on
+ * disk. `GitHub Desktop Plus` is that fork's earlier name; `GitHub Desktop` is
+ * the upstream both descend from.
+ */
+const LegacyAppNames = ['Desktop Plus', 'GitHub Desktop Plus', 'GitHub Desktop']
 
 const MigrationSentinel = '.config-migrated'
 
