@@ -139,7 +139,13 @@ export function resolveBadge(props: IBadgeProps): IResolvedBadge {
     case 'agent':
     case 'role':
     case 'count':
-      return { tone: 'unknown', text: props.label, icon: props.icon }
+      // Identity, role and count are not health. They must never take the
+      // dashed `unknown` tone — that means "never scanned", and a count or a
+      // role is a settled fact, not a gap. They read as the quiet `ok` tone,
+      // matching the plain `.workspace-badge`/`.disk` they replace. `agent`
+      // additionally opts out of the tone palette in the component and is
+      // painted by its own selected-box `.badge--agent` rule.
+      return { tone: 'ok', text: props.label, icon: props.icon }
   }
 }
 
@@ -186,7 +192,10 @@ export class Badge extends React.Component<IBadgeProps> {
         className={classNames(
           'badge',
           `badge--${kind}`,
-          `badge--tone-${resolved.tone}`,
+          // Agents opt out of the health tone palette: their `.badge--agent`
+          // rule paints them, and an emitted `badge--tone-*` class would fight
+          // it at equal specificity and win by source order.
+          { [`badge--tone-${resolved.tone}`]: kind !== 'agent' },
           { 'badge--icon-only': iconOnly }
         )}
         // An icon-only badge is, semantically, an image with a name; the text

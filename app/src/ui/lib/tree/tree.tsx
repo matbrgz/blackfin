@@ -111,13 +111,27 @@ export class Tree<T> extends React.Component<ITreeProps<T>, ITreeState> {
 
   private isExpanded = (id: string): boolean => this.state.expanded.has(id)
 
-  private toggle = (id: string): void => {
+  /**
+   * Expand or collapse a node, idempotently.
+   *
+   * `List` delivers a single keydown on a focused, selected row to
+   * `onRowKeyDown` *twice* — once from the row and once from the container's
+   * loop over `selectedRows` — so a non-idempotent toggle would add then delete
+   * within one event and cancel out. Setting membership to a definite value
+   * instead means the second call is a no-op, and repeated ArrowRight/ArrowLeft
+   * presses settle rather than flip.
+   */
+  private setExpanded = (id: string, shouldExpand: boolean): void => {
     this.setState(prev => {
+      if (prev.expanded.has(id) === shouldExpand) {
+        return null
+      }
+
       const expanded = new Set(prev.expanded)
-      if (expanded.has(id)) {
-        expanded.delete(id)
-      } else {
+      if (shouldExpand) {
         expanded.add(id)
+      } else {
+        expanded.delete(id)
       }
 
       // Collapsing must not strand the selection on a row that just vanished.
@@ -129,6 +143,11 @@ export class Tree<T> extends React.Component<ITreeProps<T>, ITreeState> {
 
       return { expanded, selectedId }
     })
+  }
+
+  // A genuine toggle for the mouse twisty, where a single click means "flip".
+  private toggle = (id: string): void => {
+    this.setExpanded(id, !this.state.expanded.has(id))
   }
 
   private onSelectedRowChanged = (row: number): void => {
@@ -152,7 +171,7 @@ export class Tree<T> extends React.Component<ITreeProps<T>, ITreeState> {
     if (event.key === 'ArrowRight') {
       if (flat.hasChildren && !flat.expanded) {
         event.preventDefault()
-        this.toggle(flat.node.id)
+        this.setExpanded(flat.node.id, true)
       }
       return
     }
@@ -160,7 +179,7 @@ export class Tree<T> extends React.Component<ITreeProps<T>, ITreeState> {
     if (event.key === 'ArrowLeft') {
       if (flat.expanded) {
         event.preventDefault()
-        this.toggle(flat.node.id)
+        this.setExpanded(flat.node.id, false)
       } else if (flat.level > 1) {
         // Nothing to close, so step out to the parent — which, since this node
         // is on screen, is itself always on screen.
