@@ -8,6 +8,7 @@ import {
   IFlatTreeRow,
   flattenTree,
   nearestVisibleId,
+  parentIdOf,
 } from './flatten'
 
 export { ITreeNode } from './flatten'
@@ -161,14 +162,10 @@ export class Tree<T> extends React.Component<ITreeProps<T>, ITreeState> {
         event.preventDefault()
         this.toggle(flat.node.id)
       } else if (flat.level > 1) {
-        // Step to the visible parent, which is the nearest visible ancestor
-        // once this node is treated as hidden.
+        // Nothing to close, so step out to the parent — which, since this node
+        // is on screen, is itself always on screen.
         event.preventDefault()
-        const parentId = nearestVisibleId(
-          this.props.roots,
-          id => this.state.expanded.has(id) && id !== flat.node.id,
-          flat.node.id
-        )
+        const parentId = parentIdOf(this.props.roots, flat.node.id)
         if (parentId !== undefined) {
           const parentRow = this.rows.findIndex(r => r.node.id === parentId)
           if (parentRow >= 0) {

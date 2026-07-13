@@ -94,6 +94,22 @@ function findPath<T>(
 }
 
 /**
+ * The id of `id`'s parent, or `undefined` for a root or an unknown id. Used to
+ * step the selection out to the parent, which — for a currently visible node —
+ * is itself always visible.
+ */
+export function parentIdOf<T>(
+  roots: ReadonlyArray<ITreeNode<T>>,
+  id: string
+): string | undefined {
+  const path = findPath(roots, id)
+  if (path === undefined || path.length < 2) {
+    return undefined
+  }
+  return path[path.length - 2].id
+}
+
+/**
  * The id that should hold the selection given the current expansion.
  *
  * When a node is collapsed while one of its descendants is selected, the

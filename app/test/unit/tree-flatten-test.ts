@@ -4,6 +4,7 @@ import {
   ITreeNode,
   flattenTree,
   nearestVisibleId,
+  parentIdOf,
 } from '../../src/ui/lib/tree/flatten'
 
 function node(
@@ -107,5 +108,24 @@ describe('nearestVisibleId', () => {
       nearestVisibleId(forest, expandedSet('a'), 'nope'),
       undefined
     )
+  })
+})
+
+describe('parentIdOf', () => {
+  // ArrowLeft on a leaf steps out to the parent; this is the lookup behind it.
+  // It must return the actual parent, not the node itself.
+  it('returns the parent of a nested node', () => {
+    assert.strictEqual(parentIdOf(forest, 'a1x'), 'a1')
+    assert.strictEqual(parentIdOf(forest, 'a1'), 'a')
+    assert.strictEqual(parentIdOf(forest, 'a2'), 'a')
+  })
+
+  it('returns undefined for a root', () => {
+    assert.strictEqual(parentIdOf(forest, 'a'), undefined)
+    assert.strictEqual(parentIdOf(forest, 'b'), undefined)
+  })
+
+  it('returns undefined for an unknown id', () => {
+    assert.strictEqual(parentIdOf(forest, 'nope'), undefined)
   })
 })
