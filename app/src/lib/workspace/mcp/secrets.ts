@@ -14,16 +14,23 @@ import {
   ISanitizedMcpUrl,
 } from '../../../models/mcp'
 
-// The documented sensitivity heuristic: a suffix of `_TOKEN`, `_KEY`, `_SECRET`,
-// `_PASSWORD`, `_CREDENTIALS` or `_DSN` (or the bare word), or an `AUTH` prefix.
-// It is *emphasis only*. It never decides what is retained — nothing is, for any
-// variable — so a miss here is a missing lock icon, never a leaked value.
-const SENSITIVE_SUFFIX = /(^|_)(TOKEN|KEY|SECRET|PASSWORD|CREDENTIALS|DSN)$/
+// The documented sensitivity heuristic. It is *emphasis only*: it never decides
+// what is retained — nothing is, for any variable — so a miss here is a missing
+// lock icon, never a leaked value. Two tiers keep it from both under- and
+// over-matching:
+//
+//  - Strong words (`TOKEN`, `SECRET`, `PASSWORD`/`PASSWD`, `CREDENTIAL`,
+//    `APIKEY`, `AUTH`) are unambiguous, so they match anywhere in the name —
+//    `GITHUBTOKEN` and `X_AUTHORIZATION` count, not only `_`-separated suffixes.
+//  - Short/ambiguous words (`KEY`, `DSN`, `PAT`) match only on a `_` or ends
+//    boundary, so `MONKEY`, `KEYBOARD` and `PATH` do not trip them.
+const SENSITIVE_WORD = /(TOKEN|SECRET|PASSWORD|PASSWD|CREDENTIAL|APIKEY|AUTH)/
+const SENSITIVE_BOUNDED = /(^|_)(KEY|DSN|PAT)($|_)/
 
 /** Whether a variable's *name* looks sensitive. Visual emphasis only. */
 export function isSensitiveName(name: string): boolean {
   const upper = name.toUpperCase()
-  return SENSITIVE_SUFFIX.test(upper) || upper.startsWith('AUTH')
+  return SENSITIVE_WORD.test(upper) || SENSITIVE_BOUNDED.test(upper)
 }
 
 /**
@@ -79,15 +86,48 @@ export function classifyEnvVar(
   }
 }
 
+// A placeholder for a redacted path segment. Fixed text, never an excerpt of the
+// segment it replaces.
+const RedactedSegment = '[redacted]'
+
+/**
+ * Whether a single path segment looks like an embedded credential.
+ *
+ * Deploy hooks, webhook URLs and path-style API keys put the secret straight in
+ * the path (`.../services/T0/B0/<token>`, `.../v1/keys/<token>`), so the path is
+ * a credential location as real as the query string. We cannot read a segment to
+ * know, so we go by shape: a *long* segment that is either opaque (20+ chars) or
+ * mixes character classes the way tokens do (16+ chars, two of lower/upper/
+ * digit). Ordinary route words — `services`, `messages`, `my-workspace` — are
+ * short or single-case and are spared. As with the query string we err toward
+ * redacting: a spurious `[redacted]` is cheap; a leaked token is the one thing
+ * this boundary exists to prevent.
+ */
+function looksLikeSecretSegment(segment: string): boolean {
+  if (segment.length >= 20) {
+    return true
+  }
+  if (segment.length < 16) {
+    return false
+  }
+  const classes =
+    (/[a-z]/.test(segment) ? 1 : 0) +
+    (/[A-Z]/.test(segment) ? 1 : 0) +
+    (/[0-9]/.test(segment) ? 1 : 0)
+  return classes >= 2
+}
+
 /**
  * Strip credentials from a remote MCP URL: remove userinfo and the entire query
- * string (and the fragment), keep `scheme://host[:port]/path`.
+ * string (and the fragment), redact credential-shaped path segments, and keep
+ * `scheme://host[:port]/path`.
  *
  * A query string in an MCP endpoint URL is almost always a token, and we cannot
  * tell a credential parameter from a benign one without reading it — so any
- * query is treated as credential-bearing and flagged. Erring toward a spurious
- * "this URL contained credentials" note is far cheaper than letting a token
- * through in a query string, which is the worst place a token can be.
+ * query is treated as credential-bearing and flagged. The same reasoning applies
+ * to the path: a token embedded in it is redacted, per `looksLikeSecretSegment`.
+ * Erring toward a spurious "this URL contained credentials" note is far cheaper
+ * than letting a token through, which is the worst place a token can be.
  */
 export function sanitizeMcpUrl(raw: string): ISanitizedMcpUrl {
   let parsed: URL
@@ -103,11 +143,26 @@ export function sanitizeMcpUrl(raw: string): ISanitizedMcpUrl {
   const hadQuery = parsed.search !== ''
   const hadFragment = parsed.hash !== ''
 
-  // `host` already carries `[:port]`; `pathname` carries the leading slash.
-  const sanitized = `${parsed.protocol}//${parsed.host}${parsed.pathname}`
+  // `pathname` carries the leading slash; splitting it yields an empty first
+  // element we map over harmlessly. Rejoining preserves the original structure.
+  let hadPathCredential = false
+  const path = parsed.pathname
+    .split('/')
+    .map(segment => {
+      if (looksLikeSecretSegment(segment)) {
+        hadPathCredential = true
+        return RedactedSegment
+      }
+      return segment
+    })
+    .join('/')
+
+  // `host` already carries `[:port]`.
+  const sanitized = `${parsed.protocol}//${parsed.host}${path}`
 
   return {
     url: sanitized,
-    hadEmbeddedCredentials: hadUserinfo || hadQuery || hadFragment,
+    hadEmbeddedCredentials:
+      hadUserinfo || hadQuery || hadFragment || hadPathCredential,
   }
 }

@@ -111,8 +111,33 @@ describe('isSensitiveName', () => {
     }
   })
 
+  it('flags sensitive words without a `_` separator or in the middle', () => {
+    for (const name of [
+      'GITHUBTOKEN',
+      'APIKEY',
+      'X_AUTHORIZATION',
+      'GITHUB_PAT',
+      'DB_PASSWD',
+    ]) {
+      assert.strictEqual(
+        isSensitiveName(name),
+        true,
+        `${name} should be sensitive`
+      )
+    }
+  })
+
   it('does not flag ordinary names', () => {
-    for (const name of ['HOME', 'PATH', 'PORT', 'NODE_ENV', 'MONKEY', 'LANG']) {
+    for (const name of [
+      'HOME',
+      'PATH',
+      'PORT',
+      'NODE_ENV',
+      'MONKEY',
+      'KEYBOARD',
+      'REPO_PATTERN',
+      'LANG',
+    ]) {
       assert.strictEqual(
         isSensitiveName(name),
         false,
@@ -167,6 +192,37 @@ describe('sanitizeMcpUrl', () => {
   it('returns null for an unparseable URL, with no excerpt to leak', () => {
     const out = sanitizeMcpUrl('this is not a url')
     assert.strictEqual(out.url, null)
+    assert.strictEqual(out.hadEmbeddedCredentials, false)
+  })
+
+  // The worst case the query/userinfo stripping misses on its own: a token that
+  // lives in the path, as webhook and deploy-hook URLs put it.
+  it('redacts a token embedded in the path (Slack-webhook shape)', () => {
+    const out = sanitizeMcpUrl(
+      'https://hooks.slack.com/services/T00000000/B00000000/abcAO1LEcSoMPLE24Tk'
+    )
+    assert.strictEqual(
+      out.url,
+      'https://hooks.slack.com/services/T00000000/B00000000/[redacted]'
+    )
+    assert.strictEqual(out.hadEmbeddedCredentials, true)
+    assert.ok(!out.url!.includes('abcAO1LEcSoMPLE24Tk'))
+  })
+
+  it('redacts a path-style API key but keeps the route around it', () => {
+    const out = sanitizeMcpUrl(
+      'https://api.example.com/v1/keys/sk-1a2b3c4d5e6f7g8h9i0j/mcp'
+    )
+    assert.strictEqual(
+      out.url,
+      'https://api.example.com/v1/keys/[redacted]/mcp'
+    )
+    assert.strictEqual(out.hadEmbeddedCredentials, true)
+  })
+
+  it('leaves ordinary short route segments intact', () => {
+    const out = sanitizeMcpUrl('https://api.example.com/v1/workspace/mcp')
+    assert.strictEqual(out.url, 'https://api.example.com/v1/workspace/mcp')
     assert.strictEqual(out.hadEmbeddedCredentials, false)
   })
 })
