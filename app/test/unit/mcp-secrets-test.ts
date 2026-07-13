@@ -127,6 +127,20 @@ describe('isSensitiveName', () => {
     }
   })
 
+  it('flags AUTH only on a word boundary, sparing git author vars', () => {
+    for (const sensitive of [
+      'AUTH',
+      'AUTH_HEADER',
+      'X_AUTH',
+      'AUTHORIZATION',
+    ]) {
+      assert.strictEqual(isSensitiveName(sensitive), true, sensitive)
+    }
+    for (const benign of ['GIT_AUTHOR_NAME', 'GIT_AUTHOR_EMAIL', 'CO_AUTHOR']) {
+      assert.strictEqual(isSensitiveName(benign), false, benign)
+    }
+  })
+
   it('does not flag ordinary names', () => {
     for (const name of [
       'HOME',

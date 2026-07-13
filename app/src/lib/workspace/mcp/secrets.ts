@@ -20,12 +20,16 @@ import {
 // over-matching:
 //
 //  - Strong words (`TOKEN`, `SECRET`, `PASSWORD`/`PASSWD`, `CREDENTIAL`,
-//    `APIKEY`, `AUTH`) are unambiguous, so they match anywhere in the name —
-//    `GITHUBTOKEN` and `X_AUTHORIZATION` count, not only `_`-separated suffixes.
-//  - Short/ambiguous words (`KEY`, `DSN`, `PAT`) match only on a `_` or ends
-//    boundary, so `MONKEY`, `KEYBOARD` and `PATH` do not trip them.
-const SENSITIVE_WORD = /(TOKEN|SECRET|PASSWORD|PASSWD|CREDENTIAL|APIKEY|AUTH)/
-const SENSITIVE_BOUNDED = /(^|_)(KEY|DSN|PAT)($|_)/
+//    `APIKEY`, `AUTHORIZATION`, `AUTHENTICATION`) are unambiguous, so they match
+//    anywhere in the name — `GITHUBTOKEN` and `X_AUTHORIZATION` count, not only
+//    `_`-separated suffixes.
+//  - Short/ambiguous words (`KEY`, `DSN`, `PAT`, and bare `AUTH`) match only on
+//    a `_` or ends boundary, so `MONKEY`, `KEYBOARD`, `PATH` and — importantly
+//    in a git tool — `GIT_AUTHOR_NAME` do not trip them, while `AUTH_TOKEN` and
+//    `AUTH` still do.
+const SENSITIVE_WORD =
+  /(TOKEN|SECRET|PASSWORD|PASSWD|CREDENTIAL|APIKEY|AUTHORIZATION|AUTHENTICATION)/
+const SENSITIVE_BOUNDED = /(^|_)(KEY|DSN|PAT|AUTH)($|_)/
 
 /** Whether a variable's *name* looks sensitive. Visual emphasis only. */
 export function isSensitiveName(name: string): boolean {
@@ -96,12 +100,15 @@ const RedactedSegment = '[redacted]'
  * Deploy hooks, webhook URLs and path-style API keys put the secret straight in
  * the path (`.../services/T0/B0/<token>`, `.../v1/keys/<token>`), so the path is
  * a credential location as real as the query string. We cannot read a segment to
- * know, so we go by shape: a *long* segment that is either opaque (20+ chars) or
- * mixes character classes the way tokens do (16+ chars, two of lower/upper/
- * digit). Ordinary route words — `services`, `messages`, `my-workspace` — are
- * short or single-case and are spared. As with the query string we err toward
- * redacting: a spurious `[redacted]` is cheap; a leaked token is the one thing
- * this boundary exists to prevent.
+ * know, so we go by shape: any segment of 20+ chars (regardless of character
+ * class — long opaque *and* long single-case both redact, so a 35-char org slug
+ * or a UUID gets `[redacted]` too), or a 16–19 char one mixing two of lower/
+ * upper/digit the way tokens do. Ordinary short route words — `services`,
+ * `messages`, `my-workspace` — are spared. As with the query string we err
+ * toward redacting: a spurious `[redacted]` is cheap; a leaked token is the one
+ * thing this boundary exists to prevent. The residual gap is deliberate: a token
+ * under 16 chars, or 16–19 chars of a single class, is not caught — widening
+ * further would redact too many ordinary segments.
  */
 function looksLikeSecretSegment(segment: string): boolean {
   if (segment.length >= 20) {
