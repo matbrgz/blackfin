@@ -48,7 +48,9 @@ class TreeRow<T> extends React.Component<ITreeRowProps<T>> {
             aria-hidden={true}
           >
             <Octicon
-              symbol={row.expanded ? octicons.chevronDown : octicons.chevronRight}
+              symbol={
+                row.expanded ? octicons.chevronDown : octicons.chevronRight
+              }
             />
           </button>
         ) : (
@@ -134,7 +136,10 @@ export class Tree<T> extends React.Component<ITreeProps<T>, ITreeState> {
     this.props.onNodeSelected?.(node)
   }
 
-  private onRowKeyDown = (row: number, event: React.KeyboardEvent<any>): void => {
+  private onRowKeyDown = (
+    row: number,
+    event: React.KeyboardEvent<any>
+  ): void => {
     const flat = this.rows[row]
     if (flat === undefined) {
       return
@@ -181,7 +186,11 @@ export class Tree<T> extends React.Component<ITreeProps<T>, ITreeState> {
       return null
     }
     return (
-      <TreeRow row={flat} onToggle={this.toggle} renderNode={this.props.renderNode} />
+      <TreeRow
+        row={flat}
+        onToggle={this.toggle}
+        renderNode={this.props.renderNode}
+      />
     )
   }
 
