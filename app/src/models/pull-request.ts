@@ -19,6 +19,13 @@ export class PullRequestRef {
   ) {}
 }
 
+/**
+ * A pull request's lifecycle state. `merged` is deliberately distinct from
+ * `closed`: a board's final lane needs to tell "integrated" apart from
+ * "abandoned", and a git client that only knows open-or-closed cannot.
+ */
+export type PullRequestState = 'open' | 'closed' | 'merged'
+
 export class PullRequest {
   /**
    * @param created The date on which the PR was created.
@@ -29,6 +36,9 @@ export class PullRequest {
    * @param head The ref from which the pull request's changes are coming.
    * @param base The ref which the pull request is targeting.
    * @param author The author's login.
+   * @param state The lifecycle state: open, closed, or merged.
+   * @param mergedAt When the PR was merged, or null if it was not.
+   * @param closedAt When the PR was closed, or null if it is open.
    */
   public constructor(
     public readonly created: Date,
@@ -38,7 +48,10 @@ export class PullRequest {
     public readonly base: PullRequestRef,
     public readonly author: string,
     public readonly draft: boolean,
-    public readonly body: string
+    public readonly body: string,
+    public readonly state: PullRequestState = 'open',
+    public readonly mergedAt: Date | null = null,
+    public readonly closedAt: Date | null = null
   ) {}
 }
 

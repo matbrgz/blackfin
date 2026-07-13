@@ -1,6 +1,7 @@
 import Dexie from 'dexie'
 import { BaseDatabase } from './base-database'
 import { GitHubRepository } from '../../models/github-repository'
+import { PullRequestState } from '../../models/pull-request'
 
 export interface IPullRequestRef {
   /**
@@ -45,6 +46,15 @@ export interface IPullRequest {
    * The draft state of the PR or undefined if state is unknown
    */
   readonly draft: boolean
+
+  /** The lifecycle state: open, closed, or merged. */
+  readonly state: PullRequestState
+
+  /** ISO8601 timestamp of the merge, or null if the PR was not merged. */
+  readonly mergedAt: string | null
+
+  /** ISO8601 timestamp of the close, or null if the PR is open. */
+  readonly closedAt: string | null
 }
 
 /**
@@ -140,6 +150,20 @@ export class PullRequestDatabase extends BaseDatabase {
       tx.table('pullRequests').clear()
       tx.table('pullRequestsLastUpdated').clear()
     })
+
+    this.conditionalVersion(
+      10,
+      { pullRequests: '[base.repoId+number], state' },
+      async tx => {
+        // Version 10 introduces `state`, `mergedAt` and `closedAt` and stops
+        // deleting closed/merged PRs. `state` is not inferable for existing
+        // rows: the table only ever held open PRs, because closed ones were
+        // deleted, so stamping them all 'open' would be writing a fact we never
+        // verified. Clear and rehydrate from the API, exactly as 8 and 9 did.
+        tx.table('pullRequests').clear()
+        tx.table('pullRequestsLastUpdated').clear()
+      }
+    )
   }
 
   /**
@@ -200,6 +224,31 @@ export class PullRequestDatabase extends BaseDatabase {
    */
   public getPullRequest(repository: GitHubRepository, prNumber: number) {
     return this.pullRequests.get([repository.dbID, prNumber])
+  }
+
+  /**
+   * Retrieve the PRs for a repository whose state is one of the given states.
+   * The read #59's fleet board consumes to derive its lanes.
+   */
+  public async getPullRequestsWithState(
+    repository: GitHubRepository,
+    states: ReadonlyArray<PullRequestState>
+  ) {
+    const all = await this.getAllPullRequestsInRepository(repository)
+    return all.filter(pr => states.includes(pr.state))
+  }
+
+  /**
+   * Retrieve the PRs for a repository whose head ref is one of the given refs —
+   * given a set of worktree branches, the PR and state of each. #59 and #57.
+   */
+  public async getPullRequestsForHeadRefs(
+    repository: GitHubRepository,
+    headRefs: ReadonlyArray<string>
+  ) {
+    const wanted = new Set(headRefs)
+    const all = await this.getAllPullRequestsInRepository(repository)
+    return all.filter(pr => wanted.has(pr.head.ref))
   }
 
   /**
