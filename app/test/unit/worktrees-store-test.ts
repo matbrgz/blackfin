@@ -169,6 +169,28 @@ describe('WorktreesStore', () => {
     assert.strictEqual(live[0].manualStatusDerivedFrom, null)
   })
 
+  it('does not orphan a live worktree when its name fails to resolve (path fallback)', async () => {
+    await store.applyReconciliation(
+      COMMON,
+      [entry('/repo/wt', 'aaa')],
+      names({ '/repo/wt': 'wt' }),
+      1000
+    )
+    // A later pass where resolveWorktreeIdentity failed for this entry: its path
+    // is absent from namesByPath. The worktree is plainly still present, so the
+    // store must match it by path and refresh, not orphan it.
+    await store.applyReconciliation(
+      COMMON,
+      [entry('/repo/wt', 'bbb', 'refs/heads/y')],
+      names({}),
+      1200
+    )
+    const live = await store.getLive(COMMON)
+    assert.strictEqual(live.length, 1)
+    assert.strictEqual(live[0].head, 'bbb')
+    assert.strictEqual(live[0].orphanedAt, null)
+  })
+
   it('markOrphanByPath orphans the live row at a path', async () => {
     await store.applyReconciliation(
       COMMON,
@@ -200,7 +222,17 @@ describe('WorktreesStore', () => {
 
 describe('sanitizeCheckpointText', () => {
   it('strips control characters but keeps ordinary text', () => {
-    const controls = String.fromCharCode(9, 10, 13, 0)
+    // C0 + DEL, then C1 (0x85 NEL) and the line/paragraph separators.
+    const controls = String.fromCharCode(
+      9,
+      10,
+      13,
+      0,
+      0x7f,
+      0x85,
+      0x2028,
+      0x2029
+    )
     assert.strictEqual(sanitizeCheckpointText('a' + controls + 'bcde'), 'abcde')
     assert.strictEqual(sanitizeCheckpointText('hello world'), 'hello world')
   })

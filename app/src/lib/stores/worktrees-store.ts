@@ -16,11 +16,15 @@ import { WorktreeEntry } from '../../models/worktree'
 import { listWorktrees, resolveWorktreeIdentity } from '../git/worktree'
 import { reconcileWorktrees, IWorktreeInsert } from '../worktrees/reconcile'
 
-/** Strip control characters and cap length — a checkpoint is data, not a channel. */
+/**
+ * Strip control characters and cap length — a checkpoint is data, not a channel.
+ * Removes C0 and DEL, the C1 range (U+0080–U+009F, e.g. the CSI some terminals
+ * honor), and the Unicode line/paragraph separators U+2028 / U+2029.
+ */
 export function sanitizeCheckpointText(text: string): string {
   // eslint-disable-next-line no-control-regex
   return text
-    .replace(/[\u0000-\u001F\u007F]/g, '')
+    .replace(/[\u0000-\u001F\u007F-\u009F\u2028\u2029]/g, '')
     .slice(0, MaxCheckpointLength)
 }
 
@@ -103,7 +107,9 @@ export class WorktreesStore {
 
   /**
    * Apply a reconciliation for one family. Separated from disk resolution so it
-   * is testable without git. Runs in a single read-write transaction.
+   * is testable without git. The family is read and the plan computed *inside*
+   * the write transaction, so a concurrent reconcile can't compute a stale plan
+   * and collide on the unique key.
    */
   public async applyReconciliation(
     commonGitDir: string,
@@ -111,16 +117,30 @@ export class WorktreesStore {
     namesByPath: ReadonlyMap<string, string>,
     now: number = Date.now()
   ): Promise<void> {
-    const rows = await this.getFamily(commonGitDir)
-    const plan = reconcileWorktrees(
-      rows,
-      entries,
-      namesByPath,
-      commonGitDir,
-      now
-    )
-
     await this.db.transaction('rw', this.db.worktrees, async () => {
+      const rows = await this.db.worktrees
+        .where('commonGitDir')
+        .equals(commonGitDir)
+        .toArray()
+
+      // Path fallback: an entry whose administrative name couldn't be resolved
+      // (a transient unreadable `.git`) still matches a live row by path, so a
+      // momentary read failure refreshes that row instead of orphaning a
+      // worktree that is plainly still there.
+      const names = new Map(namesByPath)
+      for (const entry of entries) {
+        if (!names.has(entry.path)) {
+          const live = rows.find(
+            r => r.orphanedAt === null && r.path === entry.path
+          )
+          if (live !== undefined) {
+            names.set(entry.path, live.worktreeName)
+          }
+        }
+      }
+
+      const plan = reconcileWorktrees(rows, entries, names, commonGitDir, now)
+
       for (const insert of plan.toInsert) {
         await this.db.worktrees.add(materialize(insert))
       }

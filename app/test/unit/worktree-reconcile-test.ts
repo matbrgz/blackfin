@@ -172,6 +172,29 @@ describe('reconcileWorktrees', () => {
     assert.strictEqual(plan.toUpdate.length, 0)
   })
 
+  it('converges a broken invariant: orphans the superseded live row', () => {
+    const plan = reconcileWorktrees(
+      [
+        row({ id: 1, generation: 0, head: 'aaa', orphanedAt: null }),
+        row({ id: 2, generation: 1, head: 'aaa', orphanedAt: null }),
+      ],
+      [entry('/repo/wt', 'aaa')],
+      names({ '/repo/wt': 'wt' }),
+      COMMON,
+      NOW
+    )
+    // The highest-generation live row is kept and updated; the duplicate is
+    // orphaned so the next pass has exactly one live row.
+    assert.deepStrictEqual(
+      plan.toUpdate.map(u => u.id),
+      [2]
+    )
+    assert.deepStrictEqual(
+      plan.toOrphan.map(o => o.id),
+      [1]
+    )
+  })
+
   it('handles a mixed pass: one update, one insert, one orphan', () => {
     const plan = reconcileWorktrees(
       [

@@ -81,6 +81,10 @@ export function reconcileWorktrees(
   const liveByName = new Map<string, IWorktreeMetadata>()
   const maxGenByName = new Map<string, number>()
   const orphansByName = new Map<string, Array<IWorktreeMetadata>>()
+  // Should the one-live-row-per-name invariant ever be breached, the extra live
+  // rows are orphaned so reconcile *converges* to one, rather than perpetuating
+  // the duplicate. We keep the highest-generation live row and orphan the rest.
+  const supersededLiveIds = new Array<number>()
 
   for (const row of rows) {
     const gen = maxGenByName.get(row.worktreeName)
@@ -89,10 +93,16 @@ export function reconcileWorktrees(
     }
 
     if (row.orphanedAt === null) {
-      // Keep the highest-generation live row if the invariant was ever broken.
       const existing = liveByName.get(row.worktreeName)
-      if (existing === undefined || row.generation > existing.generation) {
+      if (existing === undefined) {
         liveByName.set(row.worktreeName, row)
+      } else if (row.generation > existing.generation) {
+        if (existing.id !== undefined) {
+          supersededLiveIds.push(existing.id)
+        }
+        liveByName.set(row.worktreeName, row)
+      } else if (row.id !== undefined) {
+        supersededLiveIds.push(row.id)
       }
     } else {
       const list = orphansByName.get(row.worktreeName) ?? []
@@ -162,12 +172,16 @@ export function reconcileWorktrees(
     })
   }
 
-  // Any live row whose name was not seen this pass has left listWorktrees.
+  // Any live row whose name was not seen this pass has left listWorktrees, plus
+  // any superseded duplicate live rows, are orphaned.
   const toOrphan = new Array<IWorktreeOrphan>()
   for (const [name, live] of liveByName) {
     if (!seenNames.has(name) && live.id !== undefined) {
       toOrphan.push({ id: live.id, orphanedAt: now })
     }
+  }
+  for (const id of supersededLiveIds) {
+    toOrphan.push({ id, orphanedAt: now })
   }
 
   return { toInsert, toUpdate, toOrphan, toRevive }

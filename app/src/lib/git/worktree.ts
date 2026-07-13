@@ -99,39 +99,47 @@ export async function listWorktreesFromGitDirFallback(
 
 /**
  * The stable identity of a worktree: its common git dir and administrative name
- * (`'(main)'` for the main worktree). Returns `null` when neither the worktree's
- * `.git` file nor the conventional layout can be read — the caller then falls
- * back to matching by path. Never throws.
+ * (`'(main)'` for the main worktree). Returns `null` for a *linked* worktree
+ * whose `.git` file can't be read — the caller then falls back to matching by
+ * path so a transient read failure doesn't orphan a live worktree. Never throws.
  *
- * A linked worktree's `.git` is a *file* — `gitdir: <common>/.git/worktrees/<name>`
- * — so the admin name is the basename of that path and survives `git worktree
- * move` and branch renames. The main worktree's `.git` is the common dir itself.
+ * The git dir is resolved the same way for both kinds: `.git` is read as a file
+ * first (`gitdir: …`), which covers a linked worktree and a main worktree opened
+ * with `--separate-git-dir`; if that read fails, `.git` is the conventional
+ * directory and the main worktree uses it directly. `resolveCommonGitDir` then
+ * walks a linked git dir up to the shared common dir, so main and linked always
+ * resolve to the *same* `commonGitDir` and stay one family. The admin name is
+ * the basename of the git dir, surviving `git worktree move` and branch renames.
  */
 export async function resolveWorktreeIdentity(
   entry: WorktreeEntry
 ): Promise<{ commonGitDir: string; worktreeName: string } | null> {
   const dotGit = Path.join(entry.path, '.git')
-
-  if (entry.type === 'main') {
-    return {
-      commonGitDir: Path.normalize(dotGit),
-      worktreeName: MainWorktreeName,
-    }
-  }
+  let gitDir: string | undefined
 
   try {
     const content = await readFile(dotGit, 'utf8')
     const match = /^gitdir:\s*(.+)$/m.exec(content)
     if (match !== null) {
-      const gitDir = Path.normalize(match[1].trim())
-      const commonGitDir = Path.normalize(await resolveCommonGitDir(gitDir))
-      return { commonGitDir, worktreeName: Path.basename(gitDir) }
+      gitDir = Path.normalize(match[1].trim())
     }
   } catch {
-    // Unreadable `.git` — fall through to null; the store matches by path.
+    // `.git` is likely a directory (the conventional layout) — handled below.
   }
 
-  return null
+  if (gitDir === undefined) {
+    if (entry.type !== 'main') {
+      // A linked worktree whose `.git` file we couldn't read: identity unknown.
+      return null
+    }
+    // Conventional main worktree: `.git` is the common dir itself.
+    gitDir = Path.normalize(dotGit)
+  }
+
+  const commonGitDir = Path.normalize(await resolveCommonGitDir(gitDir))
+  const worktreeName =
+    entry.type === 'main' ? MainWorktreeName : Path.basename(gitDir)
+  return { commonGitDir, worktreeName }
 }
 
 export async function resolveCommonGitDir(gitDir: string): Promise<string> {
