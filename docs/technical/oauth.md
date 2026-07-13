@@ -15,16 +15,3 @@ These are listed in [app/app-info.ts](https://github.com/desktop/desktop/blob/85
 The limitation with this developer application is that **this will not work
 with GitHub Enterprise**. You will see  sign-in will fail on the OAuth callback
 due to the credentials not being present there.
-
-## Provide your own Client ID and Secret
-
-The OAuth client ID and Client Secret are bundled into the application with
-webpack. If you want to provide your own Client ID and Client Secret, set these
-environment variables:
-
- - `DESKTOP_OAUTH_CLIENT_ID`
- - `DESKTOP_OAUTH_CLIENT_SECRET`
- - `DESKTOP_OAUTH_CLIENT_ID_BITBUCKET`
- - `DESKTOP_OAUTH_CLIENT_SECRET_BITBUCKET`
- - `DESKTOP_OAUTH_CLIENT_ID_GITLAB`
- - `DESKTOP_OAUTH_CLIENT_SECRET_GITLAB`

@@ -16,10 +16,14 @@ import {
   getBitbucketAPIEndpoint,
   getBitbucketOAuthAuthorizationURL,
   requestOAuthTokenBitbucket,
+  getCodebergAPIEndpoint,
+  getCodebergOAuthAuthorizationURL,
   getGitLabAPIEndpoint,
   getGitLabOAuthAuthorizationURL,
   getGitLabOAuthRedirectUri,
+  requestOAuthTokenCodeberg,
   requestOAuthTokenGitLab,
+  getCodebergOAuthRedirectUri,
 } from '../../lib/api'
 
 import { TypedBaseStore } from './base-store'
@@ -299,14 +303,9 @@ export class SignInStore extends TypedBaseStore<SignInState | null> {
           onAuthError: reject,
         },
       })
-      if (oauthProvider === 'bitbucket') {
-        shell.openExternal(getBitbucketOAuthAuthorizationURL())
-      } else if (oauthProvider === 'gitlab') {
-        const redirectUri = getGitLabOAuthRedirectUri()
-        shell.openExternal(getGitLabOAuthAuthorizationURL(redirectUri))
-      } else {
-        shell.openExternal(getOAuthAuthorizationURL(endpoint, csrfToken))
-      }
+      shell.openExternal(
+        this.getOauthAuthorizationURL(oauthProvider, endpoint, csrfToken)
+      )
     })
       .then(account => {
         if (!this.state || this.state.kind !== SignInStep.Authentication) {
@@ -336,11 +335,34 @@ export class SignInStore extends TypedBaseStore<SignInState | null> {
       })
   }
 
+  private getOauthAuthorizationURL(
+    oauthProvider: RepoType,
+    endpoint: string,
+    csrfToken: string
+  ): string {
+    switch (oauthProvider) {
+      case 'github':
+        return getOAuthAuthorizationURL(endpoint, csrfToken)
+      case 'bitbucket':
+        return getBitbucketOAuthAuthorizationURL()
+      case 'gitlab':
+        const gitlabRedirectUri = getGitLabOAuthRedirectUri()
+        return getGitLabOAuthAuthorizationURL(gitlabRedirectUri)
+      case 'codeberg':
+        const codebergRedirectUri = getCodebergOAuthRedirectUri()
+        return getCodebergOAuthAuthorizationURL(codebergRedirectUri, csrfToken)
+      default:
+        assertNever(oauthProvider, 'Unexpected oauth provider')
+    }
+  }
+
   private getOAuthProvider(endpoint: string): OAuthProvider {
     if (endpoint === getBitbucketAPIEndpoint()) {
       return 'bitbucket'
     } else if (endpoint === getGitLabAPIEndpoint()) {
       return 'gitlab'
+    } else if (endpoint === getCodebergAPIEndpoint()) {
+      return 'codeberg'
     } else {
       return 'github'
     }
@@ -356,7 +378,7 @@ export class SignInStore extends TypedBaseStore<SignInState | null> {
     }
 
     if (
-      this.state.oauthState.oauthProvider === 'github' &&
+      this.oauthProviderUsesState(this.state.oauthState.oauthProvider) &&
       this.state.oauthState.state !== action.state
     ) {
       log.warn(
@@ -401,6 +423,11 @@ export class SignInStore extends TypedBaseStore<SignInState | null> {
         return await requestOAuthTokenBitbucket(code)
       case 'gitlab':
         return await requestOAuthTokenGitLab(code, getGitLabOAuthRedirectUri())
+      case 'codeberg':
+        return await requestOAuthTokenCodeberg(
+          code,
+          getCodebergOAuthRedirectUri()
+        )
       default:
         assertNever(oauthProvider, 'Unexpected oauth provider')
     }
@@ -447,6 +474,21 @@ export class SignInStore extends TypedBaseStore<SignInState | null> {
     }
 
     const endpoint = getGitLabAPIEndpoint()
+    this.setState({
+      kind: SignInStep.Authentication,
+      endpoint,
+      error: null,
+      loading: false,
+      resultCallback: resultCallback ?? noop,
+    })
+  }
+
+  public beginCodebergSignIn(resultCallback?: (result: SignInResult) => void) {
+    if (this.state !== null) {
+      this.reset()
+    }
+
+    const endpoint = getCodebergAPIEndpoint()
     this.setState({
       kind: SignInStep.Authentication,
       endpoint,
@@ -521,5 +563,18 @@ export class SignInStore extends TypedBaseStore<SignInState | null> {
       loading: false,
       resultCallback: currentState.resultCallback,
     })
+  }
+
+  private oauthProviderUsesState(oauthProvider: OAuthProvider) {
+    switch (oauthProvider) {
+      case 'github':
+      case 'codeberg':
+        return true
+      case 'bitbucket':
+      case 'gitlab':
+        return false
+      default:
+        assertNever(oauthProvider, 'Unexpected oauth provider')
+    }
   }
 }

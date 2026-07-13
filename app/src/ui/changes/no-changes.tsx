@@ -38,7 +38,7 @@ import {
 import { KeyboardShortcut } from '../keyboard-shortcut/keyboard-shortcut'
 import * as octicons from '../octicons/octicons.generated'
 import { OcticonSymbol } from '../octicons/octicons.generated'
-import { stash, bitbucket, gitlab } from '../octicons'
+import { stash, bitbucket, gitlab, codeberg } from '../octicons'
 import { assertNever } from '../../lib/fatal-error'
 import { formatNumber } from '../../lib/format-number'
 
@@ -302,6 +302,7 @@ export class NoChanges extends React.Component<
       github: ['on Github', octicons.markGithub],
       bitbucket: ['on Bitbucket', bitbucket],
       gitlab: ['on GitLab', gitlab],
+      codeberg: ['on Codeberg', codeberg],
       _: ['in your browser', octicons.globe],
     }
     const repoType = this.props.repository.gitHubRepository?.type ?? '_'
@@ -640,6 +641,8 @@ export class NoChanges extends React.Component<
         return 'Bitbucket'
       case 'gitlab':
         return 'GitLab'
+      case 'codeberg':
+        return 'Codeberg'
       case undefined:
         return 'the remote'
       default:

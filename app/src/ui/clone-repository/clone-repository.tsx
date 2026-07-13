@@ -112,6 +112,12 @@ interface ICloneRepositoryState {
   readonly gitlabTabState: IGitHubTabState
 
   /**
+   * The persisted state of the CloneGitHubRepository component for
+   * the Codeberg account.
+   */
+  readonly codebergTabState: IGitHubTabState
+
+  /**
    * The persisted state of the CloneGenericRepository component.
    */
   readonly urlTabState: IUrlTabState
@@ -243,6 +249,16 @@ export class CloneRepository extends React.Component<
             .filter(account => account.apiType === 'gitlab')
             .at(0) || null,
       },
+      codebergTabState: {
+        kind: 'codeberg',
+        filterText: '',
+        selectedItem: null,
+        ...initialBaseTabState,
+        selectedAccount:
+          props.accounts
+            .filter(account => account.apiType === 'codeberg')
+            .at(0) || null,
+      },
       urlTabState: {
         kind: 'url',
         ...initialBaseTabState,
@@ -264,6 +280,8 @@ export class CloneRepository extends React.Component<
         return 'bitbucket'
       case CloneRepositoryTab.GitLab:
         return 'gitlab'
+      case CloneRepositoryTab.Codeberg:
+        return 'codeberg'
       case CloneRepositoryTab.Generic:
         return 'generic'
       default:
@@ -308,6 +326,10 @@ export class CloneRepository extends React.Component<
       path: initialPath,
     }
     const gitlabTabState = { ...this.state.gitlabTabState, path: initialPath }
+    const codebergTabState = {
+      ...this.state.codebergTabState,
+      path: initialPath,
+    }
     const urlTabState = { ...this.state.urlTabState, path: initialPath }
     this.setState({
       initialPath,
@@ -315,6 +337,7 @@ export class CloneRepository extends React.Component<
       enterpriseTabState,
       bitbucketTabState,
       gitlabTabState,
+      codebergTabState,
       urlTabState,
     })
 
@@ -389,6 +412,8 @@ export class CloneRepository extends React.Component<
         return 'Bitbucket'
       case CloneRepositoryTab.GitLab:
         return 'GitLab'
+      case CloneRepositoryTab.Codeberg:
+        return 'Codeberg'
       case CloneRepositoryTab.Generic:
         return 'URL'
       default:
@@ -512,6 +537,8 @@ export class CloneRepository extends React.Component<
       return this.state.bitbucketTabState
     } else if (tab === CloneRepositoryTab.GitLab) {
       return this.state.gitlabTabState
+    } else if (tab === CloneRepositoryTab.Codeberg) {
+      return this.state.codebergTabState
     } else {
       return assertNever(tab, `Unknown tab: ${tab}`)
     }
@@ -591,6 +618,16 @@ export class CloneRepository extends React.Component<
         }),
         callback
       )
+    } else if (tab === CloneRepositoryTab.Codeberg) {
+      this.setState(
+        prevState => ({
+          codebergTabState: {
+            ...prevState.codebergTabState,
+            ...state,
+          },
+        }),
+        callback
+      )
     } else if (tab === CloneRepositoryTab.Generic) {
       this.setState(
         prevState => ({
@@ -623,6 +660,10 @@ export class CloneRepository extends React.Component<
       this.setState(prevState => ({
         gitlabTabState: merge(prevState.gitlabTabState, tabState),
       }))
+    } else if (tab === CloneRepositoryTab.Codeberg) {
+      this.setState(prevState => ({
+        codebergTabState: merge(prevState.codebergTabState, tabState),
+      }))
     } else {
       return assertNever(tab, `Unknown tab: ${tab}`)
     }
@@ -653,6 +694,8 @@ export class CloneRepository extends React.Component<
       return this.props.dispatcher.showBitbucketSignInDialog
     } else if (tab === CloneRepositoryTab.GitLab) {
       return this.props.dispatcher.showGitLabSignInDialog
+    } else if (tab === CloneRepositoryTab.Codeberg) {
+      return this.props.dispatcher.showCodebergSignInDialog
     } else {
       return assertNever(tab, `Unknown sign in tab: ${tab}`)
     }

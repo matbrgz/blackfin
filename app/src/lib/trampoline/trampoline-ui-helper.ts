@@ -103,6 +103,9 @@ class TrampolineUIHelper {
         case 'gitlab':
           this.dispatcher.beginGitLabSignIn(cb)
           break
+        case 'codeberg':
+          this.dispatcher.beginCodebergSignIn(cb)
+          break
         default:
           assertNever(repositoryType, `Unexpected repo type: ${repositoryType}`)
       }

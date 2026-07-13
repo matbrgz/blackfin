@@ -1919,6 +1919,10 @@ export class Dispatcher {
     this.appStore._beginGitLabSignIn(resultCallback)
   }
 
+  public beginCodebergSignIn(resultCallback: (result: SignInResult) => void) {
+    this.appStore._beginCodebergSignIn(resultCallback)
+  }
+
   public beginBrowserBasedSignIn(
     endpoint: string,
     resultCallback?: (result: SignInResult) => void
@@ -2013,6 +2017,13 @@ export class Dispatcher {
     resultCallback?: (result: SignInResult) => void
   ): Promise<void> {
     this.appStore._beginGitLabSignIn(resultCallback)
+    this.appStore._showPopup({ type: PopupType.SignIn })
+  }
+
+  public async showCodebergSignInDialog(
+    resultCallback?: (result: SignInResult) => void
+  ): Promise<void> {
+    this.appStore._beginCodebergSignIn(resultCallback)
     this.appStore._showPopup({ type: PopupType.SignIn })
   }
 

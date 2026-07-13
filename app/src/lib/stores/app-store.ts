@@ -8920,6 +8920,10 @@ export class AppStore extends TypedBaseStore<IAppState> {
     return this.signInStore.beginGitLabSignIn(resultCallback)
   }
 
+  public _beginCodebergSignIn(resultCallback?: (result: SignInResult) => void) {
+    return this.signInStore.beginCodebergSignIn(resultCallback)
+  }
+
   public _setSignInEndpoint(url: string): Promise<void> {
     return this.signInStore.setEndpoint(url)
   }
@@ -9464,6 +9468,7 @@ export class AppStore extends TypedBaseStore<IAppState> {
       github: `${baseRepoUrl}/pull/${pr.pullRequestNumber}`,
       bitbucket: `${baseRepoUrl}/pull-requests/${pr.pullRequestNumber}`,
       gitlab: `${baseRepoUrl}/merge_requests/${pr.pullRequestNumber}`,
+      codeberg: `${baseRepoUrl}/pulls/${pr.pullRequestNumber}`,
     }
 
     const type = pr.base.gitHubRepository.type
@@ -9536,48 +9541,129 @@ export class AppStore extends TypedBaseStore<IAppState> {
     compareBranch: Branch,
     baseBranch?: Branch
   ): Promise<void> {
-    const gitHubRepository = repository.gitHubRepository
-    if (!gitHubRepository) {
+    if (!isRepositoryWithGitHubRepository(repository)) {
       return
     }
+    const url = this._getPullRequestCreationURL(
+      repository,
+      compareBranch,
+      baseBranch
+    )
+    await this._openInBrowser(url)
+  }
 
-    const { parent, owner, name, htmlURL, type } = gitHubRepository
-    const isForkContributingToParent =
-      isForkedRepositoryContributingToParent(repository)
+  public _getPullRequestCreationURL(
+    repository: RepositoryWithGitHubRepository,
+    compareBranch: Branch,
+    baseBranch?: Branch
+  ): string {
+    const { gitHubRepository } = repository
+    const isFork = isForkedRepositoryContributingToParent(repository)
 
-    const baseForkPreface =
-      isForkContributingToParent && parent !== null
-        ? `${parent.owner.login}:${parent.name}:`
-        : ''
+    const encodedCompareBranch = encodeURIComponent(
+      compareBranch.upstreamWithoutRemote ?? compareBranch.nameWithoutRemote
+    )
     const encodedBaseBranch =
       baseBranch !== undefined
-        ? baseForkPreface + encodeURIComponent(baseBranch.nameWithoutRemote)
+        ? encodeURIComponent(baseBranch.nameWithoutRemote)
         : ''
 
-    const compareForkPreface = isForkContributingToParent
-      ? `${owner.login}:${name}:`
-      : ''
-
-    const encodedCompareBranch =
-      compareForkPreface +
-      encodeURIComponent(
-        compareBranch.upstreamWithoutRemote ?? compareBranch.nameWithoutRemote
-      )
-
-    const param = (name: string, value: string): string => {
-      return value ? encodeURIComponent(name) + '=' + value : ''
+    switch (gitHubRepository.type) {
+      case 'github':
+        return this.getGitHubPullRequestCreationURL(
+          gitHubRepository,
+          isFork,
+          encodedCompareBranch,
+          encodedBaseBranch
+        )
+      case 'bitbucket':
+        return this.getBitbucketPullRequestCreationURL(
+          gitHubRepository,
+          isFork,
+          encodedCompareBranch,
+          encodedBaseBranch
+        )
+      case 'gitlab':
+        return this.getGitLabPullRequestCreationURL(
+          gitHubRepository,
+          encodedCompareBranch,
+          encodedBaseBranch
+        )
+      case 'codeberg':
+        return this.getCodebergPullRequestCreationURL(
+          gitHubRepository,
+          isFork,
+          encodedCompareBranch,
+          encodedBaseBranch
+        )
+      default:
+        return assertNever(
+          gitHubRepository.type,
+          `Unknown repository type: ${gitHubRepository.type}`
+        )
     }
+  }
 
-    // prettier-ignore
-    const PR_URLS = {
-      bitbucket:
-        `${htmlURL}/pull-requests/new?${param('source', encodedCompareBranch)}&${param('dest', encodedBaseBranch)}`,
-      github:
-        `${htmlURL}/pull/new/${encodedBaseBranch ? encodedBaseBranch + '...' : ''}${encodedCompareBranch}`,
-      gitlab:
-        `${htmlURL}/merge_requests/new?${param('merge_request[source_branch]', encodedCompareBranch)}&${param('merge_request[target_branch]', encodedBaseBranch)}`,
-    }
-    await this._openInBrowser(PR_URLS[type])
+  private getGitHubPullRequestCreationURL(
+    { parent, owner, name, htmlURL }: GitHubRepository,
+    isFork: boolean,
+    encodedCompareBranch: string,
+    encodedBaseBranch: string
+  ): string {
+    const base =
+      isFork && parent !== null && encodedBaseBranch !== ''
+        ? `${parent.owner.login}:${parent.name}:${encodedBaseBranch}`
+        : encodedBaseBranch
+    const compare =
+      (isFork ? `${owner.login}:${name}:` : '') + encodedCompareBranch
+
+    return `${htmlURL}/pull/new/${base ? base + '...' : ''}${compare}`
+  }
+
+  private getBitbucketPullRequestCreationURL(
+    { parent, htmlURL }: GitHubRepository,
+    isFork: boolean,
+    encodedCompareBranch: string,
+    encodedBaseBranch: string
+  ): string {
+    const source = queryParam('source', encodedCompareBranch)
+    // Bitbucket's dest param accepts a workspace/repo_slug::branch value to
+    // target the parent repository. An empty branch after :: preselects the
+    // parent's default branch.
+    const destPrefix =
+      isFork && parent !== null ? `${parent.owner.login}/${parent.name}::` : ''
+    const dest = queryParam('dest', destPrefix + encodedBaseBranch)
+    return `${htmlURL}/pull-requests/new?${source}&${dest}`
+  }
+
+  private getGitLabPullRequestCreationURL(
+    { htmlURL }: GitHubRepository,
+    encodedCompareBranch: string,
+    encodedBaseBranch: string
+  ): string {
+    const sourceBranch = queryParam(
+      'merge_request[source_branch]',
+      encodedCompareBranch
+    )
+    const targetBranch = queryParam(
+      'merge_request[target_branch]',
+      encodedBaseBranch
+    )
+    return `${htmlURL}/-/merge_requests/new?${sourceBranch}&${targetBranch}`
+  }
+
+  private getCodebergPullRequestCreationURL(
+    { parent, owner, name, htmlURL }: GitHubRepository,
+    isFork: boolean,
+    encodedCompareBranch: string,
+    encodedBaseBranch: string
+  ): string {
+    const baseRepoUrl = (isFork ? parent?.htmlURL : null) ?? htmlURL
+    const head =
+      (isFork ? `${owner.login}/${name}:` : '') + encodedCompareBranch
+    const base = encodedBaseBranch ? `${encodedBaseBranch}...` : ''
+
+    return `${baseRepoUrl}/compare/${base}${head}`
   }
 
   public async _updateExistingUpstreamRemote(
@@ -11783,6 +11869,10 @@ function isLocalChangesOverwrittenError(error: Error): boolean {
     error instanceof GitError &&
     error.result.gitError === DugiteError.LocalChangesOverwritten
   )
+}
+
+function queryParam(name: string, value: string): string {
+  return value ? encodeURIComponent(name) + '=' + value : ''
 }
 
 function constrain(
