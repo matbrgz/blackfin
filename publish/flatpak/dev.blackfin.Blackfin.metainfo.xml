@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <component type="desktop-application">
-  <id>org.desktop_plus.desktop-plus</id>
-  <name>Desktop Plus</name>
-  <summary>Git client with advanced functionality and Bitbucket, GitLab integration</summary>
+  <id>dev.blackfin.Blackfin</id>
+  <name>Blackfin</name>
+  <summary>Agentic control center for developers, built on a GitHub Desktop fork</summary>
   <metadata_license>CC0-1.0</metadata_license>
   <project_license>MIT</project_license>
   <developer id="io.github.pol_rivero">
@@ -12,12 +12,12 @@
     <p>
       This is an up-to-date fork of GitHub Desktop, with many quality of life improvements and advanced features for power users.
     </p>
-    <p>See https://github.com/desktop-plus/desktop-plus for a full list of added features.</p>
+    <p>See https://github.com/matbrgz/blackfin for a full list of added features.</p>
   </description>
-  <url type="homepage">https://desktop-plus.org</url>
-  <url type="vcs-browser">https://github.com/desktop-plus/desktop-plus</url>
-  <url type="bugtracker">https://github.com/desktop-plus/desktop-plus/issues</url>
-  <launchable type="desktop-id">org.desktop_plus.desktop-plus.desktop</launchable>
+  <url type="homepage">https://github.com/matbrgz/blackfin</url>
+  <url type="vcs-browser">https://github.com/matbrgz/blackfin</url>
+  <url type="bugtracker">https://github.com/matbrgz/blackfin/issues</url>
+  <launchable type="desktop-id">dev.blackfin.Blackfin.desktop</launchable>
   <provides>
     <id>io.github.pol_rivero.github-desktop-plus</id>
   </provides>
@@ -45,7 +45,7 @@
   <content_rating type="oars-1.1" />
   <releases>
     <release version="[VERSION]" date="[DATE]">
-      <url>https://github.com/desktop-plus/desktop-plus/releases/tag/v[VERSION]</url>
+      <url>https://github.com/matbrgz/blackfin/releases/tag/v[VERSION]</url>
     </release>
   </releases>
 </component>

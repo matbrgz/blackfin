@@ -31,6 +31,7 @@ import {
   GitHubUserStore,
   GitStore,
   IssuesStore,
+  WorkspaceStore,
   PullRequestCoordinator,
   RepositoriesStore,
   SignInResult,
@@ -102,6 +103,10 @@ import {
   getNonForkGitHubRepository,
   isForkedRepositoryContributingToParent,
 } from '../../models/repository'
+import { AppSection } from '../../models/app-section'
+import { discoverRepositories } from '../workspace/discover-repositories'
+import { CleanupOutcome } from '../workspace/cleanup'
+import { Density, DefaultDensity } from '../../models/density'
 import {
   CommittedFileChange,
   WorkingDirectoryFileChange,
@@ -598,6 +603,7 @@ export const showDiffCheckMarksKey = 'diff-check-marks-visible'
 export const showBranchNameInRepoListKey = 'show-branch-name-in-repo-list'
 const copyPathNormalizationKey = 'copy-path-normalization'
 const branchSortOrderKey = 'branch-sort-order'
+const densityKey = 'ui-density'
 
 const commitMessageGenerationDisclaimerLastSeenKey =
   'commit-message-generation-disclaimer-last-seen'
@@ -795,6 +801,8 @@ export class AppStore extends TypedBaseStore<IAppState> {
 
   private branchSortOrder: BranchSortOrder = DEFAULT_BRANCH_SORT_ORDER
 
+  private density: Density = DefaultDensity
+
   private preferAbsoluteDates: boolean = false
 
   private cachedRepoRulesets = new Map<number, IAPIRepoRuleset>()
@@ -817,6 +825,15 @@ export class AppStore extends TypedBaseStore<IAppState> {
   private copilotModels: ReadonlyArray<Model> | null = null
   private byokProviders: ReadonlyArray<IBYOKProvider> = []
 
+  /**
+   * The app opens on Home, not on a repository. That is the whole point: the
+   * first thing Blackfin shows you is the state of your work, not a diff.
+   */
+  private selectedAppSection: AppSection = AppSection.Home
+
+  /** Whether the workspace has been scanned at least once this session. */
+  private workspaceLoaded: boolean = false
+
   public constructor(
     private readonly gitHubUserStore: GitHubUserStore,
     private readonly cloningRepositoriesStore: CloningRepositoriesStore,
@@ -829,7 +846,8 @@ export class AppStore extends TypedBaseStore<IAppState> {
     private readonly repositoryStateCache: RepositoryStateCache,
     private readonly apiRepositoriesStore: ApiRepositoriesStore,
     private readonly notificationsStore: NotificationsStore,
-    private readonly copilotStore: CopilotStore
+    private readonly copilotStore: CopilotStore,
+    private readonly workspaceStore: WorkspaceStore
   ) {
     super()
 
@@ -1129,6 +1147,12 @@ export class AppStore extends TypedBaseStore<IAppState> {
   }
 
   private wireupStoreEventHandlers() {
+    this.workspaceStore.onDidUpdate(() => {
+      this.emitUpdate()
+    })
+
+    this.workspaceStore.onDidError(e => this.emitError(e))
+
     this.gitHubUserStore.onDidUpdate(() => {
       this.emitUpdate()
     })
@@ -1319,6 +1343,86 @@ export class AppStore extends TypedBaseStore<IAppState> {
     }
   }
 
+  public _setAppSection(section: AppSection): Promise<void> {
+    this.selectedAppSection = section
+    this.emitUpdate()
+
+    if (section !== AppSection.Code) {
+      this.ensureWorkspaceLoaded()
+    }
+
+    return Promise.resolve()
+  }
+
+  /**
+   * Paint from the cache first — the screen fills immediately — and only then
+   * go back to disk. Awaiting the rescan would give the user a blank screen for
+   * as long as their largest node_modules takes to walk.
+   */
+  private ensureWorkspaceLoaded(): void {
+    if (this.workspaceLoaded) {
+      return
+    }
+    this.workspaceLoaded = true
+
+    this.workspaceStore
+      .loadFromCache()
+      .then(() => this._rescanWorkspace())
+      .catch(e => this.emitError(e))
+  }
+
+  /**
+   * Point Blackfin at a folder and let it find the projects inside. The premise
+   * of a control center is that you hand it your work, not that you add your
+   * projects one at a time.
+   *
+   * Returns the repositories that were newly added.
+   */
+  public async _addRepositoriesFromFolder(
+    path: string
+  ): Promise<ReadonlyArray<Repository>> {
+    const paths = await discoverRepositories(path)
+
+    if (paths.length === 0) {
+      return []
+    }
+
+    const added = await this._addRepositories(paths, null)
+    await this._rescanWorkspace()
+
+    return added
+  }
+
+  public async _rescanWorkspace(): Promise<void> {
+    const repositories = this.repositories.filter(
+      (r): r is Repository => r instanceof Repository
+    )
+
+    await this.workspaceStore.rescanAll(
+      repositories.map(r => ({ id: r.id, path: r.path }))
+    )
+  }
+
+  /**
+   * Returns what actually happened, one outcome per path.
+   *
+   * A refusal is not an application error and must not be routed through
+   * `emitError`: an error banner collapses several distinct refusals into one
+   * string and throws away which path each belonged to. The caller renders
+   * these, so a `node_modules` that turned out to be a symlink is something the
+   * user is told about rather than something that silently stays on disk.
+   */
+  public _cleanUpWorkspace(
+    repository: Repository,
+    relativePaths: ReadonlyArray<string>
+  ): Promise<ReadonlyArray<CleanupOutcome>> {
+    return this.workspaceStore.cleanUp(
+      { id: repository.id, path: repository.path },
+      relativePaths,
+      { moveItemToTrash: shell.moveItemToTrash }
+    )
+  }
+
   public getState(): IAppState {
     const repositories = [
       ...this.repositories,
@@ -1328,6 +1432,10 @@ export class AppStore extends TypedBaseStore<IAppState> {
     return {
       accounts: this.accounts,
       repositories,
+      selectedAppSection: this.selectedAppSection,
+      workspaceInventories: this.workspaceStore.getInventories(),
+      globalAgentContext: this.workspaceStore.getGlobalContext(),
+      workspaceScanProgress: this.workspaceStore.getProgress(),
       recentRepositories: this.recentRepositories,
       localRepositoryStateLookup: this.localRepositoryStateLookup,
       windowState: this.windowState,
@@ -1422,6 +1530,7 @@ export class AppStore extends TypedBaseStore<IAppState> {
       showBranchNameInRepoList: this.showBranchNameInRepoList,
       copyPathNormalization: this.copyPathNormalization,
       branchSortOrder: this.branchSortOrder,
+      density: this.density,
       preferAbsoluteDates: this.preferAbsoluteDates,
       updateState: updateStore.state,
       commitMessageGenerationDisclaimerLastSeen:
@@ -3102,6 +3211,8 @@ export class AppStore extends TypedBaseStore<IAppState> {
 
     this.branchSortOrder =
       getEnum(branchSortOrderKey, BranchSortOrder) ?? DEFAULT_BRANCH_SORT_ORDER
+
+    this.density = getEnum(densityKey, Density) ?? DefaultDensity
 
     this.commitMessageGenerationDisclaimerLastSeen =
       getNumber(commitMessageGenerationDisclaimerLastSeenKey) ?? null
@@ -8556,7 +8667,7 @@ export class AppStore extends TypedBaseStore<IAppState> {
         if (match === null) {
           this.emitError(
             new ExternalEditorError(
-              `No suitable editors installed for Desktop Plus to launch. Install ${suggestedExternalEditor.name} for your platform and restart Desktop Plus to try again.`,
+              `No suitable editors installed for Blackfin to launch. Install ${suggestedExternalEditor.name} for your platform and restart Blackfin to try again.`,
               { suggestDefaultEditor: true }
             )
           )
@@ -8590,7 +8701,7 @@ export class AppStore extends TypedBaseStore<IAppState> {
       if (match === null) {
         this.emitError(
           new ExternalEditorError(
-            `No suitable editors installed for Desktop Plus to launch. Install ${suggestedExternalEditor.name} for your platform and restart Desktop Plus to try again.`,
+            `No suitable editors installed for Blackfin to launch. Install ${suggestedExternalEditor.name} for your platform and restart Blackfin to try again.`,
             { suggestDefaultEditor: true }
           )
         )
@@ -11321,6 +11432,18 @@ export class AppStore extends TypedBaseStore<IAppState> {
     if (branchSortOrder !== this.branchSortOrder) {
       this.branchSortOrder = branchSortOrder
       localStorage.setItem(branchSortOrderKey, branchSortOrder)
+      this.emitUpdate()
+    }
+  }
+
+  /**
+   * A preference, not a cache — so it lives in local storage beside the other
+   * UI preferences, and not in a Dexie database.
+   */
+  public _setDensity(density: Density) {
+    if (density !== this.density) {
+      this.density = density
+      localStorage.setItem(densityKey, density)
       this.emitUpdate()
     }
   }

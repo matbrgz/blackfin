@@ -1,9 +1,9 @@
 #!/bin/bash
 set -e
 
-PROFILE_D_FILE="/etc/profile.d/desktop-plus.sh"
-APP_BINARY="/usr/bin/desktop-plus"
-CLI_BINARY="/usr/bin/desktop-plus-cli"
+PROFILE_D_FILE="/etc/profile.d/blackfin.sh"
+APP_BINARY="/usr/bin/blackfin"
+CLI_BINARY="/usr/bin/blackfin-cli"
 
 case "$1" in
     purge|remove|upgrade|failed-upgrade|abort-install|abort-upgrade|disappear)

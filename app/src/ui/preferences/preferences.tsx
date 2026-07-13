@@ -26,6 +26,7 @@ import { TitleBarStyle } from '../lib/title-bar-style'
 import { OkCancelButtonGroup } from '../dialog/ok-cancel-button-group'
 import { Integrations } from './integrations'
 import { BranchSortOrder } from '../../models/branch-sort-order'
+import { Density } from '../../models/density'
 import { DiffFontFamily } from '../../models/diff-font'
 import {
   UncommittedChangesStrategy,
@@ -132,6 +133,7 @@ interface IPreferencesProps {
   readonly repositoryIndicatorsEnabled: boolean
   readonly showBranchNameInRepoList: ShowBranchNameInRepoListSetting
   readonly branchSortOrder: BranchSortOrder
+  readonly density: Density
   readonly hideWindowOnQuit: boolean
   readonly onEditGlobalGitConfig: () => void
   readonly underlineLinks: boolean
@@ -196,6 +198,7 @@ interface IPreferencesState {
   readonly repositoryIndicatorsEnabled: boolean
   readonly showBranchNameInRepoList: ShowBranchNameInRepoListSetting
   readonly branchSortOrder: BranchSortOrder
+  readonly density: Density
   readonly hideWindowOnQuit: boolean
 
   readonly initiallySelectedTheme: ApplicationTheme
@@ -289,6 +292,7 @@ export class Preferences extends React.Component<
       repositoryIndicatorsEnabled: this.props.repositoryIndicatorsEnabled,
       showBranchNameInRepoList: this.props.showBranchNameInRepoList,
       branchSortOrder: this.props.branchSortOrder,
+      density: this.props.density,
       hideWindowOnQuit: this.props.hideWindowOnQuit,
       initiallySelectedTheme: this.props.selectedTheme,
       initiallySelectedTabSize: this.props.selectedTabSize,
@@ -740,6 +744,8 @@ export class Preferences extends React.Component<
             }
             branchSortOrder={this.state.branchSortOrder}
             onBranchSortOrderChanged={this.onBranchSortOrderChanged}
+            density={this.state.density}
+            onDensityChanged={this.onDensityChanged}
             selectedDateFormat={
               this.state.selectedDateFormat ?? getDateFormatPreference()
             }
@@ -1049,6 +1055,10 @@ export class Preferences extends React.Component<
 
   private onBranchSortOrderChanged = (branchSortOrder: BranchSortOrder) => {
     this.setState({ branchSortOrder })
+  }
+
+  private onDensityChanged = (density: Density) => {
+    this.setState({ density })
   }
 
   private onSelectedCopilotModelChanged = (
@@ -1371,6 +1381,7 @@ export class Preferences extends React.Component<
 
     dispatcher.setShowBranchNameInRepoList(this.state.showBranchNameInRepoList)
     dispatcher.setBranchSortOrder(this.state.branchSortOrder)
+    dispatcher.setDensity(this.state.density)
 
     dispatcher.setSelectedCopilotModels(this.state.selectedCopilotModels)
 

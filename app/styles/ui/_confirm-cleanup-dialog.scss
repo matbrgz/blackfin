@@ -1,0 +1,92 @@
+#confirm-workspace-cleanup {
+  width: 500px;
+
+  .confirm-cleanup-root {
+    color: var(--text-secondary-color);
+    font-family: var(--font-family-monospace);
+    font-size: var(--font-size-sm);
+
+    // The absolute path is the one thing a user must be able to check before
+    // agreeing to delete. It is never truncated with an ellipsis.
+    overflow-wrap: anywhere;
+  }
+
+  .confirm-cleanup-targets,
+  .confirm-cleanup-problems {
+    list-style: none;
+    margin: var(--spacing) 0;
+    padding: 0;
+
+    max-height: 220px;
+    overflow-y: auto;
+
+    border: var(--base-border);
+    border-radius: var(--border-radius);
+  }
+
+  .confirm-cleanup-targets li,
+  .confirm-cleanup-problems li {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-half);
+
+    padding: var(--spacing-half) var(--spacing);
+
+    &:not(:last-child) {
+      border-bottom: var(--base-border);
+    }
+  }
+
+  .confirm-cleanup-path {
+    flex-grow: 1;
+    font-family: var(--font-family-monospace);
+    font-size: var(--font-size-sm);
+    overflow-wrap: anywhere;
+  }
+
+  .confirm-cleanup-meta {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing);
+    flex-shrink: 0;
+
+    color: var(--text-secondary-color);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .confirm-cleanup-reason {
+    flex-basis: 55%;
+    flex-shrink: 0;
+    color: var(--text-secondary-color);
+    font-size: var(--font-size-sm);
+  }
+
+  .confirm-cleanup-note {
+    color: var(--text-secondary-color);
+    font-size: var(--font-size-sm);
+    margin-bottom: 0;
+  }
+
+  // A refusal is not a failure. Blackfin declined to delete something because
+  // it stopped matching what was scanned — a symlink now, or a path that
+  // escaped the repository. That is the safety net doing its job, and it reads
+  // as a warning, not an error.
+  .cleanup-refused {
+    background: var(--dialog-warning-background);
+
+    .octicon {
+      fill: var(--dialog-warning-color);
+      flex-shrink: 0;
+    }
+  }
+
+  // A failure is the operation going wrong: permissions, a file in use.
+  .cleanup-failed {
+    background: var(--dialog-error-background);
+
+    .octicon {
+      fill: var(--dialog-error-color);
+      flex-shrink: 0;
+    }
+  }
+}

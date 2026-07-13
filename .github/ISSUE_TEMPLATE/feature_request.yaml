@@ -4,7 +4,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        Thanks for submitting a feature request! This issue tracker is for [Desktop Plus](https://github.com/desktop-plus/desktop-plus). Please search the issue tracker to see if there is an existing issue for the feature you are requesting.
+        Thanks for submitting a feature request! This issue tracker is for [Blackfin](https://github.com/matbrgz/blackfin). Please search the issue tracker to see if there is an existing issue for the feature you are requesting.
   - type: textarea
     id: the-feature-request
     attributes:
@@ -17,7 +17,7 @@ body:
     id: proposed-solution
     attributes:
       label: Proposed solution
-      description: Share how this will benefit Desktop Plus and its users.
+      description: Share how this will benefit Blackfin and its users.
     validations:
       required: true
   - type: textarea

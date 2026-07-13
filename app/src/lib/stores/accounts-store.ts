@@ -155,7 +155,7 @@ export class AccountsStore extends TypedBaseStore<ReadonlyArray<Account>> {
       if ((__DARWIN__ || __LINUX__) && isKeyChainError(e)) {
         this.emitError(
           new Error(
-            `Desktop Plus was unable to store the account token in the keychain. Please check you have unlocked access to the 'login' keychain.`
+            `Blackfin was unable to store the account token in the keychain. Please check you have unlocked access to the 'login' keychain.`
           )
         )
       } else {

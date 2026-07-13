@@ -1,3 +1,9 @@
+import {
+  IGlobalContext,
+  IRepositoryInventory,
+} from '../models/workspace-inventory'
+import { AppSection } from '../models/app-section'
+import { IScanProgress } from './stores/workspace-store'
 import type { CopilotModelSelections } from './stores/copilot-store'
 import type { IBYOKProvider } from './copilot/byok'
 import type { IConflictResolutionModelDisplay } from './copilot/conflict-resolution-model'
@@ -52,6 +58,7 @@ import { UncommittedChangesStrategy } from '../models/uncommitted-changes-strate
 import { ShowBranchNameInRepoListSetting } from '../models/show-branch-name-in-repo-list'
 import { CopyPathNormalization } from '../models/copy-path-normalization'
 import { BranchSortOrder } from '../models/branch-sort-order'
+import { Density } from '../models/density'
 import { DiffFontFamily } from '../models/diff-font'
 import { DragElement } from '../models/drag-drop'
 import { ILastThankYou } from '../models/last-thank-you'
@@ -98,6 +105,24 @@ export interface IAppState {
    * The current list of repositories tracked in the application
    */
   readonly repositories: ReadonlyArray<Repository | CloningRepository>
+
+  /**
+   * The top-level destination the app is showing. `Code` is the git client;
+   * the others take over the window in its place.
+   */
+  readonly selectedAppSection: AppSection
+
+  /** The workspace inventory for each repository, keyed by repository id. */
+  readonly workspaceInventories: ReadonlyMap<number, IRepositoryInventory>
+
+  /**
+   * The agent context in the user's home directory, which applies to every
+   * project on this machine.
+   */
+  readonly globalAgentContext: IGlobalContext
+
+  /** Progress of the workspace scan currently in flight, if there is one. */
+  readonly workspaceScanProgress: IScanProgress
 
   /**
    * List of IDs of the most recently opened repositories (most recent first)
@@ -445,6 +470,9 @@ export interface IAppState {
 
   /** Controls the sort order for branch lists in branch-selection views */
   readonly branchSortOrder: BranchSortOrder
+
+  /** How much room a row of the control center gets. */
+  readonly density: Density
 
   /** Whether the user prefers absolute dates over relative time in lists */
   readonly preferAbsoluteDates: boolean

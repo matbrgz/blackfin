@@ -1,0 +1,87 @@
+.app-rail {
+  // Wide enough for the longest label at --font-size-2xs without wrapping. It
+  // is a component-level token rather than a bare number so the label size and
+  // the rail width cannot drift apart silently.
+  --rail-width: 68px;
+
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  width: var(--rail-width);
+  padding: var(--space-1) 0;
+  gap: 2px;
+
+  background: var(--box-alt-background-color);
+  border-right: var(--base-border);
+  -webkit-app-region: no-drag;
+}
+
+.app-rail-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+
+  margin: 0 var(--spacing-half);
+  padding: var(--spacing-half) 0;
+  border: none;
+  border-radius: var(--border-radius);
+
+  background: transparent;
+  color: var(--text-secondary-color);
+  cursor: pointer;
+
+  &:hover {
+    background: var(--box-background-color);
+    color: var(--text-color);
+  }
+
+  &.selected {
+    background: var(--box-selected-background-color);
+    color: var(--box-selected-text-color);
+
+    .octicon {
+      fill: var(--box-selected-text-color);
+    }
+  }
+
+  &:focus-visible {
+    outline: var(--focus-border-width) solid var(--focus-color);
+    outline-offset: -1px;
+  }
+
+  .octicon {
+    fill: currentColor;
+    width: 18px;
+    height: 18px;
+  }
+}
+
+.app-rail-icon {
+  position: relative;
+  display: flex;
+}
+
+.app-rail-badge {
+  position: absolute;
+  top: -6px;
+  right: -10px;
+
+  min-width: 15px;
+  padding: 0 3px;
+  border-radius: 999px;
+
+  // The count of things that are actually wrong. Broken, not merely worth a
+  // look — so it borrows the health scale rather than a dialog colour.
+  background: var(--health-broken-fg);
+  color: var(--background-color);
+  font-size: var(--font-size-2xs);
+  line-height: 15px;
+  text-align: center;
+  font-variant-numeric: var(--numeric-font-variant);
+}
+
+.app-rail-label {
+  font-size: var(--font-size-2xs);
+  line-height: 1.2;
+}

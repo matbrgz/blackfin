@@ -381,6 +381,11 @@ $overlay-background-color: rgba(0, 0, 0, 0.4);
 
   /** The highlight color used for focus rings and focus box shadows */
   --focus-color: #{$blue};
+
+  // Width of a focus ring. Deliberately theme-independent — a keyboard user
+  // needs the same ring on both themes, so the dark theme inherits this one.
+  --focus-border-width: 2px;
+
   --accent-color: #{$blue-400};
   --diff-linenumber-focus-color: #{$blue-600};
 
@@ -496,6 +501,12 @@ $overlay-background-color: rgba(0, 0, 0, 0.4);
   --dialog-warning-color: #{$yellow-800};
   --dialog-information-color: #{$blue-400};
   --dialog-error-color: #{$red};
+
+  // Backgrounds to go behind the colors above. Both themes must set these
+  // explicitly: a color defined only here is silently inherited by the dark
+  // theme, which is how a warning ends up unreadable on a dark surface.
+  --dialog-warning-background: #{$yellow-100};
+  --dialog-error-background: #{$red-100};
 
   /** Banner */
   --banner-warning-background: #{$yellow-100};

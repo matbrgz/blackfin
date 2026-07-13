@@ -54,7 +54,7 @@ export async function packageElectronBuilder(): Promise<string> {
     return Promise.reject(error)
   }
 
-  const appImageInstaller = `${distRoot}/DesktopPlus-linux-*.AppImage`
+  const appImageInstaller = `${distRoot}/Blackfin-linux-*.AppImage`
 
   const files = await globPromise(appImageInstaller)
   if (files.length !== 1) {
@@ -67,7 +67,7 @@ export async function packageElectronBuilder(): Promise<string> {
 
   const oldPath = files[0]
 
-  const newFileName = `DesktopPlus-v${getVersion()}-linux-${getArchitectureForFileName()}.AppImage`
+  const newFileName = `Blackfin-v${getVersion()}-linux-${getArchitectureForFileName()}.AppImage`
   const newPath = path.join(distRoot, newFileName)
   await rename(oldPath, newPath)
 

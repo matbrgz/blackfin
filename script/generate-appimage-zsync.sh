@@ -20,9 +20,9 @@ else
   exit 1
 fi
 
-REPO_OWNER="desktop-plus"
-REPO_NAME="desktop-plus"
-RELEASES_ZSYNC_PATTERN="DesktopPlus-*-linux-$FILENAME_ARCH_PART.AppImage.zsync"
+REPO_OWNER="blackfin"
+REPO_NAME="blackfin"
+RELEASES_ZSYNC_PATTERN="Blackfin-*-linux-$FILENAME_ARCH_PART.AppImage.zsync"
 
 extract_appimage_noexec() {
   local f="$1"

@@ -97,7 +97,7 @@ export class NoRepositoriesView extends React.Component<
         <section aria-label="Let's get started!">
           <header>
             <h1>Let's get started!</h1>
-            <p>Add a repository to Desktop Plus to start collaborating</p>
+            <p>Add a repository to Blackfin to start collaborating</p>
           </header>
 
           <div className="content">
@@ -367,7 +367,7 @@ export class NoRepositoriesView extends React.Component<
           <Octicon symbol={octicons.lightBulb} />
           <div>
             <strong>ProTip!</strong> You can drag &amp; drop an existing
-            repository folder here to add it to Desktop
+            repository folder here to add it to Blackfin
           </div>
         </div>
       </div>

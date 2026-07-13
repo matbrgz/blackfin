@@ -58,6 +58,8 @@ import type {
 } from '../../lib/stores/copilot-store'
 import type { IBYOKProvider } from '../../lib/copilot/byok'
 import { RepositoryStateCache } from '../../lib/stores/repository-state-cache'
+import { CleanupOutcome } from '../../lib/workspace/cleanup'
+import { Density } from '../../models/density'
 import { getTipSha } from '../../lib/tip'
 
 import { Account } from '../../models/account'
@@ -87,6 +89,7 @@ import {
   isRepositoryWithForkedGitHubRepository,
   getNonForkGitHubRepository,
 } from '../../models/repository'
+import { AppSection } from '../../models/app-section'
 import { RetryAction, RetryActionType } from '../../models/retry-actions'
 import {
   CommittedFileChange,
@@ -356,11 +359,25 @@ export class Dispatcher {
     return this.appStore._setRepositoryFilterText(text)
   }
 
-  /** Select the repository. */
+  /**
+   * Select the repository and show it.
+   *
+   * "Show it" is the point: every caller here — the repository list, a clone
+   * finishing, a notification click, a `x-github-client://` open — is a user
+   * asking to look at a repository, so selecting one moves to the Code section.
+   * The app opens on Home instead of a repository, and without this a selection
+   * triggered from any of those paths would leave the user stranded on whatever
+   * section they were on, watching nothing happen.
+   *
+   * Launch-time restoration of the last repository deliberately does not go
+   * through here — it calls the store directly — so restoring a selection on
+   * startup does not yank the user off Home.
+   */
   public selectRepository(
     repository: Repository | CloningRepository,
     persistSelection: boolean = true
   ): Promise<Repository | null> {
+    this.appStore._setAppSection(AppSection.Code)
     return this.appStore._selectRepository(repository, persistSelection)
   }
 
@@ -370,6 +387,43 @@ export class Dispatcher {
     section: RepositorySectionTab
   ): Promise<void> {
     return this.appStore._changeRepositorySection(repository, section)
+  }
+
+  /** Navigate to a top-level section of the app. */
+  public setAppSection(section: AppSection): Promise<void> {
+    return this.appStore._setAppSection(section)
+  }
+
+  /** Rescan every repository's workspace inventory. */
+  public rescanWorkspace(): Promise<void> {
+    return this.appStore._rescanWorkspace()
+  }
+
+  /** Find every git repository inside a folder and add them all. */
+  public addRepositoriesFromFolder(
+    path: string
+  ): Promise<ReadonlyArray<Repository>> {
+    return this.appStore._addRepositoriesFromFolder(path)
+  }
+
+  /**
+   * Move the given reclaimable directories to the trash, and report what
+   * happened to each one.
+   *
+   * The outcomes are the point. Every path is revalidated against the disk at
+   * the moment of deletion, and one that has become a symlink, or escaped the
+   * repository root, is refused — a refusal the caller is expected to show.
+   */
+  public cleanUpWorkspace(
+    repository: Repository,
+    relativePaths: ReadonlyArray<string>
+  ): Promise<ReadonlyArray<CleanupOutcome>> {
+    return this.appStore._cleanUpWorkspace(repository, relativePaths)
+  }
+
+  /** Set how much room a row of the control center gets. */
+  public setDensity(density: Density): void {
+    this.appStore._setDensity(density)
   }
 
   /**

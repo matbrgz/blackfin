@@ -1,0 +1,369 @@
+#workspace-center {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--background-color);
+
+  .workspace-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--spacing-double);
+    padding: var(--spacing-double);
+    border-bottom: var(--base-border);
+  }
+
+  .workspace-title {
+    h1 {
+      margin: 0;
+      font-size: var(--font-size-lg);
+      font-weight: var(--font-weight-semibold);
+    }
+
+    p {
+      margin: var(--spacing-half) 0 0;
+      color: var(--text-secondary-color);
+    }
+  }
+
+  .workspace-summary {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing);
+    flex-shrink: 0;
+  }
+
+  .workspace-reclaimable {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+
+    strong {
+      font-size: var(--font-size-md);
+    }
+
+    span {
+      color: var(--text-secondary-color);
+      font-size: var(--font-size-sm);
+    }
+  }
+
+  .workspace-progress {
+    color: var(--text-secondary-color);
+  }
+
+  .workspace-controls {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--spacing);
+    padding: var(--spacing) var(--spacing-double);
+    border-bottom: var(--base-border);
+  }
+
+  .workspace-lenses {
+    display: flex;
+    gap: var(--spacing-half);
+  }
+
+  .workspace-lens {
+    padding: var(--spacing-half) var(--spacing);
+    border: none;
+    border-radius: var(--border-radius);
+    background: transparent;
+    color: var(--text-secondary-color);
+    cursor: pointer;
+
+    &:hover {
+      background: var(--background-color);
+    }
+
+    &.selected {
+      background: var(--box-selected-background-color);
+      color: var(--box-selected-text-color);
+    }
+  }
+
+  .workspace-filter {
+    width: 240px;
+    padding: var(--spacing-half);
+    border: var(--base-border);
+    border-radius: var(--border-radius);
+    background: var(--box-background-color);
+    color: var(--text-color);
+  }
+
+  .workspace-list {
+    flex-grow: 1;
+    overflow-y: auto;
+    padding: var(--spacing);
+  }
+
+  .workspace-repository {
+    border: var(--base-border);
+    border-radius: var(--border-radius);
+    margin-bottom: var(--spacing-half);
+    background: var(--box-background-color);
+  }
+
+  .workspace-repository-header {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-half);
+    width: 100%;
+    padding: var(--spacing);
+    border: none;
+    background: transparent;
+    color: var(--text-color);
+    cursor: pointer;
+    text-align: left;
+
+    &:hover {
+      background: var(--box-alt-background-color);
+    }
+  }
+
+  .workspace-repository-name {
+    font-weight: var(--font-weight-semibold);
+    margin-right: auto;
+  }
+
+  // Every state below is a word in the product's domain, and each now has a
+  // colour that means it — rather than borrowing `--dialog-*`, which was never
+  // about a project's health and only ever fit by accident.
+  .workspace-badge {
+    padding: 2px var(--space-2);
+    border: 1px solid transparent;
+    border-radius: var(--border-radius);
+    font-size: var(--font-size-sm);
+    background: var(--health-ok-bg);
+    color: var(--health-ok-fg);
+    border-color: var(--health-ok-border);
+    white-space: nowrap;
+
+    &.agent {
+      background: var(--box-selected-background-color);
+      color: var(--box-selected-text-color);
+      border-color: transparent;
+    }
+
+    // A project with no agent context at all is the finding this feature
+    // exists to surface. It gets to shout.
+    &.warning {
+      background: var(--health-attention-bg);
+      color: var(--health-attention-fg);
+      border-color: var(--health-attention-border);
+    }
+
+    &.error,
+    &.missing {
+      background: var(--health-broken-bg);
+      color: var(--health-broken-fg);
+      border-color: var(--health-broken-border);
+    }
+
+    // Never scanned. Neutral on purpose — there is nothing to warn about, we
+    // simply have not looked, and dressing that up as a problem is the lie #84
+    // was about. It is a *different* class from `.muted` because "we found
+    // nothing to clean up" and "we never looked" are opposite facts, and they
+    // shared one class until this issue.
+    &.unknown {
+      background: var(--health-unknown-bg);
+      color: var(--health-unknown-fg);
+      border-color: var(--health-unknown-border);
+      border-style: dashed;
+    }
+
+    // Scanned, nothing to do. Quiet by design: good news should look like
+    // nothing.
+    &.muted {
+      opacity: 0.7;
+    }
+
+    &.disk {
+      font-variant-numeric: var(--numeric-font-variant);
+    }
+  }
+
+  .workspace-detail {
+    padding: 0 var(--spacing) var(--spacing) var(--spacing-double);
+    border-top: var(--base-border);
+  }
+
+  .workspace-agent-group {
+    h3 {
+      margin: var(--spacing) 0 var(--spacing-half);
+      font-size: var(--font-size-sm);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--text-secondary-color);
+    }
+  }
+
+  .workspace-files {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  // The rows density actually governs. This screen is a machine for producing
+  // them — forty projects times N context files — and it is the reason the
+  // density tokens exist rather than a fixed height.
+  .workspace-file {
+    padding: var(--row-padding-y) 0;
+    font-size: var(--row-font-size);
+
+    & + .workspace-file {
+      border-top: var(--base-border);
+    }
+  }
+
+  .workspace-file-path {
+    padding: 0;
+    border: none;
+    background: transparent;
+    color: var(--link-button-color);
+    font-family: var(--font-family-monospace);
+    cursor: pointer;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+
+  span.workspace-file-path {
+    color: var(--text-color);
+    cursor: default;
+
+    &:hover {
+      text-decoration: none;
+    }
+  }
+
+  .workspace-file-meta {
+    display: flex;
+    gap: var(--spacing);
+    margin-top: 2px;
+    font-size: var(--font-size-sm);
+    color: var(--text-secondary-color);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .workspace-role {
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  .workspace-file-name {
+    font-family: var(--font-family-monospace);
+  }
+
+  .workspace-file-description {
+    margin: 2px 0 0;
+    color: var(--text-secondary-color);
+  }
+
+  .workspace-file-skipped {
+    margin: 2px 0 0;
+    color: var(--text-secondary-color);
+    font-style: italic;
+  }
+
+  .workspace-broken {
+    list-style: none;
+    margin: var(--spacing-half) 0 0;
+    padding: 0;
+
+    li {
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-half);
+      color: var(--text-color);
+      font-size: var(--font-size-sm);
+    }
+
+    .octicon {
+      fill: var(--dialog-error-color);
+      flex-shrink: 0;
+    }
+  }
+
+  .workspace-cleanup {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing);
+    margin-top: var(--spacing);
+  }
+
+  .workspace-cleanup-note {
+    color: var(--text-secondary-color);
+    font-size: var(--font-size-sm);
+  }
+
+  .workspace-empty {
+    padding: var(--spacing);
+    color: var(--text-secondary-color);
+  }
+}
+
+.workspace-scopes {
+  display: flex;
+  gap: var(--spacing-half);
+  padding: var(--spacing) var(--spacing-double);
+  border-bottom: var(--base-border);
+}
+
+.workspace-scope {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-half);
+
+  padding: var(--spacing-half) var(--spacing);
+  border: none;
+  border-radius: var(--border-radius);
+
+  background: transparent;
+  color: var(--text-secondary-color);
+  cursor: pointer;
+
+  &:hover {
+    background: var(--box-alt-background-color);
+    color: var(--text-color);
+  }
+
+  &.selected {
+    background: var(--box-selected-background-color);
+    color: var(--box-selected-text-color);
+  }
+}
+
+.workspace-scope-count {
+  padding: 0 var(--spacing-half);
+  border-radius: 8px;
+  background: var(--box-alt-background-color);
+  font-size: var(--font-size-sm);
+  font-variant-numeric: tabular-nums;
+}
+
+.workspace-global-note {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-half);
+
+  margin: var(--spacing);
+  padding: var(--spacing);
+  border: var(--base-border);
+  border-radius: var(--border-radius);
+
+  background: var(--box-alt-background-color);
+  color: var(--text-secondary-color);
+
+  .octicon {
+    fill: currentColor;
+    flex-shrink: 0;
+  }
+}
+
+.workspace-global .workspace-detail {
+  border-top: none;
+}

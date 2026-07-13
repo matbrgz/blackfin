@@ -1,4 +1,4 @@
-name: 'Desktop Plus CodeQL config'
+name: 'Blackfin CodeQL config'
 
 paths-ignore:
   - 'vendor'

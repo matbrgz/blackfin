@@ -16,6 +16,7 @@ import { ShowBranchNameInRepoListSetting } from '../../models/show-branch-name-i
 import { parseEnumValue } from '../../lib/enum'
 import { assertNever } from '../../lib/fatal-error'
 import { BranchSortOrder } from '../../models/branch-sort-order'
+import { Density } from '../../models/density'
 import {
   availableDiffFontSizes,
   defaultDiffFontFamily,
@@ -47,6 +48,8 @@ interface IAppearanceProps {
   readonly onSelectedDiffFontFamilyChanged: (
     diffFontFamily: DiffFontFamily
   ) => void
+  readonly density: Density
+  readonly onDensityChanged: (density: Density) => void
   readonly titleBarStyle: TitleBarStyle
   readonly onTitleBarStyleChanged: (titleBarStyle: TitleBarStyle) => void
   readonly showRecentRepositories: boolean
@@ -92,7 +95,7 @@ interface IAppearanceState {
 function getTitleBarStyleDescription(titleBarStyle: TitleBarStyle): string {
   switch (titleBarStyle) {
     case 'custom':
-      return 'Uses the menu system provided by Desktop Plus, hiding the default chrome provided by your window manager.'
+      return 'Uses the menu system provided by Blackfin, hiding the default chrome provided by your window manager.'
     case 'native':
       return 'Uses the menu system and chrome provided by your window manager.'
     case 'native-without-menu-bar':
@@ -633,12 +636,43 @@ export class Appearance extends React.Component<
     )
   }
 
+  private onDensityChanged = (event: React.FormEvent<HTMLSelectElement>) => {
+    const density = parseEnumValue(Density, event.currentTarget.value)
+
+    if (density !== undefined) {
+      this.props.onDensityChanged(density)
+    }
+  }
+
+  private renderDensity() {
+    return (
+      <div className="advanced-section">
+        <h2>Density</h2>
+
+        <Select
+          label="Row density"
+          value={this.props.density}
+          onChange={this.onDensityChanged}
+        >
+          <option value={Density.Comfortable}>Comfortable</option>
+          <option value={Density.Compact}>Compact</option>
+        </Select>
+
+        <p className="git-settings-description">
+          How much room each row gets. Compact fits more projects, context files
+          and MCP servers on screen at once.
+        </p>
+      </div>
+    )
+  }
+
   public render() {
     return (
       <DialogContent className="appearance-tab">
         {this.renderSelectedTheme()}
         {this.renderFormatting()}
         {this.renderRepositoryList()}
+        {this.renderDensity()}
         {this.renderBranchSortOrder()}
         {this.renderWorktreeVisibility()}
         {this.renderDiffSettings()}

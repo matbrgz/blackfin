@@ -93,9 +93,9 @@ and is Pol Rivero's work, not ours.
 
 | <h4>Search commits by title, message, tag, or hash</h4> | <h4>Add multiple GitHub, Bitbucket & GitLab accounts</h4> |
 | :---: | :---: |
-| ![Commit search](docs/assets/desktop-plus-demo-search.webp) | ![Multiple accounts](docs/assets/desktop-plus-demo-multiaccount.webp) |
+| ![Commit search](docs/assets/blackfin-demo-search.webp) | ![Multiple accounts](docs/assets/blackfin-demo-multiaccount.webp) |
 | <h4>Create multiple stashes per branch</h4> | <h4>Visualize the Commit Graph</h4> |
-| ![Multiple stashes](docs/assets/desktop-plus-demo-stashes.webp) | ![Commit Graph](docs/assets/desktop-plus-demo-commit-graph.webp) |
+| ![Multiple stashes](docs/assets/blackfin-demo-stashes.webp) | ![Commit Graph](docs/assets/blackfin-demo-commit-graph.webp) |
 
 <details>
 <summary><strong>Full feature list</strong> (click to expand)</summary>
@@ -174,7 +174,7 @@ and is Pol Rivero's work, not ours.
 
 ---
 
-<img src="docs/assets/desktop-plus-demo.webp" alt="Demo" style="max-width:1000px;">
+<img src="docs/assets/blackfin-demo.webp" alt="Demo" style="max-width:1000px;">
 
 </details>
 

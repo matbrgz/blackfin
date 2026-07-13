@@ -73,10 +73,10 @@ export function buildDefaultMenuTemplate({
 
   if (__DARWIN__) {
     template.push({
-      label: 'Desktop Plus',
+      label: 'Blackfin',
       submenu: [
         {
-          label: 'About Desktop Plus',
+          label: 'About Blackfin',
           click: emit('show-about'),
           id: 'about',
         },
@@ -571,9 +571,7 @@ export function buildDefaultMenuTemplate({
     label: __DARWIN__ ? 'Report Issue…' : 'Report issue…',
     click() {
       shell
-        .openExternal(
-          'https://github.com/desktop-plus/desktop-plus/issues/new/choose'
-        )
+        .openExternal('https://github.com/matbrgz/blackfin/issues/new/choose')
         .catch(err => log.error('Failed opening issue creation page', err))
     },
   }
@@ -635,7 +633,7 @@ export function buildDefaultMenuTemplate({
         ...helpItems,
         separator,
         {
-          label: '&About Desktop Plus',
+          label: '&About Blackfin',
           click: emit('show-about'),
           id: 'about',
         },

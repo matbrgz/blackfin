@@ -2,8 +2,8 @@
 
 set -euo pipefail
 
-flags_file="${XDG_CONFIG_HOME:-$HOME/.config}/desktop-plus-flags.conf"
-old_flags_file="${XDG_CONFIG_HOME:-$HOME/.config}/github-desktop-plus-flags.conf"
+flags_file="${XDG_CONFIG_HOME:-$HOME/.config}/blackfin-flags.conf"
+old_flags_file="${XDG_CONFIG_HOME:-$HOME/.config}/github-blackfin-flags.conf"
 fallback_file="${XDG_CONFIG_HOME:-$HOME/.config}/electron-flags.conf"
 
 lines=()
@@ -22,4 +22,4 @@ for line in "${lines[@]}"; do
     fi
 done
 
-exec /opt/desktop-plus/desktop-plus "${flags[@]}" "$@"
+exec /opt/blackfin/blackfin "${flags[@]}" "$@"

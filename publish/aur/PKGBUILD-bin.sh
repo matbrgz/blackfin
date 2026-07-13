@@ -3,14 +3,14 @@
 # Contributor: Jake <aur@ja-ke.tech>
 # Contributor: Ian MacKay <immackay0@gmail.com>
 
-_pkgname='desktop-plus'
-_old_pkgname='github-desktop-plus'
+_pkgname='blackfin'
+_old_pkgname='github-blackfin'
 pkgname="${_pkgname}-bin"
 pkgver=[[APP_VERSION]]
 pkgrel=1
 pkgdesc="GitHub Desktop fork with extra features and improvements (binary release)."
 arch=('x86_64' 'aarch64')
-url="https://github.com/desktop-plus/desktop-plus"
+url="https://github.com/matbrgz/blackfin"
 license=('MIT')
 provides=(${_pkgname} ${_old_pkgname})
 conflicts=(${_pkgname} ${_old_pkgname})
@@ -32,7 +32,7 @@ source=(
     'launch-app.sh'
 )
 
-_common_download_url="${url}/releases/download/v${pkgver}/DesktopPlus-v${pkgver}-linux"
+_common_download_url="${url}/releases/download/v${pkgver}/Blackfin-v${pkgver}-linux"
 source_x86_64=(${_common_download_url}-x86_64.deb)
 source_aarch64=(${_common_download_url}-arm64.deb)
 
@@ -48,15 +48,15 @@ package() {
     tar --zstd -xf data.tar.zst -C "$pkgdir"
     install -d "$INSTALL_DIR"
 
-    mv "$pkgdir/usr/lib/desktop-plus/"* "$INSTALL_DIR/"
-    rmdir "$pkgdir/usr/lib/desktop-plus"
+    mv "$pkgdir/usr/lib/blackfin/"* "$INSTALL_DIR/"
+    rmdir "$pkgdir/usr/lib/blackfin"
     rmdir "$pkgdir/usr/lib"
 
-    rm "$pkgdir/usr/share/applications/desktop-plus.desktop"
+    rm "$pkgdir/usr/share/applications/blackfin.desktop"
     install -Dm644 "${_pkgname}.desktop" "$pkgdir/usr/share/applications/${_pkgname}.desktop"
 
     install -Dm755 "$srcdir/launch-app.sh" "$pkgdir/usr/bin/${_pkgname}"
 
-    chmod +x "$INSTALL_DIR/resources/app/static/desktop-plus-cli"
-    ln -s "/opt/${_pkgname}/resources/app/static/desktop-plus-cli" "$pkgdir/usr/bin/desktop-plus-cli"
+    chmod +x "$INSTALL_DIR/resources/app/static/blackfin-cli"
+    ln -s "/opt/${_pkgname}/resources/app/static/blackfin-cli" "$pkgdir/usr/bin/blackfin-cli"
 }

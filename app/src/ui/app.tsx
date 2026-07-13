@@ -77,6 +77,7 @@ import {
   openRepositoryInNewWindow,
   setWindowTitle,
   setWindowSelectedRepository,
+  showOpenDialog,
 } from './main-process-proxy'
 import { DiscardChanges } from './discard-changes'
 import { Welcome } from './welcome'
@@ -104,6 +105,16 @@ import { Publish } from './publish-repository'
 import { Acknowledgements } from './acknowledgements'
 import { UntrustedCertificate } from './untrusted-certificate'
 import { NoRepositoriesView } from './no-repositories'
+import { WorkspaceCenter } from './workspace/workspace-center'
+import { ConfirmCleanupDialog } from './workspace/confirm-cleanup-dialog'
+import { HomeView } from './home/home-view'
+import { AppRail } from './rail/app-rail'
+import { AppSection } from '../models/app-section'
+import {
+  brokenReferences,
+  configuredAgents,
+  IArtifactDirectory,
+} from '../models/workspace-inventory'
 import { ConfirmRemoveRepository } from './remove-repository'
 import { TermsAndConditions } from './terms-and-conditions'
 import { PushBranchCommits } from './branches'
@@ -116,6 +127,7 @@ import { ReleaseNotes } from './release-notes'
 import { DeletePullRequest } from './delete-branch/delete-pull-request-dialog'
 import { CommitConflictsWarning } from './merge-conflicts'
 import { AppTheme } from './app-theme'
+import { AppDensity } from './app-density'
 import { ApplicationTheme } from './lib/application-theme'
 import { RepositoryStateCache } from '../lib/stores/repository-state-cache'
 import { PopupType, Popup } from '../models/popup'
@@ -1160,10 +1172,10 @@ export class App extends React.Component<IAppProps, IAppState> {
         repository instanceof Repository
           ? repository.alias ?? repository.name
           : repository.name
-      return `${repositoryTitle} - Desktop Plus`
+      return `${repositoryTitle} - Blackfin`
     }
 
-    return 'Desktop Plus'
+    return 'Blackfin'
   }
 
   private updateWindowTitle() {
@@ -1860,6 +1872,7 @@ export class App extends React.Component<IAppProps, IAppState> {
             showDiffCheckMarks={this.state.showDiffCheckMarks}
             showBranchNameInRepoList={this.state.showBranchNameInRepoList}
             branchSortOrder={this.state.branchSortOrder}
+            density={this.state.density}
             copyPathNormalization={this.state.copyPathNormalization}
             selectedCopilotModels={this.state.selectedCopilotModels}
             copilotModels={this.state.copilotModels}
@@ -3075,6 +3088,17 @@ export class App extends React.Component<IAppProps, IAppState> {
           />
         )
       }
+      case PopupType.ConfirmWorkspaceCleanup: {
+        return (
+          <ConfirmCleanupDialog
+            key="confirm-workspace-cleanup"
+            dispatcher={this.props.dispatcher}
+            repository={popup.repository}
+            artifacts={popup.artifacts}
+            onDismissed={onPopupDismissedFn}
+          />
+        )
+      }
       case PopupType.ManageRemotes:
         return (
           <ManageRemotesDialog
@@ -3417,12 +3441,81 @@ export class App extends React.Component<IAppProps, IAppState> {
         id="desktop-app-contents"
         className={this.getDesktopAppContentsClassNames()}
       >
-        {this.renderToolbar()}
-        {this.renderBanner()}
-        {this.renderRepository()}
+        <AppRail
+          selectedSection={this.state.selectedAppSection}
+          onSelectSection={this.onSelectAppSection}
+          attentionCount={this.attentionCount()}
+        />
+        <div className="app-main">
+          {this.renderToolbar()}
+          {this.renderBanner()}
+          {this.renderSection()}
+        </div>
         {this.renderPopups()}
         {this.renderDragElement()}
       </div>
+    )
+  }
+
+  private onSelectAppSection = (section: AppSection) => {
+    this.props.dispatcher.setAppSection(section)
+  }
+
+  /**
+   * How many projects have something wrong with their agent context: none at
+   * all, or instructions pointing at files that no longer exist.
+   */
+  private attentionCount(): number {
+    let count = 0
+
+    for (const repository of this.state.repositories) {
+      if (!(repository instanceof Repository)) {
+        continue
+      }
+      const inventory = this.state.workspaceInventories.get(repository.id)
+      if (inventory === undefined || inventory.status.kind !== 'ok') {
+        continue
+      }
+      if (
+        configuredAgents(inventory).length === 0 ||
+        brokenReferences(inventory).length > 0
+      ) {
+        count++
+      }
+    }
+
+    return count
+  }
+
+  private renderSection() {
+    switch (this.state.selectedAppSection) {
+      case AppSection.Home:
+        return this.renderHome()
+      case AppSection.Code:
+        return this.renderRepository()
+      case AppSection.Agents:
+      case AppSection.Docs:
+      case AppSection.Disk:
+        return this.renderWorkspaceCenter(this.state.selectedAppSection)
+      default:
+        return assertNever(
+          this.state.selectedAppSection,
+          `Unknown section: ${this.state.selectedAppSection}`
+        )
+    }
+  }
+
+  private renderHome() {
+    return (
+      <HomeView
+        repositories={this.workspaceRepositories()}
+        inventories={this.state.workspaceInventories}
+        progress={this.state.workspaceScanProgress}
+        onRescan={this.onRescanWorkspace}
+        onAddFolder={this.onAddWorkspaceFolder}
+        onOpenRepository={this.onWorkspaceSelectRepository}
+        onNavigate={this.onSelectAppSection}
+      />
     )
   }
 
@@ -4055,6 +4148,14 @@ export class App extends React.Component<IAppProps, IAppState> {
   }
 
   private renderToolbar() {
+    // The toolbar is the git client's chrome — repository picker, branch,
+    // push/pull. It has nothing to say on Home, Agents, Docs or Disk, and
+    // leaving it up there would keep implying the git client is the frame the
+    // rest of the app lives inside.
+    if (this.state.selectedAppSection !== AppSection.Code) {
+      return null
+    }
+
     /**
      * No toolbar if we're in the blank slate view.
      */
@@ -4074,6 +4175,91 @@ export class App extends React.Component<IAppProps, IAppState> {
         {this.renderPushPullToolbarButton()}
       </Toolbar>
     )
+  }
+
+  private onRescanWorkspace = () => {
+    this.props.dispatcher.rescanWorkspace()
+  }
+
+  /**
+   * Pick a folder, and add every git repository inside it. A control center
+   * should take your work wholesale, not one project at a time.
+   */
+  private onAddWorkspaceFolder = async () => {
+    const path = await showOpenDialog({
+      properties: ['createDirectory', 'openDirectory'],
+    })
+
+    if (path === null) {
+      return
+    }
+
+    const added = await this.props.dispatcher.addRepositoriesFromFolder(path)
+
+    if (added.length === 0) {
+      this.props.dispatcher.postError(
+        new Error(`No git repositories were found in ${path}.`)
+      )
+    }
+  }
+
+  /** Opening a project from anywhere lands you in the git client, on it. */
+  private onWorkspaceSelectRepository = (repository: Repository) => {
+    // selectRepository now switches to Code itself, for every selection path.
+    this.props.dispatcher.selectRepository(repository)
+  }
+
+  // Opens the confirmation rather than deleting. Nothing on this path touches
+  // the disk; only a confirmed dialog calls `cleanUpWorkspace`.
+  private onWorkspaceCleanUp = (
+    repository: Repository,
+    artifacts: ReadonlyArray<IArtifactDirectory>
+  ) => {
+    this.props.dispatcher.showPopup({
+      type: PopupType.ConfirmWorkspaceCleanup,
+      repository,
+      artifacts,
+    })
+  }
+
+  private onWorkspaceOpenFile = (
+    repository: Repository,
+    relativePath: string
+  ) => {
+    this.props.dispatcher.openInExternalEditor(
+      repository,
+      Path.join(repository.path, relativePath)
+    )
+  }
+
+  private workspaceRepositories(): ReadonlyArray<Repository> {
+    return this.state.repositories.filter(
+      (r): r is Repository => r instanceof Repository
+    )
+  }
+
+  private renderWorkspaceCenter(section: AppSection) {
+    return (
+      <WorkspaceCenter
+        section={section}
+        repositories={this.workspaceRepositories()}
+        inventories={this.state.workspaceInventories}
+        globalContext={this.state.globalAgentContext}
+        progress={this.state.workspaceScanProgress}
+        onRescan={this.onRescanWorkspace}
+        onCleanUp={this.onWorkspaceCleanUp}
+        onOpenFile={this.onWorkspaceOpenFile}
+        onOpenPath={this.onWorkspaceOpenPath}
+      />
+    )
+  }
+
+  /**
+   * Global context files live outside any repository, so there is no repository
+   * to open them in. The OS knows what to do with a markdown file.
+   */
+  private onWorkspaceOpenPath = (absolutePath: string) => {
+    shell.showItemInFolder(absolutePath)
   }
 
   private renderRepository() {
@@ -4237,6 +4423,7 @@ export class App extends React.Component<IAppProps, IAppState> {
     return (
       <div id="desktop-app-chrome" className={className} style={appStyle}>
         <AppTheme theme={currentTheme} />
+        <AppDensity density={this.state.density} />
         {this.renderTitlebar()}
         {this.state.showWelcomeFlow
           ? this.renderWelcomeFlow()

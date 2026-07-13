@@ -26,14 +26,14 @@ export function getExecutableName() {
   if (process.platform === 'win32') {
     return `${getWindowsIdentifierName()}${suffix}`
   } else if (process.platform === 'linux') {
-    return `desktop-plus${suffix}`
+    return `blackfin${suffix}`
   } else {
     return productName
   }
 }
 
 export function getOSXZipName() {
-  return `DesktopPlus-v${version}-macOS-${getDistArchitecture()}.zip`
+  return `Blackfin-v${version}-macOS-${getDistArchitecture()}.zip`
 }
 
 export function getOSXZipPath() {
@@ -95,7 +95,7 @@ export function getWindowsDeltaNugetPackagePath() {
 }
 
 export function getWindowsIdentifierName() {
-  return 'DesktopPlus'
+  return 'Blackfin'
 }
 
 export function getBundleSizes() {

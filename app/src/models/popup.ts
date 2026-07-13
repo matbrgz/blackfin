@@ -28,6 +28,7 @@ import { BypassReasonType } from '../ui/secret-scanning/bypass-push-protection-d
 import { TerminalOutput, TerminalOutputListener } from '../lib/git'
 import type { IBYOKModel, IBYOKProvider } from '../lib/copilot/byok'
 import { WorktreeEntry } from './worktree'
+import { IArtifactDirectory } from './workspace-inventory'
 
 export enum PopupType {
   RenameBranch = 'RenameBranch',
@@ -129,6 +130,7 @@ export enum PopupType {
   ManageRemotes = 'ManageRemotes',
   AddRemote = 'AddRemote',
   DeleteWorktreeFailed = 'DeleteWorktreeFailed',
+  ConfirmWorkspaceCleanup = 'ConfirmWorkspaceCleanup',
 }
 
 interface IBasePopup {
@@ -591,5 +593,10 @@ export type PopupDetail =
       worktreePath: string
       error: Error
       originalWorktree: WorktreeEntry | null
+    }
+  | {
+      type: PopupType.ConfirmWorkspaceCleanup
+      repository: Repository
+      artifacts: ReadonlyArray<IArtifactDirectory>
     }
 export type Popup = IBasePopup & PopupDetail

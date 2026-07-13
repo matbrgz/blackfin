@@ -34,6 +34,7 @@ import {
   TokenStore,
   AccountsStore,
   PullRequestStore,
+  WorkspaceStore,
 } from '../lib/stores'
 import { GitHubUserDatabase } from '../lib/databases'
 import { SelectionType, IAppState } from '../lib/app-state'
@@ -42,6 +43,7 @@ import {
   IssuesDatabase,
   RepositoriesDatabase,
   PullRequestDatabase,
+  WorkspaceDatabase,
 } from '../lib/databases'
 import { shellNeedsPatching, updateEnvironmentForProcess } from '../lib/shell'
 import { installDevGlobals } from './install-globals'
@@ -254,6 +256,9 @@ const gitHubUserStore = new GitHubUserStore(
 )
 const cloningRepositoriesStore = new CloningRepositoriesStore()
 const issuesStore = new IssuesStore(new IssuesDatabase('IssuesDatabase'))
+const workspaceStore = new WorkspaceStore(
+  new WorkspaceDatabase('WorkspaceDatabase')
+)
 const statsStore = new StatsStore(
   new StatsDatabase('StatsDatabase'),
   new UiActivityMonitor()
@@ -323,7 +328,8 @@ const appStore = new AppStore(
   repositoryStateManager,
   apiRepositoriesStore,
   notificationsStore,
-  copilotStore
+  copilotStore,
+  workspaceStore
 )
 
 appStore.onDidUpdate(state => {

@@ -391,6 +391,11 @@ body.theme-dark {
   --dialog-information-color: #{$blue-400};
   --dialog-error-color: #{$red-600};
 
+  // Dark surfaces, not the light theme's tints. Inheriting those would put
+  // near-white behind text that is already light.
+  --dialog-warning-background: #272216;
+  --dialog-error-background: #{darken($red-900, 3%)};
+
   /** Banner */
   --banner-warning-background: #272216;
   --banner-warning-text-color: var(--text-color);
@@ -450,6 +455,55 @@ body.theme-dark {
   --md-neutral-muted-color: rgba(110, 118, 129, 0.4);
   --md-accent-emphasis-color: #1f6feb;
   --md-accent-fg-color: #58a6ff;
+
+  // ---------------------------------------------------------------------------
+  // Context health (see app/styles/_tokens.scss)
+  // ---------------------------------------------------------------------------
+  //
+  // Every token in the theme-varying block of `_tokens.scss` must appear here.
+  // A colour left out does not fail loudly — it inherits its light value and
+  // paints a near-white tint behind text that is already light. It just looks
+  // wrong, on a theme the author was not using.
+  //
+  // `styles-tokens-test.ts` fails if any of them is missing, which is the only
+  // reason this stays true.
+  //
+  // These are dark surfaces with light foregrounds, not the light theme's tints
+  // darkened. Backgrounds are deliberately low-saturation: a full-strength hue
+  // behind a table row on a dark theme vibrates.
+
+  --health-ok-fg: #{$gray-400};
+  --health-ok-bg: #{$gray-800};
+  --health-ok-border: #{$gray-700};
+
+  --health-attention-fg: #{$yellow-300};
+  --health-attention-bg: #272216;
+  --health-attention-border: #{$yellow-900};
+
+  --health-broken-fg: #{$red-300};
+  --health-broken-bg: #{darken($red-900, 3%)};
+  --health-broken-border: #{$red-800};
+
+  --health-inherited-fg: #{$blue-300};
+  --health-inherited-bg: #{darken($blue-900, 3%)};
+  --health-inherited-border: #{$blue-800};
+
+  --health-overridden-fg: #{$purple-300};
+  --health-overridden-bg: #{darken($purple-900, 2%)};
+  --health-overridden-border: #{$purple-800};
+
+  --health-stale-fg: #{$orange-300};
+  --health-stale-bg: #2a1c11;
+  --health-stale-border: #{$orange-900};
+
+  --health-unknown-fg: #{$gray-400};
+  --health-unknown-bg: #{$gray-900};
+  --health-unknown-border: #{$gray-800};
+
+  // Black shadows are invisible on a dark surface. These need real contrast, so
+  // they are stronger than their light counterparts rather than softer.
+  --elevation-1: 0 1px 3px rgba(0, 0, 0, 0.4);
+  --elevation-2: 0 4px 12px rgba(0, 0, 0, 0.5);
 }
 
 // this emulates the cursor for the co-author input because it isn't exactly
