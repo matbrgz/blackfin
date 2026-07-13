@@ -22,7 +22,13 @@ async function file(relativePath: string, content = ''): Promise<void> {
 
 async function discover(): Promise<ReadonlyArray<string>> {
   const found = await discoverRepositories(root)
-  return [...found].map(p => Path.relative(root, p)).sort()
+  // discoverRepositories returns absolute, OS-native paths. Relativize and
+  // normalize separators so the assertions read the same on Windows, where
+  // Path.relative yields backslashes, as on POSIX. The production value is the
+  // absolute path; this normalization is purely for the test's own comparison.
+  return [...found]
+    .map(p => Path.relative(root, p).split(Path.sep).join('/'))
+    .sort()
 }
 
 describe('discoverRepositories', () => {
