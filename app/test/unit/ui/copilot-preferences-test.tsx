@@ -510,8 +510,8 @@ describe('CopilotPreferences', () => {
     )
 
     assert.ok(screen.getAllByRole('button', { name: /Auto/ }).length > 0)
-    assert.ok(screen.getByText('@octo'))
-    assert.ok(screen.getByText('GitHub Enterprise · octocorp.ghe.com'))
+    assert.ok(screen.getByText('@octo (Octo Cat)'))
+    assert.ok(screen.getByText('https://octocorp.ghe.com'))
     assert.strictEqual(screen.queryByText('@mona'), null)
     assert.strictEqual(screen.queryByText('View Copilot plans'), null)
   })
@@ -539,9 +539,12 @@ describe('CopilotPreferences', () => {
       />
     )
 
+    assert.ok(screen.getByRole('heading', { name: 'GitHub.com' }))
+    assert.ok(screen.getByRole('heading', { name: 'GitHub Enterprise' }))
+    assert.ok(screen.getByText('Mona Lisa'))
     assert.ok(screen.getByText('@mona'))
-    assert.ok(screen.getByText('@octo'))
-    assert.ok(screen.getByText('GitHub Enterprise · octocorp.ghe.com'))
+    assert.ok(screen.getByText('@octo (Octo Cat)'))
+    assert.ok(screen.getByText('https://octocorp.ghe.com'))
     assert.strictEqual(
       view.container.querySelector('.copilot-model-picker'),
       null
@@ -642,8 +645,8 @@ describe('CopilotPreferences', () => {
 
     assert.strictEqual(screen.queryByRole('heading', { name: 'Usage' }), null)
     assert.ok(screen.getByAltText('Avatar for Mona Lisa'))
+    assert.ok(screen.getByText('Mona Lisa'))
     assert.ok(screen.getByText('@mona'))
-    assert.ok(screen.getByText('GitHub.com account'))
     assert.ok(screen.getByText('Chat messages'))
     assert.ok(screen.getByText('Premium requests'))
 

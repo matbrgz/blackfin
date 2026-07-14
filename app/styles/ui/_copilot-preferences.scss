@@ -169,12 +169,19 @@
     }
   }
 
+  .copilot-account-snapshot-groups {
+    padding: var(--spacing-double);
+  }
+
   .copilot-account-snapshot-card-list {
     display: flex;
     min-width: 0;
     flex-direction: column;
     gap: var(--spacing);
-    padding: var(--spacing);
+  }
+
+  .copilot-account-snapshot-card-group:not(:last-child) {
+    margin-bottom: var(--spacing);
   }
 
   .copilot-snapshot-card {
@@ -182,10 +189,6 @@
     min-width: 0;
     flex-direction: column;
     gap: var(--spacing);
-    padding: var(--spacing);
-    border: var(--base-border);
-    border-radius: var(--border-radius);
-    background: var(--box-alt-background-color);
   }
 
   .copilot-snapshot-account {
@@ -208,8 +211,8 @@
 
     .avatar-container,
     .avatar {
-      width: 32px;
-      height: 32px;
+      width: 34px;
+      height: 34px;
       flex-shrink: 0;
     }
   }
@@ -218,21 +221,13 @@
     display: flex;
     min-width: 0;
     flex-direction: column;
-  }
 
-  .copilot-snapshot-account-login {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    font-weight: var(--font-weight-semibold);
-  }
-
-  .copilot-snapshot-account-type {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    color: var(--text-secondary-color);
-    font-size: var(--font-size-sm);
+    .account-title,
+    .name {
+      margin-top: -2px;
+      margin-bottom: -2px;
+      font-weight: var(--font-weight-semibold);
+    }
   }
 
   .copilot-snapshot-item {

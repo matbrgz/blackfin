@@ -1,10 +1,11 @@
 import * as React from 'react'
+import { getHTMLURL } from '../../lib/api'
 import { lookupPreferredEmail } from '../../lib/email'
 import type {
   CopilotQuotaSnapshots,
   ICopilotQuotaSnapshot,
 } from '../../lib/stores/copilot-store'
-import { isDotComAccount, type Account } from '../../models/account'
+import { isEnterpriseAccount, type Account } from '../../models/account'
 import type { IAvatarUser } from '../../models/avatar'
 import { Avatar } from '../lib/avatar'
 import { Button } from '../lib/button'
@@ -58,14 +59,6 @@ function getAccountAvatarUser(account: Account): IAvatarUser {
     avatarURL: account.avatarURL,
     endpoint: account.endpoint,
   }
-}
-
-function formatAccountType(account: Account): string {
-  if (isDotComAccount(account)) {
-    return 'GitHub.com account'
-  }
-
-  return `GitHub Enterprise · ${account.friendlyEndpoint}`
 }
 
 function hasTokenBasedBilling(snapshots: CopilotQuotaSnapshots): boolean {
@@ -317,21 +310,30 @@ export class SnapshotCard extends React.Component<ISnapshotCardProps> {
             <Avatar
               accounts={[account]}
               user={avatarUser}
-              size={32}
+              size={34}
               tooltip={false}
             />
             <div className="copilot-snapshot-account-info">
-              <div className="copilot-snapshot-account-login">
-                @{account.login}
-              </div>
-              <div className="copilot-snapshot-account-type">
-                {formatAccountType(account)}
-              </div>
+              {isEnterpriseAccount(account) ? (
+                <>
+                  <div className="account-title">
+                    {account.name === account.login
+                      ? `@${account.login}`
+                      : `@${account.login} (${account.name})`}
+                  </div>
+                  <div className="endpoint">{getHTMLURL(account.endpoint)}</div>
+                </>
+              ) : (
+                <>
+                  <div className="name">{account.name}</div>
+                  <div className="login">@{account.login}</div>
+                </>
+              )}
             </div>
           </div>
           {onConfigureModels !== undefined && (
             <Button onClick={this.onConfigureModelsClick}>
-              {__DARWIN__ ? 'Configure Models…' : 'Configure models…'}
+              {__DARWIN__ ? 'Configure…' : 'Configure…'}
             </Button>
           )}
         </div>

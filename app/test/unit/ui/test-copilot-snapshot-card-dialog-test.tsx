@@ -47,8 +47,8 @@ describe('TestCopilotSnapshotCardDialog', () => {
     )
     assert.ok(preview instanceof HTMLElement)
 
+    assert.ok(within(preview).getByText('Mona Lisa'))
     assert.ok(within(preview).getByText('@mona'))
-    assert.ok(within(preview).getByText('GitHub.com account'))
     assert.ok(within(preview).getByText('Chat messages'))
     assert.ok(within(preview).getByText('Premium requests'))
   })
@@ -78,10 +78,8 @@ describe('TestCopilotSnapshotCardDialog', () => {
     )
     assert.ok(preview instanceof HTMLElement)
 
-    assert.ok(within(preview).getByText('@octo'))
-    assert.ok(
-      within(preview).getByText('GitHub Enterprise · enterprise.example.com')
-    )
+    assert.ok(within(preview).getByText('@octo (Octo Cat)'))
+    assert.ok(within(preview).getByText('https://enterprise.example.com'))
     assert.ok(screen.getByDisplayValue('Octo Cat'))
     assert.ok(
       screen.getByDisplayValue('https://avatars.githubusercontent.com/u/2')
@@ -100,8 +98,8 @@ describe('TestCopilotSnapshotCardDialog', () => {
       target: { value: 'https://enterprise.example.com/api/v3' },
     })
 
-    assert.ok(screen.getByText('@octo'))
-    assert.ok(screen.getByText('GitHub Enterprise · enterprise.example.com'))
+    assert.ok(screen.getByText('@octo (Mona Lisa)'))
+    assert.ok(screen.getByText('https://enterprise.example.com'))
   })
 
   it('previews token-based billing data', () => {

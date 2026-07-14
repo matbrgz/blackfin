@@ -9,7 +9,11 @@ import {
   type CopilotQuotaSnapshotsByAccount,
   type CopilotQuotaSnapshots,
 } from '../../lib/stores/copilot-store'
-import type { Account } from '../../models/account'
+import {
+  isDotComAccount,
+  isEnterpriseAccount,
+  type Account,
+} from '../../models/account'
 import { DialogContent, DialogPreferredFocusClassName } from '../dialog'
 import { CallToAction } from '../lib/call-to-action'
 import type { Model } from '@github/copilot-sdk/dist/generated/rpc'
@@ -108,19 +112,42 @@ export class CopilotPreferences extends React.Component<ICopilotPreferencesProps
   private renderAccountSnapshotCards(
     accounts: ReadonlyArray<Account>
   ): JSX.Element {
+    const dotComAccounts = accounts.filter(isDotComAccount)
+    const enterpriseAccounts = accounts.filter(isEnterpriseAccount)
+
     return (
       <div className="copilot-tab-content">
-        <div className="copilot-section">
-          <div className="copilot-account-snapshot-card-list">
-            {accounts.map(account => (
-              <SnapshotCard
-                key={getCopilotAccountCacheKey(account)}
-                account={account}
-                snapshots={this.getCopilotQuotaSnapshots(account)}
-                onConfigureModels={this.props.onConfigureModels}
-              />
-            ))}
-          </div>
+        <div className="copilot-section copilot-account-snapshot-groups">
+          {this.renderAccountSnapshotCardGroup('GitHub.com', dotComAccounts)}
+          {this.renderAccountSnapshotCardGroup(
+            'GitHub Enterprise',
+            enterpriseAccounts
+          )}
+        </div>
+      </div>
+    )
+  }
+
+  private renderAccountSnapshotCardGroup(
+    heading: string,
+    accounts: ReadonlyArray<Account>
+  ): JSX.Element | null {
+    if (accounts.length === 0) {
+      return null
+    }
+
+    return (
+      <div className="copilot-account-snapshot-card-group">
+        <h2>{heading}</h2>
+        <div className="copilot-account-snapshot-card-list">
+          {accounts.map(account => (
+            <SnapshotCard
+              key={getCopilotAccountCacheKey(account)}
+              account={account}
+              snapshots={this.getCopilotQuotaSnapshots(account)}
+              onConfigureModels={this.props.onConfigureModels}
+            />
+          ))}
         </div>
       </div>
     )
