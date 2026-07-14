@@ -12,19 +12,70 @@ import {
   GitStatusEntry,
   ManualConflict,
   ConflictedFileStatus,
+  UnmergedEntrySummary,
 } from '../../src/models/status'
 
 // ---------------------------------------------------------------------------
 // Helpers for creating conflict status objects
 // ---------------------------------------------------------------------------
 
-function makeManualConflict(
-  us: GitStatusEntry,
-  them: GitStatusEntry
-): ManualConflict {
+function makeDeletedByUs(): ManualConflict {
   return {
     kind: AppFileStatusKind.Conflicted,
-    entry: { us, them } as ManualConflict['entry'],
+    entry: {
+      kind: 'conflicted',
+      action: UnmergedEntrySummary.DeletedByUs,
+      us: GitStatusEntry.Deleted,
+      them: GitStatusEntry.UpdatedButUnmerged,
+    },
+  }
+}
+
+function makeDeletedByThem(): ManualConflict {
+  return {
+    kind: AppFileStatusKind.Conflicted,
+    entry: {
+      kind: 'conflicted',
+      action: UnmergedEntrySummary.DeletedByThem,
+      us: GitStatusEntry.UpdatedButUnmerged,
+      them: GitStatusEntry.Deleted,
+    },
+  }
+}
+
+function makeBothDeleted(): ManualConflict {
+  return {
+    kind: AppFileStatusKind.Conflicted,
+    entry: {
+      kind: 'conflicted',
+      action: UnmergedEntrySummary.BothDeleted,
+      us: GitStatusEntry.Deleted,
+      them: GitStatusEntry.Deleted,
+    },
+  }
+}
+
+function makeBothModified(): ManualConflict {
+  return {
+    kind: AppFileStatusKind.Conflicted,
+    entry: {
+      kind: 'conflicted',
+      action: UnmergedEntrySummary.BothModified,
+      us: GitStatusEntry.UpdatedButUnmerged,
+      them: GitStatusEntry.UpdatedButUnmerged,
+    },
+  }
+}
+
+function makeBothAdded(): ManualConflict {
+  return {
+    kind: AppFileStatusKind.Conflicted,
+    entry: {
+      kind: 'conflicted',
+      action: UnmergedEntrySummary.BothAdded,
+      us: GitStatusEntry.Added,
+      them: GitStatusEntry.Added,
+    },
   }
 }
 
@@ -32,6 +83,8 @@ function makeConflictWithMarkers(): ConflictedFileStatus {
   return {
     kind: AppFileStatusKind.Conflicted,
     entry: {
+      kind: 'conflicted',
+      action: UnmergedEntrySummary.BothModified,
       us: GitStatusEntry.UpdatedButUnmerged,
       them: GitStatusEntry.UpdatedButUnmerged,
     },
@@ -45,48 +98,27 @@ function makeConflictWithMarkers(): ConflictedFileStatus {
 
 describe('isDeleteConflictFile', () => {
   it('returns true when "us" is deleted and "them" is not', () => {
-    const status = makeManualConflict(
-      GitStatusEntry.Deleted,
-      GitStatusEntry.UpdatedButUnmerged
-    )
-    assert.equal(isDeleteConflictFile(status), true)
+    assert.equal(isDeleteConflictFile(makeDeletedByUs()), true)
   })
 
   it('returns true when "them" is deleted and "us" is not', () => {
-    const status = makeManualConflict(
-      GitStatusEntry.UpdatedButUnmerged,
-      GitStatusEntry.Deleted
-    )
-    assert.equal(isDeleteConflictFile(status), true)
+    assert.equal(isDeleteConflictFile(makeDeletedByThem()), true)
   })
 
   it('returns false when both sides are deleted', () => {
-    const status = makeManualConflict(
-      GitStatusEntry.Deleted,
-      GitStatusEntry.Deleted
-    )
-    assert.equal(isDeleteConflictFile(status), false)
+    assert.equal(isDeleteConflictFile(makeBothDeleted()), false)
   })
 
   it('returns false when neither side is deleted', () => {
-    const status = makeManualConflict(
-      GitStatusEntry.UpdatedButUnmerged,
-      GitStatusEntry.UpdatedButUnmerged
-    )
-    assert.equal(isDeleteConflictFile(status), false)
+    assert.equal(isDeleteConflictFile(makeBothModified()), false)
   })
 
   it('returns false for ConflictsWithMarkers (text conflicts)', () => {
-    const status = makeConflictWithMarkers()
-    assert.equal(isDeleteConflictFile(status), false)
+    assert.equal(isDeleteConflictFile(makeConflictWithMarkers()), false)
   })
 
   it('returns false for BothAdded manual conflict', () => {
-    const status = makeManualConflict(
-      GitStatusEntry.Added,
-      GitStatusEntry.Added
-    )
-    assert.equal(isDeleteConflictFile(status), false)
+    assert.equal(isDeleteConflictFile(makeBothAdded()), false)
   })
 })
 
@@ -96,27 +128,15 @@ describe('isDeleteConflictFile', () => {
 
 describe('getDeletedSide', () => {
   it('returns "ours" when us is deleted', () => {
-    const status = makeManualConflict(
-      GitStatusEntry.Deleted,
-      GitStatusEntry.UpdatedButUnmerged
-    )
-    assert.equal(getDeletedSide(status), 'ours')
+    assert.equal(getDeletedSide(makeDeletedByUs()), 'ours')
   })
 
   it('returns "theirs" when them is deleted', () => {
-    const status = makeManualConflict(
-      GitStatusEntry.UpdatedButUnmerged,
-      GitStatusEntry.Deleted
-    )
-    assert.equal(getDeletedSide(status), 'theirs')
+    assert.equal(getDeletedSide(makeDeletedByThem()), 'theirs')
   })
 
   it('returns undefined when neither side is deleted', () => {
-    const status = makeManualConflict(
-      GitStatusEntry.UpdatedButUnmerged,
-      GitStatusEntry.UpdatedButUnmerged
-    )
-    assert.equal(getDeletedSide(status), undefined)
+    assert.equal(getDeletedSide(makeBothModified()), undefined)
   })
 })
 
@@ -126,12 +146,8 @@ describe('getDeletedSide', () => {
 
 describe('getDeleteConflictLabels', () => {
   it('labels correctly when ours deleted the file', () => {
-    const status = makeManualConflict(
-      GitStatusEntry.Deleted,
-      GitStatusEntry.UpdatedButUnmerged
-    )
     const { oursLabel, theirsLabel } = getDeleteConflictLabels(
-      status,
+      makeDeletedByUs(),
       'main',
       'feature'
     )
@@ -140,12 +156,8 @@ describe('getDeleteConflictLabels', () => {
   })
 
   it('labels correctly when theirs deleted the file', () => {
-    const status = makeManualConflict(
-      GitStatusEntry.UpdatedButUnmerged,
-      GitStatusEntry.Deleted
-    )
     const { oursLabel, theirsLabel } = getDeleteConflictLabels(
-      status,
+      makeDeletedByThem(),
       'main',
       'feature'
     )
@@ -154,11 +166,9 @@ describe('getDeleteConflictLabels', () => {
   })
 
   it('omits branch names when not provided', () => {
-    const status = makeManualConflict(
-      GitStatusEntry.Deleted,
-      GitStatusEntry.UpdatedButUnmerged
+    const { oursLabel, theirsLabel } = getDeleteConflictLabels(
+      makeDeletedByUs()
     )
-    const { oursLabel, theirsLabel } = getDeleteConflictLabels(status)
     assert.equal(oursLabel, 'Delete file')
     assert.equal(theirsLabel, 'Keep file')
   })
@@ -170,42 +180,37 @@ describe('getDeleteConflictLabels', () => {
 
 describe('getDeleteConflictChoiceLabel', () => {
   it('returns "Copilot" for the copilot choice', () => {
-    const status = makeManualConflict(
-      GitStatusEntry.Deleted,
-      GitStatusEntry.UpdatedButUnmerged
+    assert.equal(
+      getDeleteConflictChoiceLabel('copilot', makeDeletedByUs()),
+      'Copilot'
     )
-    assert.equal(getDeleteConflictChoiceLabel('copilot', status), 'Copilot')
   })
 
   it('returns "Delete file" for ours when ours deleted', () => {
-    const status = makeManualConflict(
-      GitStatusEntry.Deleted,
-      GitStatusEntry.UpdatedButUnmerged
+    assert.equal(
+      getDeleteConflictChoiceLabel('ours', makeDeletedByUs()),
+      'Delete file'
     )
-    assert.equal(getDeleteConflictChoiceLabel('ours', status), 'Delete file')
   })
 
   it('returns "Keep file" for theirs when ours deleted', () => {
-    const status = makeManualConflict(
-      GitStatusEntry.Deleted,
-      GitStatusEntry.UpdatedButUnmerged
+    assert.equal(
+      getDeleteConflictChoiceLabel('theirs', makeDeletedByUs()),
+      'Keep file'
     )
-    assert.equal(getDeleteConflictChoiceLabel('theirs', status), 'Keep file')
   })
 
   it('returns "Keep file" for ours when theirs deleted', () => {
-    const status = makeManualConflict(
-      GitStatusEntry.UpdatedButUnmerged,
-      GitStatusEntry.Deleted
+    assert.equal(
+      getDeleteConflictChoiceLabel('ours', makeDeletedByThem()),
+      'Keep file'
     )
-    assert.equal(getDeleteConflictChoiceLabel('ours', status), 'Keep file')
   })
 
   it('returns "Delete file" for theirs when theirs deleted', () => {
-    const status = makeManualConflict(
-      GitStatusEntry.UpdatedButUnmerged,
-      GitStatusEntry.Deleted
+    assert.equal(
+      getDeleteConflictChoiceLabel('theirs', makeDeletedByThem()),
+      'Delete file'
     )
-    assert.equal(getDeleteConflictChoiceLabel('theirs', status), 'Delete file')
   })
 })
