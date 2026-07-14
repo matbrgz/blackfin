@@ -26,8 +26,10 @@ import {
 //  - `AUTH` matches anywhere *except* when it begins `AUTHOR`, via `AUTH(?!OR)`.
 //    That one carve-out is what flags `AUTHKEY`, `OAUTH` and `AUTH0` (which are
 //    credentials) while sparing `GIT_AUTHOR_NAME` / `CO_AUTHOR` — the git author
-//    vars, important not to over-flag in a git tool. `AUTHORIZATION`/
-//    `AUTHENTICATION` stay listed explicitly since `AUTH(?!OR)` skips them.
+//    vars, important not to over-flag in a git tool. `AUTHORIZATION` stays
+//    listed explicitly because `AUTH(?!OR)` skips it (the letters after `AUTH`
+//    are `OR`); `AUTHENTICATION` is listed for clarity though `AUTH(?!OR)`
+//    already matches it (the letters after `AUTH` are `EN`, not `OR`).
 //  - Short/ambiguous words (`KEY`, `DSN`, `PAT`) match only on a `_` or ends
 //    boundary, so `MONKEY`, `KEYBOARD` and `PATH` do not trip them.
 const SENSITIVE_WORD =
