@@ -1,0 +1,440 @@
+import { createHash } from 'crypto'
+import { DiffLine, DiffLineType } from '../../models/diff/diff-line'
+import { DiffType, IDiff, ITextDiff } from '../../models/diff/diff-data'
+
+// Stable line addressing for the diff (#67).
+//
+// Anything Blackfin wants to pin to a *line* of a diff — a review annotation, a
+// band of agent authorship — needs an address that survives the diff being
+// recomputed. The app's only line address today is `diffLineNumber`
+// (`hunk.unifiedDiffStart + num`), which is a *render* index: it slides the
+// moment a hunk is expanded, and an annotation that silently slides onto the
+// wrong line is a review tool lying about where the problem is.
+//
+// This module stores what a line *is* — its content and its neighbourhood —
+// not where it was drawn. It is pure: no fs, no git, no React, and it never
+// throws. A non-text diff, an absent side, an out-of-range line number are all
+// *results* (`null` or an `orphaned` resolution), never exceptions.
+
+/** Which side of the diff an anchor addresses. */
+export type DiffAnchorSide = 'old' | 'new'
+
+/** Anchor format version. A bump forces revalidation; it never migrates silently. */
+export const DiffAnchorVersion = 1
+
+/** Hard cap on the stored preview, so a 3 MB minified line is not a 3 MB row. */
+export const MaxContentPreviewLength = 200
+
+/** How many neighbouring lines, each side, form the context window. */
+export const ContextRadius = 3
+
+/** Tier 2 searches this far around the recorded line before scanning the file. */
+export const NearbySearchRadius = 64
+
+/**
+ * A stable address for a line of code, across re-diffs and hunk expansions.
+ *
+ * It NEVER contains `diffLineNumber` or anything derived from
+ * `unifiedDiffStart` — those are render indices, not identity.
+ */
+export interface IDiffAnchor {
+  readonly anchorVersion: number
+  /** Repository-relative path, `/` separator. */
+  readonly path: string
+  readonly side: DiffAnchorSide
+  /** Line number in the OLD file, or null if the line exists only in the new. */
+  readonly oldLineNumber: number | null
+  /** Line number in the NEW file, or null if the line exists only in the old. */
+  readonly newLineNumber: number | null
+  /** sha256 of the normalized line content, 16 hex. */
+  readonly contentHash: string
+  /** sha256 of the context window on the anchored side, 16 hex. */
+  readonly contextHash: string
+  /** The radius actually used, stored so resolution rebuilds the same window. */
+  readonly contextRadius: number
+  /** The line's text, truncated. Without it an orphan cannot be rendered. */
+  readonly contentPreview: string
+}
+
+export type DiffAnchorOrphanReason =
+  | 'content-gone'
+  | 'file-absent'
+  | 'side-absent'
+  | 'ambiguous'
+  | 'unsupported-diff'
+
+/**
+ * The result of resolving an anchor against a current diff. `orphaned` is a
+ * member of the union, not an error: every consumer must handle it, because an
+ * orphan is a truth and a displaced annotation is a lie.
+ */
+export type DiffAnchorResolution =
+  | { readonly kind: 'exact'; readonly lineNumber: number }
+  | {
+      readonly kind: 'moved'
+      readonly lineNumber: number
+      readonly previousLineNumber: number
+      readonly ambiguous: boolean
+    }
+  | {
+      readonly kind: 'shifted'
+      readonly lineNumber: number
+      readonly confidence: 'low'
+    }
+  | { readonly kind: 'orphaned'; readonly reason: DiffAnchorOrphanReason }
+
+/** What the caller knows about the file the diff currently represents. */
+export interface IResolveOptions {
+  /** The path the given diff is for. */
+  readonly path: string
+  /** If the file was renamed, its previous path — so an anchor on the old name still resolves. */
+  readonly renamedFrom?: string
+}
+
+// A sentinel for window positions past the start or end of the side. It keeps
+// every window exactly `2 * radius` entries long so the hash is reproducible,
+// and NUL never occurs in a real source line.
+const OutOfBounds = '\u0000@'
+
+/**
+ * Normalize a line for hashing: strip a single trailing `\r`, and nothing else.
+ * No trim (indentation is semantic), no case folding, no whitespace collapsing
+ * (that would collide genuinely different lines).
+ */
+export function normalizeLine(content: string): string {
+  return content.endsWith('\r') ? content.slice(0, -1) : content
+}
+
+function hashLines(lines: ReadonlyArray<string>): string {
+  return createHash('sha256')
+    .update(lines.join('\n'))
+    .digest('hex')
+    .slice(0, 16)
+}
+
+/** sha256 of one normalized line, 16 hex. */
+export function computeContentHash(content: string): string {
+  return hashLines([normalizeLine(content)])
+}
+
+/** sha256 of an already-collected context window, 16 hex. */
+export function computeContextHash(window: ReadonlyArray<string>): string {
+  return hashLines(window)
+}
+
+/** One line as it exists on the anchored side, with both file line numbers. */
+interface ISideLine {
+  /** The anchored side's line number — what indexing and search key on. */
+  readonly lineNumber: number
+  readonly oldLineNumber: number | null
+  readonly newLineNumber: number | null
+  /** Normalized content. */
+  readonly content: string
+}
+
+function lineBelongsToSide(line: DiffLine, side: DiffAnchorSide): boolean {
+  if (side === 'new') {
+    return line.type === DiffLineType.Context || line.type === DiffLineType.Add
+  }
+  return line.type === DiffLineType.Context || line.type === DiffLineType.Delete
+}
+
+/**
+ * The lines present on one side of the diff, in ascending line-number order.
+ *
+ * This is the reconstruction of the *file* on that side, as far as the diff
+ * reveals it. The context window is built over this — not over the raw unified
+ * `DiffLine` sequence — which is what makes a line's context hash the same
+ * before and after a hunk expansion that does not touch its neighbours.
+ */
+function sideLinesOf(
+  diff: ITextDiff,
+  side: DiffAnchorSide
+): ReadonlyArray<ISideLine> {
+  const out: Array<ISideLine> = []
+  for (const hunk of diff.hunks) {
+    for (const line of hunk.lines) {
+      if (line.type === DiffLineType.Hunk || !lineBelongsToSide(line, side)) {
+        continue
+      }
+      const lineNumber =
+        side === 'new' ? line.newLineNumber : line.oldLineNumber
+      if (lineNumber === null) {
+        continue
+      }
+      out.push({
+        lineNumber,
+        oldLineNumber: line.oldLineNumber,
+        newLineNumber: line.newLineNumber,
+        content: normalizeLine(line.content),
+      })
+    }
+  }
+  return out
+}
+
+/** The `2 * radius` normalized neighbours around index `i`, padded at the edges. */
+function contextWindowAt(
+  sideLines: ReadonlyArray<ISideLine>,
+  i: number,
+  radius: number
+): ReadonlyArray<string> {
+  const window: Array<string> = []
+  for (let k = i - radius; k < i; k++) {
+    window.push(
+      k >= 0 && k < sideLines.length ? sideLines[k].content : OutOfBounds
+    )
+  }
+  for (let k = i + 1; k <= i + radius; k++) {
+    window.push(
+      k >= 0 && k < sideLines.length ? sideLines[k].content : OutOfBounds
+    )
+  }
+  return window
+}
+
+function truncatePreview(content: string): string {
+  const normalized = normalizeLine(content)
+  return normalized.length > MaxContentPreviewLength
+    ? normalized.slice(0, MaxContentPreviewLength)
+    : normalized
+}
+
+/**
+ * Capture an anchor for a real *file* line number (not a `diffLineNumber`) on
+ * one side of a diff. Returns `null` — never throws — for a non-text diff or a
+ * line number that does not exist on that side.
+ */
+export function createDiffAnchor(
+  diff: IDiff,
+  path: string,
+  side: DiffAnchorSide,
+  lineNumber: number
+): IDiffAnchor | null {
+  if (diff.kind !== DiffType.Text) {
+    return null
+  }
+
+  const sideLines = sideLinesOf(diff, side)
+  const i = sideLines.findIndex(l => l.lineNumber === lineNumber)
+  if (i === -1) {
+    return null
+  }
+
+  const line = sideLines[i]
+
+  return {
+    anchorVersion: DiffAnchorVersion,
+    path,
+    side,
+    oldLineNumber: line.oldLineNumber,
+    newLineNumber: line.newLineNumber,
+    contentHash: computeContentHash(line.content),
+    contextHash: computeContextHash(
+      contextWindowAt(sideLines, i, ContextRadius)
+    ),
+    contextRadius: ContextRadius,
+    contentPreview: truncatePreview(line.content),
+  }
+}
+
+/** The anchored side's recorded line number. */
+function recordedLineNumber(anchor: IDiffAnchor): number | null {
+  return anchor.side === 'new' ? anchor.newLineNumber : anchor.oldLineNumber
+}
+
+function anchorMatchesPath(
+  anchor: IDiffAnchor,
+  options: IResolveOptions
+): boolean {
+  return (
+    anchor.path === options.path ||
+    (options.renamedFrom !== undefined && anchor.path === options.renamedFrom)
+  )
+}
+
+/**
+ * The four-tier resolution, run in order: exact, moved (content+context),
+ * shifted (content only), and orphaned. It is pure and recomputed against every
+ * diff — never persisted. Re-anchoring is an explicit act of the owning store.
+ */
+export function resolveDiffAnchor(
+  anchor: IDiffAnchor,
+  diff: IDiff,
+  options: IResolveOptions
+): DiffAnchorResolution {
+  if (diff.kind !== DiffType.Text) {
+    return { kind: 'orphaned', reason: 'unsupported-diff' }
+  }
+  if (!anchorMatchesPath(anchor, options)) {
+    return { kind: 'orphaned', reason: 'file-absent' }
+  }
+  return resolveAgainstSide(anchor, sideLinesOf(diff, anchor.side))
+}
+
+/**
+ * Resolve N anchors against one diff. Builds each side's reconstruction once,
+ * then resolves each anchor against it — the same result as N individual calls.
+ */
+export function resolveDiffAnchors(
+  anchors: ReadonlyArray<IDiffAnchor>,
+  diff: IDiff,
+  options: IResolveOptions
+): ReadonlyArray<DiffAnchorResolution> {
+  if (diff.kind !== DiffType.Text) {
+    return anchors.map(() => ({ kind: 'orphaned', reason: 'unsupported-diff' }))
+  }
+
+  // One reconstruction per side, shared across every anchor on that side.
+  const sidesUsed = new Map<DiffAnchorSide, ReadonlyArray<ISideLine>>()
+  const sideLinesFor = (side: DiffAnchorSide) => {
+    const existing = sidesUsed.get(side)
+    if (existing !== undefined) {
+      return existing
+    }
+    const built = sideLinesOf(diff, side)
+    sidesUsed.set(side, built)
+    return built
+  }
+
+  return anchors.map(anchor => {
+    if (!anchorMatchesPath(anchor, options)) {
+      return { kind: 'orphaned', reason: 'file-absent' }
+    }
+    return resolveAgainstSide(anchor, sideLinesFor(anchor.side))
+  })
+}
+
+function resolveAgainstSide(
+  anchor: IDiffAnchor,
+  sideLines: ReadonlyArray<ISideLine>
+): DiffAnchorResolution {
+  if (sideLines.length === 0) {
+    // The anchored side is gone entirely — e.g. an `old`-side anchor on a file
+    // that is now a pure addition.
+    return { kind: 'orphaned', reason: 'side-absent' }
+  }
+
+  const recorded = recordedLineNumber(anchor)
+  const radius = anchor.contextRadius
+
+  // Content hashes are cheap; compute them all once. Context hashes are only
+  // needed for the lines whose content already matches, so compute them lazily.
+  const contentMatches: Array<number> = []
+  for (let i = 0; i < sideLines.length; i++) {
+    if (computeContentHash(sideLines[i].content) === anchor.contentHash) {
+      contentMatches.push(i)
+    }
+  }
+
+  const contextHashAt = (i: number) =>
+    computeContextHash(contextWindowAt(sideLines, i, radius))
+
+  // Tier 1 — exact. The recorded line still exists and both hashes match.
+  if (recorded !== null) {
+    const atRecorded = contentMatches.find(
+      i => sideLines[i].lineNumber === recorded
+    )
+    if (
+      atRecorded !== undefined &&
+      contextHashAt(atRecorded) === anchor.contextHash
+    ) {
+      return { kind: 'exact', lineNumber: recorded }
+    }
+  }
+
+  // Tier 2 — moved. Content AND context match, but not at the recorded spot.
+  const contextMatches = contentMatches.filter(
+    i => contextHashAt(i) === anchor.contextHash
+  )
+  if (contextMatches.length > 0 && recorded !== null) {
+    const nearby = contextMatches.filter(
+      i => Math.abs(sideLines[i].lineNumber - recorded) <= NearbySearchRadius
+    )
+    const pool = nearby.length > 0 ? nearby : contextMatches
+
+    if (pool.length === 1) {
+      return {
+        kind: 'moved',
+        lineNumber: sideLines[pool[0]].lineNumber,
+        previousLineNumber: recorded,
+        ambiguous: false,
+      }
+    }
+    const nearest = closestTo(pool, sideLines, recorded)
+    return {
+      kind: 'moved',
+      lineNumber: sideLines[nearest].lineNumber,
+      previousLineNumber: recorded,
+      ambiguous: true,
+    }
+  }
+
+  // Tier 3 — shifted. Only the content matches; the context changed. Accept
+  // only a single candidate, or one sitting exactly at the recorded number.
+  if (contentMatches.length === 0) {
+    return { kind: 'orphaned', reason: 'content-gone' }
+  }
+  const atRecorded =
+    recorded === null
+      ? undefined
+      : contentMatches.find(i => sideLines[i].lineNumber === recorded)
+  if (contentMatches.length === 1 || atRecorded !== undefined) {
+    const chosen = atRecorded ?? contentMatches[0]
+    return {
+      kind: 'shifted',
+      lineNumber: sideLines[chosen].lineNumber,
+      confidence: 'low',
+    }
+  }
+
+  // Tier 4 — orphaned. Content matches in several places and none at the
+  // recorded spot: the lone `}` that matches forty lines. Guessing here is the
+  // exact bug this module exists to prevent.
+  return { kind: 'orphaned', reason: 'ambiguous' }
+}
+
+function closestTo(
+  indices: ReadonlyArray<number>,
+  sideLines: ReadonlyArray<ISideLine>,
+  target: number
+): number {
+  let best = indices[0]
+  let bestDistance = Math.abs(sideLines[best].lineNumber - target)
+  for (const i of indices) {
+    const distance = Math.abs(sideLines[i].lineNumber - target)
+    if (distance < bestDistance) {
+      best = i
+      bestDistance = distance
+    }
+  }
+  return best
+}
+
+/**
+ * The `diffLineNumber` of a resolution in *this* render, for the diff view to
+ * place its widget. Derived, ephemeral, never persisted: it changes after a
+ * hunk expansion, which is exactly why it cannot be the anchor.
+ */
+export function anchorResolutionToDiffLineNumber(
+  resolution: DiffAnchorResolution,
+  diff: IDiff,
+  side: DiffAnchorSide
+): number | null {
+  if (resolution.kind === 'orphaned' || diff.kind !== DiffType.Text) {
+    return null
+  }
+
+  const target = resolution.lineNumber
+  for (const hunk of diff.hunks) {
+    for (let i = 0; i < hunk.lines.length; i++) {
+      const line = hunk.lines[i]
+      const lineNumber =
+        side === 'new' ? line.newLineNumber : line.oldLineNumber
+      if (lineNumber === target && lineBelongsToSide(line, side)) {
+        return hunk.unifiedDiffStart + i
+      }
+    }
+  }
+  return null
+}
