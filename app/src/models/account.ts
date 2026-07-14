@@ -1,5 +1,6 @@
 import {
   getBitbucketAPIEndpoint,
+  getCodebergAPIEndpoint,
   getDotComAPIEndpoint,
   getGitLabAPIEndpoint,
   getHTMLURL,
@@ -17,7 +18,12 @@ export function accountEquals(x: Account, y: Account) {
   return x.endpoint === y.endpoint && x.id === y.id && x.login === y.login
 }
 
-export type AccountAPIType = 'dotcom' | 'enterprise' | 'bitbucket' | 'gitlab'
+export type AccountAPIType =
+  | 'dotcom'
+  | 'enterprise'
+  | 'bitbucket'
+  | 'gitlab'
+  | 'codeberg'
 
 export enum UnknownLogin {
   InitialAuthFetch,
@@ -159,6 +165,8 @@ export class Account {
       return 'bitbucket'
     } else if (this.endpoint === getGitLabAPIEndpoint()) {
       return 'gitlab'
+    } else if (this.endpoint === getCodebergAPIEndpoint()) {
+      return 'codeberg'
     } else {
       return 'enterprise'
     }

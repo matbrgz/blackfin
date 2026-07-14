@@ -3,7 +3,7 @@ import { Owner } from './owner'
 
 export type GitHubRepositoryPermission = 'read' | 'write' | 'admin' | null
 
-export type RepoType = 'github' | 'bitbucket' | 'gitlab'
+export type RepoType = 'github' | 'bitbucket' | 'gitlab' | 'codeberg'
 
 /** A GitHub repository. */
 export class GitHubRepository {
@@ -100,6 +100,8 @@ export function deduceRepositoryType(url: string): RepoType {
       return 'bitbucket'
     } else if (host === 'gitlab.com') {
       return 'gitlab'
+    } else if (host === 'codeberg.org') {
+      return 'codeberg'
     }
     return 'github'
   } catch (e) {

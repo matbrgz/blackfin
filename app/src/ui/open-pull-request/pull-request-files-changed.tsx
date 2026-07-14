@@ -151,6 +151,8 @@ export class PullRequestFilesChanged extends React.Component<
         return 'View on Bitbucket'
       case 'gitlab':
         return 'View on GitLab'
+      case 'codeberg':
+        return 'View on Codeberg'
       default:
         assertNever(
           gitHubRepository.type,

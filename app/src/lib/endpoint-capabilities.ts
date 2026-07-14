@@ -1,6 +1,7 @@
 import * as semver from 'semver'
 import {
   getBitbucketAPIEndpoint,
+  getCodebergAPIEndpoint,
   getDotComAPIEndpoint,
   getGitLabAPIEndpoint,
 } from './api'
@@ -70,6 +71,10 @@ export const isGitLab = (ep: string) => {
   return ep === getGitLabAPIEndpoint()
 }
 
+export const isCodeberg = (ep: string) => {
+  return ep === getCodebergAPIEndpoint()
+}
+
 /** Whether or not the given endpoint URI is under the ghe.com domain */
 export const isGHE = (ep: string) => new URL(ep).hostname.endsWith('.ghe.com')
 
@@ -78,7 +83,11 @@ export const isGHE = (ep: string) => new URL(ep).hostname.endsWith('.ghe.com')
  * Server instance
  */
 export const isGHES = (ep: string) =>
-  !isDotCom(ep) && !isGHE(ep) && !isBitbucket(ep) && !isGitLab(ep)
+  !isDotCom(ep) &&
+  !isGHE(ep) &&
+  !isBitbucket(ep) &&
+  !isGitLab(ep) &&
+  !isCodeberg(ep)
 
 export function getEndpointVersion(endpoint: string) {
   const key = endpointVersionKey(endpoint)

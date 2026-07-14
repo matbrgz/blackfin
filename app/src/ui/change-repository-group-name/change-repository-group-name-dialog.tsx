@@ -91,6 +91,8 @@ export class ChangeRepositoryGroupName extends React.Component<
         return ' on Bitbucket'
       case 'gitlab':
         return ' on GitLab'
+      case 'codeberg':
+        return ' on Codeberg'
       default:
         assertNever(type, `Unknown repository type: ${type}`)
     }

@@ -17,6 +17,7 @@ interface IAccountsProps {
   readonly onEnterpriseSignIn: () => void
   readonly onBitbucketSignIn: () => void
   readonly onGitLabSignIn: () => void
+  readonly onCodebergSignIn: () => void
   readonly onLogout: (account: Account) => void
 }
 
@@ -25,6 +26,7 @@ enum SignInType {
   Enterprise,
   Bitbucket,
   GitLab,
+  Codeberg,
 }
 
 export class Accounts extends React.Component<IAccountsProps, {}> {
@@ -42,6 +44,9 @@ export class Accounts extends React.Component<IAccountsProps, {}> {
 
         <h2>GitLab</h2>
         {this.renderMultipleGitLabAccounts()}
+
+        <h2>Codeberg</h2>
+        {this.renderMultipleCodebergAccounts()}
       </DialogContent>
     )
   }
@@ -89,6 +94,18 @@ export class Accounts extends React.Component<IAccountsProps, {}> {
       SignInType.GitLab,
       'Add GitLab account',
       this.props.onGitLabSignIn
+    )
+  }
+
+  private renderMultipleCodebergAccounts() {
+    const codebergAccounts = this.props.accounts.filter(
+      a => a.apiType === 'codeberg'
+    )
+    return this.renderMultipleAccounts(
+      codebergAccounts,
+      SignInType.Codeberg,
+      'Add Codeberg account',
+      this.props.onCodebergSignIn
     )
   }
 
@@ -173,6 +190,10 @@ export class Accounts extends React.Component<IAccountsProps, {}> {
     this.props.onGitLabSignIn()
   }
 
+  private onCodebergSignIn = () => {
+    this.props.onCodebergSignIn()
+  }
+
   private renderSignIn(type: SignInType) {
     const signInTitle = __DARWIN__ ? 'Sign Into' : 'Sign into'
     switch (type) {
@@ -222,6 +243,17 @@ export class Accounts extends React.Component<IAccountsProps, {}> {
           >
             <div>
               Sign in to your GitLab account to access your repositories.
+            </div>
+          </CallToAction>
+        )
+      case SignInType.Codeberg:
+        return (
+          <CallToAction
+            actionTitle={signInTitle + ' Codeberg'}
+            onAction={this.onCodebergSignIn}
+          >
+            <div>
+              Sign in to your Codeberg account to access your repositories.
             </div>
           </CallToAction>
         )
