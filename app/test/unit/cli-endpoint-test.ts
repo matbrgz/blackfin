@@ -1,5 +1,6 @@
 import { describe, it } from 'node:test'
 import assert from 'node:assert'
+import * as Path from 'path'
 import {
   EndpointEnvVar,
   cliDirectory,
@@ -17,7 +18,7 @@ const USER_DATA = '/home/x/.config/Blackfin'
 describe('resolveEndpointPath', () => {
   it('defaults to endpoint.json under the cli directory', () => {
     const p = resolveEndpointPath(USER_DATA, {})
-    assert.strictEqual(p, `${cliDirectory(USER_DATA)}/endpoint.json`)
+    assert.strictEqual(p, Path.join(cliDirectory(USER_DATA), 'endpoint.json'))
   })
 
   it('honors BLACKFIN_ENDPOINT when set', () => {
@@ -29,7 +30,7 @@ describe('resolveEndpointPath', () => {
 
   it('ignores an empty BLACKFIN_ENDPOINT', () => {
     const p = resolveEndpointPath(USER_DATA, { [EndpointEnvVar]: '' })
-    assert.strictEqual(p, `${cliDirectory(USER_DATA)}/endpoint.json`)
+    assert.strictEqual(p, Path.join(cliDirectory(USER_DATA), 'endpoint.json'))
   })
 })
 
@@ -43,7 +44,7 @@ describe('transport and socket path', () => {
   it('puts the unix socket under the cli directory', () => {
     assert.strictEqual(
       resolveSocketPath('linux', USER_DATA),
-      `${cliDirectory(USER_DATA)}/agent.sock`
+      Path.join(cliDirectory(USER_DATA), 'agent.sock')
     )
   })
 
@@ -81,7 +82,10 @@ describe('buildEndpoint', () => {
     })
     assert.strictEqual(endpoint.protocol, CLIProtocolVersion)
     assert.strictEqual(endpoint.transport, 'unix')
-    assert.strictEqual(endpoint.path, `${cliDirectory(USER_DATA)}/agent.sock`)
+    assert.strictEqual(
+      endpoint.path,
+      Path.join(cliDirectory(USER_DATA), 'agent.sock')
+    )
     // The validator the CLI uses must accept what the app writes.
     assert.deepStrictEqual(
       parseEndpoint(JSON.parse(JSON.stringify(endpoint))),
