@@ -154,47 +154,23 @@ export class CopilotConflictsDialog extends React.Component<
     const { ourBranch, theirBranch } = this.props.conflictState
     const fileStatus = this.getConflictedFileStatus(path)
 
-    // Delete-vs-modify conflicts get "Keep file" / "Delete file" labels
-    // instead of "Current" / "Incoming", and still include Copilot's
-    // suggestion as an option.
+    let oursLabel: string
+    let theirsLabel: string
+
     if (fileStatus !== undefined && isDeleteConflictFile(fileStatus)) {
-      const { oursLabel, theirsLabel } = getDeleteConflictLabels(
-        fileStatus,
-        ourBranch,
-        theirBranch
-      )
-
-      const items: ReadonlyArray<IMenuItem> = [
-        {
-          label: "Use Copilot's suggestion",
-          type: 'checkbox',
-          checked: currentChoice === 'copilot',
-          action: () => this.setResolution(path, 'copilot'),
-        },
-        {
-          label: oursLabel,
-          type: 'checkbox',
-          checked: currentChoice === 'ours',
-          action: () => this.setResolution(path, 'ours'),
-        },
-        {
-          label: theirsLabel,
-          type: 'checkbox',
-          checked: currentChoice === 'theirs',
-          action: () => this.setResolution(path, 'theirs'),
-        },
-      ]
-
-      showContextualMenu(items)
-      return
+      // Delete-vs-modify: "Keep file" / "Delete file" labels
+      const labels = getDeleteConflictLabels(fileStatus, ourBranch, theirBranch)
+      oursLabel = labels.oursLabel
+      theirsLabel = labels.theirsLabel
+    } else {
+      // Text conflict: "Use current/incoming file" labels
+      oursLabel = ourBranch
+        ? `Use current file from ${ourBranch}`
+        : 'Use current file'
+      theirsLabel = theirBranch
+        ? `Use incoming file from ${theirBranch}`
+        : 'Use incoming file'
     }
-
-    const oursLabel = ourBranch
-      ? `Use current file from ${ourBranch}`
-      : 'Use current file'
-    const theirsLabel = theirBranch
-      ? `Use incoming file from ${theirBranch}`
-      : 'Use incoming file'
 
     const items: ReadonlyArray<IMenuItem> = [
       {
