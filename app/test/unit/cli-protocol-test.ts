@@ -48,6 +48,29 @@ describe('CLI protocol framing', () => {
     assert.deepStrictEqual(decoded, res)
   })
 
+  it('round-trips a no-data success without turning it into an error', () => {
+    // A command that succeeds with no payload: `okResponse` normalizes the
+    // absent `data` to `null` so the key survives JSON serialization and the
+    // CLI-side shape check still recognizes the envelope as `ok: true`.
+    const res = okResponse('id-2', undefined)
+    assert.strictEqual(res.ok, true)
+    assert.strictEqual(res.ok === true ? res.data : 'x', null)
+    const decoded = decodeResponse(encodeLine(res), 'id-2')
+    assert.strictEqual(decoded.ok, true)
+    assert.deepStrictEqual(decoded, res)
+  })
+
+  it('accepts an ok envelope that arrives with no data key at all', () => {
+    // A peer that omits `data` on the wire (an older or hand-built producer)
+    // must still be read as a success, not rewritten into an internal error.
+    const line =
+      JSON.stringify({ protocol: CLIProtocolVersion, id: 'id-3', ok: true }) +
+      '\n'
+    const decoded = decodeResponse(line, 'id-3')
+    assert.strictEqual(decoded.ok, true)
+    assert.strictEqual(decoded.id, 'id-3')
+  })
+
   it('turns a malformed response line into an internal error, never a throw', () => {
     const decoded = decodeResponse('{not json', 'id-9')
     assert.strictEqual(decoded.ok, false)

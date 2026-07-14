@@ -120,15 +120,20 @@ export function errorResponse(
   return { protocol: CLIProtocolVersion, id, ok: false, error }
 }
 
-/** Build an `ok: true` response. */
+/**
+ * Build an `ok: true` response. `undefined` payloads are normalized to `null`
+ * so `data` is always present on the wire (JSON would otherwise drop the key),
+ * keeping the required `data` field of the envelope honest end to end.
+ */
 export function okResponse(
   id: string,
   data: unknown,
   warnings?: ReadonlyArray<string>
 ): ICLIResponse {
+  const payload = data === undefined ? null : data
   return warnings === undefined || warnings.length === 0
-    ? { protocol: CLIProtocolVersion, id, ok: true, data }
-    : { protocol: CLIProtocolVersion, id, ok: true, data, warnings }
+    ? { protocol: CLIProtocolVersion, id, ok: true, data: payload }
+    : { protocol: CLIProtocolVersion, id, ok: true, data: payload, warnings }
 }
 
 /** One NDJSON line: the JSON plus the terminating newline the framing needs. */
@@ -182,7 +187,11 @@ function isResponseShape(value: unknown): value is ICLIResponse {
     const err = v.error as Record<string, unknown>
     return typeof err.code === 'string' && typeof err.message === 'string'
   }
-  return 'data' in v
+  // An `ok: true` envelope is valid regardless of whether `data` is present:
+  // `data` is `unknown`, and a command that produces no payload serializes to a
+  // line with no `data` key at all (JSON drops `undefined`). Requiring the key
+  // here would rewrite a legitimate no-data success into an `internal` error.
+  return true
 }
 
 /**
