@@ -4,6 +4,7 @@ import type { WorktreeEntry, WorktreeType } from '../../models/worktree'
 import { git } from './core'
 import { directoryExists } from '../directory-exists'
 import { readFile } from 'fs/promises'
+import { MainWorktreeName } from '../../models/worktree-metadata'
 
 export function parseWorktreePorcelainOutput(
   stdout: string
@@ -96,7 +97,61 @@ export async function listWorktreesFromGitDirFallback(
   }
 }
 
-async function resolveCommonGitDir(gitDir: string): Promise<string> {
+/**
+ * The stable identity of a worktree: its common git dir and administrative name
+ * (`'(main)'` for the main worktree). Returns `null` for a *linked* worktree
+ * whose `.git` file can't be read — the caller then falls back to matching by
+ * path so a transient read failure doesn't orphan a live worktree. Never throws.
+ *
+ * The git dir is resolved the same way for both kinds: `.git` is read as a file
+ * first (`gitdir: …`), which covers a linked worktree and a main worktree opened
+ * with `--separate-git-dir`; if that read fails, `.git` is the conventional
+ * directory and the main worktree uses it directly. `resolveCommonGitDir` then
+ * walks a linked git dir up to the shared common dir, so main and linked always
+ * resolve to the *same* `commonGitDir` and stay one family. The admin name is
+ * the basename of the git dir, surviving `git worktree move` and branch renames.
+ */
+export async function resolveWorktreeIdentity(
+  entry: WorktreeEntry
+): Promise<{ commonGitDir: string; worktreeName: string } | null> {
+  const dotGit = Path.join(entry.path, '.git')
+  let gitDir: string | undefined
+
+  try {
+    const content = await readFile(dotGit, 'utf8')
+    const match = /^gitdir:\s*(.+)$/m.exec(content)
+    if (match !== null) {
+      gitDir = Path.normalize(match[1].trim())
+    }
+  } catch {
+    // `.git` is likely a directory (the conventional layout) — handled below.
+  }
+
+  if (gitDir === undefined) {
+    if (entry.type !== 'main') {
+      // A linked worktree whose `.git` file we couldn't read: identity unknown.
+      return null
+    }
+    // Conventional main worktree: `.git` is the common dir itself.
+    gitDir = Path.normalize(dotGit)
+  }
+
+  // A main worktree's git dir *is* the common dir; only a linked worktree's git
+  // dir needs walking up. Routing main through `resolveCommonGitDir` would
+  // misfire when the checkout folder is itself named `worktrees` (its
+  // `basename(dirname(<path>/.git))` is `worktrees`, tripping that function's
+  // heuristic and returning the grandparent), splitting the main worktree off
+  // into its own family.
+  const commonGitDir =
+    entry.type === 'main'
+      ? gitDir
+      : Path.normalize(await resolveCommonGitDir(gitDir))
+  const worktreeName =
+    entry.type === 'main' ? MainWorktreeName : Path.basename(gitDir)
+  return { commonGitDir, worktreeName }
+}
+
+export async function resolveCommonGitDir(gitDir: string): Promise<string> {
   if (Path.basename(Path.dirname(gitDir)) !== 'worktrees') {
     return gitDir
   }
