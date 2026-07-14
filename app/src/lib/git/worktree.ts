@@ -136,7 +136,16 @@ export async function resolveWorktreeIdentity(
     gitDir = Path.normalize(dotGit)
   }
 
-  const commonGitDir = Path.normalize(await resolveCommonGitDir(gitDir))
+  // A main worktree's git dir *is* the common dir; only a linked worktree's git
+  // dir needs walking up. Routing main through `resolveCommonGitDir` would
+  // misfire when the checkout folder is itself named `worktrees` (its
+  // `basename(dirname(<path>/.git))` is `worktrees`, tripping that function's
+  // heuristic and returning the grandparent), splitting the main worktree off
+  // into its own family.
+  const commonGitDir =
+    entry.type === 'main'
+      ? gitDir
+      : Path.normalize(await resolveCommonGitDir(gitDir))
   const worktreeName =
     entry.type === 'main' ? MainWorktreeName : Path.basename(gitDir)
   return { commonGitDir, worktreeName }
