@@ -23,13 +23,16 @@ import {
 //    `APIKEY`, `AUTHORIZATION`, `AUTHENTICATION`) are unambiguous, so they match
 //    anywhere in the name — `GITHUBTOKEN` and `X_AUTHORIZATION` count, not only
 //    `_`-separated suffixes.
-//  - Short/ambiguous words (`KEY`, `DSN`, `PAT`, and bare `AUTH`) match only on
-//    a `_` or ends boundary, so `MONKEY`, `KEYBOARD`, `PATH` and — importantly
-//    in a git tool — `GIT_AUTHOR_NAME` do not trip them, while `AUTH_TOKEN` and
-//    `AUTH` still do.
+//  - `AUTH` matches anywhere *except* when it begins `AUTHOR`, via `AUTH(?!OR)`.
+//    That one carve-out is what flags `AUTHKEY`, `OAUTH` and `AUTH0` (which are
+//    credentials) while sparing `GIT_AUTHOR_NAME` / `CO_AUTHOR` — the git author
+//    vars, important not to over-flag in a git tool. `AUTHORIZATION`/
+//    `AUTHENTICATION` stay listed explicitly since `AUTH(?!OR)` skips them.
+//  - Short/ambiguous words (`KEY`, `DSN`, `PAT`) match only on a `_` or ends
+//    boundary, so `MONKEY`, `KEYBOARD` and `PATH` do not trip them.
 const SENSITIVE_WORD =
-  /(TOKEN|SECRET|PASSWORD|PASSWD|CREDENTIAL|APIKEY|AUTHORIZATION|AUTHENTICATION)/
-const SENSITIVE_BOUNDED = /(^|_)(KEY|DSN|PAT|AUTH)($|_)/
+  /(TOKEN|SECRET|PASSWORD|PASSWD|CREDENTIAL|APIKEY|AUTHORIZATION|AUTHENTICATION|AUTH(?!OR))/
+const SENSITIVE_BOUNDED = /(^|_)(KEY|DSN|PAT)($|_)/
 
 /** Whether a variable's *name* looks sensitive. Visual emphasis only. */
 export function isSensitiveName(name: string): boolean {

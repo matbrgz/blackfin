@@ -127,16 +127,27 @@ describe('isSensitiveName', () => {
     }
   })
 
-  it('flags AUTH only on a word boundary, sparing git author vars', () => {
+  it('flags AUTH everywhere but in AUTHOR, sparing the git author vars', () => {
     for (const sensitive of [
       'AUTH',
       'AUTH_HEADER',
       'X_AUTH',
       'AUTHORIZATION',
+      'AUTHENTICATION',
+      'AUTHKEY',
+      'OAUTH',
+      'OAUTH_CLIENT',
+      'AUTH0',
     ]) {
       assert.strictEqual(isSensitiveName(sensitive), true, sensitive)
     }
-    for (const benign of ['GIT_AUTHOR_NAME', 'GIT_AUTHOR_EMAIL', 'CO_AUTHOR']) {
+    // `AUTHOR` is the one AUTH-prefixed word that isn't a credential.
+    for (const benign of [
+      'GIT_AUTHOR_NAME',
+      'GIT_AUTHOR_EMAIL',
+      'CO_AUTHOR',
+      'AUTHOR',
+    ]) {
       assert.strictEqual(isSensitiveName(benign), false, benign)
     }
   })
