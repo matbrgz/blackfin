@@ -9,10 +9,7 @@
 // agent meant is how a query silently runs the wrong thing.
 
 import { CLIArgValue, CLIProtocolVersion } from './protocol'
-import {
-  buildCapabilities,
-  CLISchemaVersion,
-} from './capabilities'
+import { buildCapabilities, CLISchemaVersion } from './capabilities'
 import type {
   CLIConfirmation,
   CLIEffect,

@@ -10,11 +10,7 @@
 // the ambient facts as arguments — which is why the whole contract is unit
 // tested without a socket or the app.
 
-import {
-  CLIProtocolVersion,
-  exitCodeTable,
-  ICLIExitCodeInfo,
-} from './protocol'
+import { CLIProtocolVersion, exitCodeTable, ICLIExitCodeInfo } from './protocol'
 import type { ICommandDescriptor, CommandScope } from './registry'
 
 /** The version of *this document's format*, bumped independently of the wire and the app. */

@@ -6,10 +6,7 @@ import {
   ALL_CLI_EFFECTS,
   ICapabilitiesEnv,
 } from '../../src/lib/cli/capabilities'
-import {
-  allCommands,
-  ICommandDescriptor,
-} from '../../src/lib/cli/registry'
+import { allCommands, ICommandDescriptor } from '../../src/lib/cli/registry'
 import {
   CLIProtocolVersion,
   ExitSuccess,
