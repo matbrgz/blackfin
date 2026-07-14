@@ -7,6 +7,8 @@ import {
   transportForPlatform,
   resolveSocketPath,
   buildEndpoint,
+  unixSocketPathWithinLimit,
+  MaxUnixSocketPathBytes,
 } from '../../src/lib/cli/endpoint'
 import { parseEndpoint, CLIProtocolVersion } from '../../src/lib/cli/protocol'
 
@@ -51,6 +53,19 @@ describe('transport and socket path', () => {
     // Deterministic for the same userData, distinct for a different one.
     assert.strictEqual(a, resolveSocketPath('win32', USER_DATA))
     assert.notStrictEqual(a, resolveSocketPath('win32', '/other/profile'))
+  })
+
+  it('accepts a normal-length unix socket path and rejects an over-long one', () => {
+    assert.strictEqual(
+      unixSocketPathWithinLimit(resolveSocketPath('linux', USER_DATA)),
+      true
+    )
+    // One byte short of the buffer is fine; a path filling it is not (the
+    // kernel needs room for the trailing NUL).
+    const fits = 'a'.repeat(MaxUnixSocketPathBytes - 1)
+    const over = 'a'.repeat(MaxUnixSocketPathBytes)
+    assert.strictEqual(unixSocketPathWithinLimit(fits), true)
+    assert.strictEqual(unixSocketPathWithinLimit(over), false)
   })
 })
 

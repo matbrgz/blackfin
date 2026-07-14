@@ -7,10 +7,25 @@ import { createHash } from 'crypto'
 import * as Path from 'path'
 import { ICLIEndpoint, CLIProtocolVersion } from './protocol'
 
-/** Overrides the discovery path — for dev and tests, never in a shipped build. */
+/**
+ * Overrides the discovery path. Intended for dev and tests; it is honored
+ * whenever set and non-empty (not gated to a dev build), so it only ever
+ * redirects the CLI's own endpoint lookup — the token in the target
+ * `endpoint.json` is still what authorizes a connection.
+ */
 export const EndpointEnvVar = 'BLACKFIN_ENDPOINT'
 
 export type Transport = 'unix' | 'pipe'
+
+/**
+ * The `sun_path` limit for a unix domain socket. macOS/BSD allow 104 bytes
+ * (Linux 108); we use the tighter value so a path that binds on our primary
+ * platform binds everywhere. The socket path includes the OS-assigned userData
+ * directory, so a long enough home path can exceed this — the server checks
+ * `unixSocketPathWithinLimit` before `bind()` to fail with a clear message
+ * instead of an opaque EINVAL.
+ */
+export const MaxUnixSocketPathBytes = 104
 
 /** The directory holding the socket and `endpoint.json`, created mode 0700. */
 export function cliDirectory(userDataDir: string): string {
@@ -58,7 +73,24 @@ export function resolveSocketPath(
   return Path.join(cliDirectory(userDataDir), 'agent.sock')
 }
 
-/** Build the descriptor to serialize into `endpoint.json` on app start. */
+/**
+ * Whether a unix socket path fits within `sun_path`. The server calls this
+ * before binding so an over-long path (a very long userData/home directory)
+ * fails with a clear message rather than a bare bind() EINVAL. Windows pipe
+ * names are not subject to this limit.
+ */
+export function unixSocketPathWithinLimit(socketPath: string): boolean {
+  // The kernel needs room for the trailing NUL, so the usable length is one
+  // less than the buffer size.
+  return Buffer.byteLength(socketPath, 'utf8') < MaxUnixSocketPathBytes
+}
+
+/**
+ * Build the descriptor to serialize into `endpoint.json` on app start. `token`
+ * must be a hex string: `parseEndpoint` (the CLI-side reader) rejects any
+ * endpoint whose token is not `/^[0-9a-f]+$/i`, so the caller's token
+ * generator must emit hex (e.g. `randomBytes(n).toString('hex')`).
+ */
 export function buildEndpoint(params: {
   readonly platform: NodeJS.Platform
   readonly userDataDir: string
