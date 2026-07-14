@@ -17,6 +17,7 @@ import { ContextFileList } from './context-file-list'
 import { DocFileList } from './doc-file-list'
 import { ArtifactList } from './artifact-list'
 import { explainStatus, plural } from './display'
+import { Badge } from '../lib/badge'
 
 interface IRepositoryRowProps {
   readonly section: AppSection
@@ -66,17 +67,17 @@ export class RepositoryRow extends React.Component<IRepositoryRowProps> {
     const { inventory, section } = this.props
 
     if (inventory.status.kind === 'missing') {
-      return <span className="workspace-badge missing">Missing</span>
+      return <Badge kind="health" health="broken" label="Missing" />
     }
 
     if (inventory.status.kind === 'error') {
-      return <span className="workspace-badge error">Scan failed</span>
+      return <Badge kind="health" health="broken" label="Scan failed" />
     }
 
     // Not the same as an empty project, and it does not get to look like one —
-    // nor like a clean one, which is why this is `unknown` and not `muted`.
+    // nor like a clean one, which is why this is `unknown` and not quietly `ok`.
     if (inventory.status.kind === 'never-scanned') {
-      return <span className="workspace-badge unknown">Not scanned yet</span>
+      return <Badge kind="health" health="unknown" label="Not scanned yet" />
     }
 
     switch (section) {
@@ -84,16 +85,20 @@ export class RepositoryRow extends React.Component<IRepositoryRowProps> {
         return this.renderAgentSummary()
       case AppSection.Docs:
         return (
-          <span className="workspace-badge">
-            {inventory.docs.length} {plural(inventory.docs.length, 'doc')}
-          </span>
+          <Badge
+            kind="count"
+            label={`${inventory.docs.length} ${plural(
+              inventory.docs.length,
+              'doc'
+            )}`}
+          />
         )
       case AppSection.Disk: {
         const bytes = reclaimableBytes(inventory)
         return bytes === 0 ? (
-          <span className="workspace-badge muted">Clean</span>
+          <Badge kind="health" health="ok" label="Clean" />
         ) : (
-          <span className="workspace-badge disk">{formatBytes(bytes)}</span>
+          <Badge kind="count" label={formatBytes(bytes)} />
         )
       }
       default:
@@ -108,7 +113,7 @@ export class RepositoryRow extends React.Component<IRepositoryRowProps> {
     // A project with no agent context at all is the finding this whole feature
     // exists to surface. Burying it among the others would defeat the point.
     if (agents.length === 0) {
-      return <span className="workspace-badge warning">No agent context</span>
+      return <Badge kind="health" health="attention" label="No agent context" />
     }
 
     const broken = brokenReferences(inventory).length
@@ -116,14 +121,14 @@ export class RepositoryRow extends React.Component<IRepositoryRowProps> {
     return (
       <>
         {agents.map(agent => (
-          <span key={agent} className="workspace-badge agent">
-            {agentDisplayName(agent)}
-          </span>
+          <Badge key={agent} kind="agent" label={agentDisplayName(agent)} />
         ))}
         {broken > 0 && (
-          <span className="workspace-badge error">
-            {broken} broken {plural(broken, 'reference')}
-          </span>
+          <Badge
+            kind="health"
+            health="broken"
+            label={`${broken} broken ${plural(broken, 'reference')}`}
+          />
         )}
       </>
     )

@@ -1,0 +1,49 @@
+// Card (#18) — a surface with header/body/footer. Tokens only; the clickable
+// variant is a real <button>, so its reset lives here.
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-4);
+  border: var(--base-border);
+  border-radius: var(--border-radius);
+  background: var(--background-color);
+  box-shadow: var(--elevation-1);
+
+  .card-header {
+    font-weight: var(--font-weight-semibold);
+    font-size: var(--font-size-heading-sm);
+  }
+
+  .card-body {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+  }
+
+  .card-footer {
+    font-size: var(--font-size-sm);
+    color: var(--text-secondary-color);
+  }
+}
+
+// The activatable card. It is a <button>, so it starts by undoing the button
+// look and then reads like a card that answers to a click.
+button.card--clickable {
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  transition: box-shadow var(--duration-fast) ease, border-color var(--duration-fast) ease;
+
+  &:hover {
+    border-color: var(--box-selected-border-color);
+    box-shadow: var(--elevation-2);
+  }
+
+  &:focus-visible {
+    outline: var(--focus-border-width) solid var(--focus-color);
+    outline-offset: 2px;
+  }
+}

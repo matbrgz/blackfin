@@ -20,4 +20,11 @@
     background: none;
     border: none;
   }
+
+  // A panel docked on the right (a DetailPane) carries its handle on the inner,
+  // left edge instead. The drag math is flipped to match in resizable.tsx.
+  &.resizable-component--handle-left .resize-handle {
+    right: auto;
+    left: -3px;
+  }
 }
