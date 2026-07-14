@@ -6,6 +6,7 @@ import {
   ICommandContext,
   ICommandRepository,
 } from '../../src/lib/cli/registry'
+import { CLIProtocolVersion } from '../../src/lib/cli/protocol'
 
 describe('CLI command registry', () => {
   it('gives every command a unique name and a non-empty summary', () => {
@@ -62,7 +63,7 @@ describe('ping command', () => {
 
     assert.strictEqual(data.app, 'Blackfin')
     assert.strictEqual(data.appVersion, '3.6.3-beta3')
-    assert.strictEqual(data.protocol, 1)
+    assert.strictEqual(data.protocol, CLIProtocolVersion)
     assert.strictEqual(data.pid, 41207)
     assert.strictEqual(data.cwd, '/Users/x/proj/wt-a')
     assert.deepStrictEqual(data.repository, {

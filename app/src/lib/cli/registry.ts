@@ -8,7 +8,7 @@
 // `unknown-command`, never to the "closest" command, because guessing what an
 // agent meant is how a query silently runs the wrong thing.
 
-import { CLIArgValue } from './protocol'
+import { CLIArgValue, CLIProtocolVersion } from './protocol'
 
 /** What a command may touch, so the server can resolve `cwd` only as far as needed. */
 export type CommandScope = 'none' | 'repository' | 'worktree'
@@ -68,7 +68,7 @@ const ping: ICommandDescriptor = {
     return {
       app: ctx.app.name,
       appVersion: ctx.app.appVersion,
-      protocol: 1,
+      protocol: CLIProtocolVersion,
       pid: ctx.app.pid,
       cwd: ctx.cwd,
       repository,

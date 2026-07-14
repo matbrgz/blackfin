@@ -3,8 +3,8 @@ import assert from 'node:assert'
 import {
   CLIProtocolVersion,
   MaxRequestBytes,
-  CLIErrorCode,
   exitCodeForError,
+  allErrorCodes,
   ExitSuccess,
   ICLIRequest,
   encodeLine,
@@ -30,18 +30,9 @@ function request(over: Partial<ICLIRequest> = {}): ICLIRequest {
   }
 }
 
-const ALL_ERROR_CODES: ReadonlyArray<CLIErrorCode> = [
-  'usage',
-  'unknown-command',
-  'unauthorized',
-  'rate-limited',
-  'app-not-running',
-  'not-in-repository',
-  'failed',
-  'needs-confirmation',
-  'timeout',
-  'internal',
-]
+// Derived from the mapping itself, so a code added to the union (and thus to
+// the mapping, which the Record forces) is automatically covered here too.
+const ALL_ERROR_CODES = allErrorCodes()
 
 describe('CLI protocol framing', () => {
   it('round-trips a request through encode/decode', () => {
@@ -65,6 +56,17 @@ describe('CLI protocol framing', () => {
       'internal'
     )
     assert.strictEqual(decoded.id, 'id-9')
+  })
+
+  it('turns a valid-JSON but wrong-shape response into an internal error', () => {
+    // Syntactically valid JSON that is not a response envelope. Without the
+    // shape check the CLI would read `.error.message` off these and throw.
+    for (const line of ['42', 'null', '"hi"', '{"ok":false}', '{"ok":true}']) {
+      const decoded = decodeResponse(line, 'id-x')
+      assert.strictEqual(decoded.ok, false, line)
+      assert.ok(decoded.ok === false && decoded.error.code === 'internal', line)
+      assert.strictEqual(decoded.id, 'id-x')
+    }
   })
 
   it('rejects an oversized line before parsing it', () => {
@@ -161,5 +163,15 @@ describe('parseEndpoint', () => {
     const noPid: Record<string, unknown> = { ...valid }
     delete noPid.pid
     assert.strictEqual(parseEndpoint(noPid), null)
+  })
+
+  it('rejects a non-hex token and non-finite / non-positive numbers', () => {
+    assert.strictEqual(parseEndpoint({ ...valid, token: 'not-hex!' }), null)
+    assert.strictEqual(parseEndpoint({ ...valid, pid: NaN }), null)
+    assert.strictEqual(parseEndpoint({ ...valid, pid: 0 }), null)
+    assert.strictEqual(parseEndpoint({ ...valid, pid: -1 }), null)
+    assert.strictEqual(parseEndpoint({ ...valid, pid: 1.5 }), null)
+    assert.strictEqual(parseEndpoint({ ...valid, startedAt: Infinity }), null)
+    assert.strictEqual(parseEndpoint({ ...valid, startedAt: -1 }), null)
   })
 })

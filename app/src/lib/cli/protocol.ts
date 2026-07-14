@@ -55,6 +55,11 @@ export function exitCodeForError(code: CLIErrorCode): number {
   return EXIT_CODE_BY_ERROR[code]
 }
 
+/** Every error code, derived from the mapping so it can't fall out of sync. */
+export function allErrorCodes(): ReadonlyArray<CLIErrorCode> {
+  return Object.keys(EXIT_CODE_BY_ERROR) as Array<CLIErrorCode>
+}
+
 export type CLIArgValue = string | number | boolean | ReadonlyArray<string>
 
 export interface ICLIRequest {
@@ -157,15 +162,46 @@ export function decodeRequest(line: string): DecodeResult<ICLIRequest> {
   return decodeLine<ICLIRequest>(line)
 }
 
+/** Whether a decoded value is actually shaped like an `ICLIResponse`. */
+function isResponseShape(value: unknown): value is ICLIResponse {
+  if (typeof value !== 'object' || value === null) {
+    return false
+  }
+  const v = value as Record<string, unknown>
+  if (
+    typeof v.protocol !== 'number' ||
+    typeof v.id !== 'string' ||
+    typeof v.ok !== 'boolean'
+  ) {
+    return false
+  }
+  if (v.ok === false) {
+    if (typeof v.error !== 'object' || v.error === null) {
+      return false
+    }
+    const err = v.error as Record<string, unknown>
+    return typeof err.code === 'string' && typeof err.message === 'string'
+  }
+  return 'data' in v
+}
+
 /**
- * Decode a response line (CLI side). A malformed or oversized response becomes an
- * `internal` error response rather than a throw, so the CLI always has an
- * envelope to render and an exit code to return.
+ * Decode a response line (CLI side). A malformed, oversized, or wrong-*shape*
+ * response becomes an `internal` error response rather than a throw, so the CLI
+ * always has an envelope to render and an exit code to return — it never reads
+ * `.error.message` off a value that isn't a response.
  */
 export function decodeResponse(line: string, id: string): ICLIResponse {
-  const result = decodeLine<ICLIResponse>(line)
+  const result = decodeLine<unknown>(line)
   if (result.kind === 'ok') {
-    return result.value
+    if (isResponseShape(result.value)) {
+      return result.value
+    }
+    return errorResponse(
+      id,
+      'internal',
+      'The response from Blackfin was not a valid response envelope.'
+    )
   }
   const reason =
     result.kind === 'too-large'
@@ -208,10 +244,15 @@ export function parseEndpoint(value: unknown): ICLIEndpoint | null {
     typeof e.path !== 'string' ||
     e.path.length === 0 ||
     typeof e.token !== 'string' ||
-    e.token.length === 0 ||
+    // The app writes a hex token; anything else is corruption, not a new format.
+    !/^[0-9a-f]+$/i.test(e.token) ||
     typeof e.appVersion !== 'string' ||
-    typeof e.pid !== 'number' ||
-    typeof e.startedAt !== 'number'
+    // Reject NaN/Infinity/negatives — `typeof NaN === 'number'` would pass the
+    // bare typeof check and hand a corrupt pid to `process.kill(pid, 0)`.
+    !Number.isInteger(e.pid) ||
+    (e.pid as number) <= 0 ||
+    !Number.isFinite(e.startedAt) ||
+    (e.startedAt as number) < 0
   ) {
     return null
   }
@@ -221,7 +262,7 @@ export function parseEndpoint(value: unknown): ICLIEndpoint | null {
     path: e.path,
     token: e.token,
     appVersion: e.appVersion,
-    pid: e.pid,
-    startedAt: e.startedAt,
+    pid: e.pid as number,
+    startedAt: e.startedAt as number,
   }
 }
