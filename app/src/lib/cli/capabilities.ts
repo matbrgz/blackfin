@@ -17,6 +17,16 @@ import type { ICommandDescriptor, CommandScope } from './registry'
 export const CLISchemaVersion = 1
 
 /**
+ * The lowest schema version an agent must understand to read this document
+ * correctly — the floor, raised only by a *breaking* change (a removed or
+ * renamed field), never by an additive bump. It is deliberately a separate
+ * constant from `CLISchemaVersion`: adding optional fields grows the version
+ * but not the floor, which is what lets an older agent keep reading a newer
+ * document (`unknownFieldsAreIgnorable`).
+ */
+export const CLISchemaMinimumUnderstood = 1
+
+/**
  * What a command does to the world, as a closed vocabulary. An agent reads this
  * to decide, *before* calling, whether a command is safe — `writes-user-files`
  * with `confirmation: 'always'` tells it the call will land in a dialog.
@@ -170,7 +180,7 @@ export function buildCapabilities(
     app: env.app,
     compatibility: {
       unknownFieldsAreIgnorable: true,
-      minimumUnderstood: CLISchemaVersion,
+      minimumUnderstood: CLISchemaMinimumUnderstood,
     },
     envelope: ENVELOPE,
     exitCodes: exitCodeTable(),

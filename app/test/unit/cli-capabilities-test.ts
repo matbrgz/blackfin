@@ -3,6 +3,7 @@ import assert from 'node:assert'
 import {
   buildCapabilities,
   CLISchemaVersion,
+  CLISchemaMinimumUnderstood,
   ALL_CLI_EFFECTS,
   ICapabilitiesEnv,
 } from '../../src/lib/cli/capabilities'
@@ -42,6 +43,21 @@ describe('buildCapabilities', () => {
     assert.strictEqual(doc.protocolVersion, CLIProtocolVersion)
     assert.strictEqual(doc.cliVersion, '3.6.3-beta3')
     assert.strictEqual(doc.generatedAt, FIXED.toISOString())
+  })
+
+  it('advertises a compatibility floor no higher than the current version', () => {
+    // The floor is what lets an older agent read a newer document; it must not
+    // track the version, or every additive bump would break backward compat.
+    const doc = buildCapabilities(allCommands(), env())
+    assert.strictEqual(doc.compatibility.unknownFieldsAreIgnorable, true)
+    assert.strictEqual(
+      doc.compatibility.minimumUnderstood,
+      CLISchemaMinimumUnderstood
+    )
+    assert.ok(
+      doc.compatibility.minimumUnderstood <= CLISchemaVersion,
+      'the floor must never exceed the current schema version'
+    )
   })
 
   it('describes itself: capabilities is one of the commands', () => {
