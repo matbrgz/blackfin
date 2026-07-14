@@ -640,7 +640,7 @@ describe('CopilotPreferences', () => {
   it('renders Copilot quota snapshot cards', () => {
     const view = render(<CopilotPreferences {...defaults()} />)
 
-    assert.ok(screen.getByText('Usage'))
+    assert.strictEqual(screen.queryByRole('heading', { name: 'Usage' }), null)
     assert.ok(screen.getByAltText('Avatar for Mona Lisa'))
     assert.ok(screen.getByText('@mona'))
     assert.ok(screen.getByText('GitHub.com account'))
@@ -648,9 +648,15 @@ describe('CopilotPreferences', () => {
     assert.ok(screen.getByText('Premium requests'))
 
     const modelPicker = view.container.querySelector('.copilot-model-picker')
+    const settingsScroll = view.container.querySelector(
+      '.copilot-settings-scroll'
+    )
     const usageSection = view.container.querySelector('.copilot-usage-section')
     assert.ok(modelPicker instanceof HTMLElement)
+    assert.ok(settingsScroll instanceof HTMLElement)
     assert.ok(usageSection instanceof HTMLElement)
+    assert.strictEqual(settingsScroll.contains(modelPicker), true)
+    assert.strictEqual(settingsScroll.contains(usageSection), false)
     assert.strictEqual(
       modelPicker.compareDocumentPosition(usageSection) &
         Node.DOCUMENT_POSITION_FOLLOWING,

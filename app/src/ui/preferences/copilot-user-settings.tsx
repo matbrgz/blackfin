@@ -121,10 +121,10 @@ export class CopilotUserSettings extends React.Component<
   private renderContent(content: JSX.Element): JSX.Element {
     return (
       <div className="copilot-tab-content">
-        <div className="copilot-section">
-          {content}
-          {this.renderUsage()}
+        <div className="copilot-settings-scroll">
+          <div className="copilot-section">{content}</div>
         </div>
+        {this.renderUsage()}
       </div>
     )
   }
@@ -199,7 +199,6 @@ export class CopilotUserSettings extends React.Component<
   private renderUsage(): JSX.Element {
     return (
       <div className="copilot-usage-section">
-        <h2>Usage</h2>
         <SnapshotCard
           account={this.props.account}
           snapshots={this.props.copilotQuotaSnapshots}

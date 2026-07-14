@@ -4,12 +4,30 @@
 
 .copilot-settings-dialog {
   .dialog-content.copilot-tab {
+    $default-tab-height: 440px;
+
+    display: flex;
+    flex-direction: column;
+    min-height: $default-tab-height;
+    max-height: $default-tab-height;
     padding: 0;
+    overflow: hidden;
   }
 
   .copilot-tab-content {
-    padding: var(--spacing-double);
+    min-height: 0;
   }
+}
+
+#preferences .dialog-content.copilot-tab {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.dialog-content.copilot-tab > .tab-bar {
+  flex-shrink: 0;
+  min-height: var(--tab-bar-height);
 }
 
 #preferences,
@@ -112,14 +130,26 @@
   }
 
   .copilot-usage-section {
-    margin: var(--spacing) 0 var(--spacing-double);
+    flex-shrink: 0;
+    padding: var(--spacing);
+    border-top: var(--base-border);
     min-width: 0;
+  }
 
-    h2 {
-      margin: 0 0 var(--spacing-half);
-      font-size: var(--font-size);
-      font-weight: var(--font-weight-semibold);
-    }
+  .copilot-tab-content {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    min-height: 0;
+    padding: 0;
+    overflow: hidden;
+  }
+
+  .copilot-settings-scroll {
+    flex: 1;
+    min-height: 0;
+    padding: var(--spacing-double);
+    overflow-y: auto;
   }
 
   .copilot-usage-empty {
@@ -144,6 +174,7 @@
     min-width: 0;
     flex-direction: column;
     gap: var(--spacing);
+    padding: var(--spacing);
   }
 
   .copilot-snapshot-card {

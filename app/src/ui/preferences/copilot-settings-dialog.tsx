@@ -33,6 +33,43 @@ interface ICopilotSettingsDialogProps {
 }
 
 export class CopilotSettingsDialog extends React.Component<ICopilotSettingsDialogProps> {
+  private dialogElement: HTMLDialogElement | null = null
+  private scrollResetFrame: number | null = null
+
+  public componentWillUnmount() {
+    this.setDialogElement(null)
+  }
+
+  private setDialogElement = (dialogElement: HTMLDialogElement | null) => {
+    this.dialogElement?.removeEventListener('dialog-show', this.onDialogShown)
+
+    if (dialogElement === null && this.scrollResetFrame !== null) {
+      cancelAnimationFrame(this.scrollResetFrame)
+      this.scrollResetFrame = null
+    }
+
+    this.dialogElement = dialogElement
+    this.dialogElement?.addEventListener('dialog-show', this.onDialogShown)
+  }
+
+  private onDialogShown = () => {
+    if (this.scrollResetFrame !== null) {
+      cancelAnimationFrame(this.scrollResetFrame)
+    }
+
+    this.scrollResetFrame = requestAnimationFrame(() => {
+      const scrollContainer = this.dialogElement?.querySelector(
+        '.copilot-settings-scroll'
+      )
+
+      if (scrollContainer instanceof HTMLElement) {
+        scrollContainer.scrollTop = 0
+      }
+
+      this.scrollResetFrame = null
+    })
+  }
+
   public render() {
     return (
       <Dialog
@@ -41,6 +78,7 @@ export class CopilotSettingsDialog extends React.Component<ICopilotSettingsDialo
         title={`Copilot Settings: @${this.props.account.login}`}
         onSubmit={this.props.onDismissed}
         onDismissed={this.props.onDismissed}
+        onDialogRef={this.setDialogElement}
       >
         <DialogContent className="copilot-tab">
           <CopilotUserSettings
