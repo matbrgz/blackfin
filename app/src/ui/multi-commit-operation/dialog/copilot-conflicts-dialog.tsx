@@ -47,8 +47,8 @@ import {
   resolutionChoices,
   isDeleteConflictFile,
   getDeletedSide,
-  getDeleteConflictLabels,
   getDeleteConflictChoiceLabel,
+  getOursTheirsLabels,
 } from './copilot-resolution-helpers'
 
 interface ICopilotConflictsDialogProps {
@@ -153,24 +153,11 @@ export class CopilotConflictsDialog extends React.Component<
     const currentChoice = this.getResolutionForFile(path)
     const { ourBranch, theirBranch } = this.props.conflictState
     const fileStatus = this.getConflictedFileStatus(path)
-
-    let oursLabel: string
-    let theirsLabel: string
-
-    if (fileStatus !== undefined && isDeleteConflictFile(fileStatus)) {
-      // Delete-vs-modify: "Keep file" / "Delete file" labels
-      const labels = getDeleteConflictLabels(fileStatus, ourBranch, theirBranch)
-      oursLabel = labels.oursLabel
-      theirsLabel = labels.theirsLabel
-    } else {
-      // Text conflict: "Use current/incoming file" labels
-      oursLabel = ourBranch
-        ? `Use current file from ${ourBranch}`
-        : 'Use current file'
-      theirsLabel = theirBranch
-        ? `Use incoming file from ${theirBranch}`
-        : 'Use incoming file'
-    }
+    const { oursLabel, theirsLabel } = getOursTheirsLabels(
+      fileStatus,
+      ourBranch,
+      theirBranch
+    )
 
     const items: ReadonlyArray<IMenuItem> = [
       {

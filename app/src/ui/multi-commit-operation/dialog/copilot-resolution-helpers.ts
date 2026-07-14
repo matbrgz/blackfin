@@ -115,3 +115,25 @@ export function getDeleteConflictChoiceLabel(
 
   return choice === 'ours' ? 'Keep file' : 'Delete file'
 }
+
+/**
+ * Returns the ours/theirs dropdown labels for a conflicted file, handling
+ * both delete-vs-modify and regular text conflicts.
+ */
+export function getOursTheirsLabels(
+  status: ConflictedFileStatus | undefined,
+  ourBranch?: string,
+  theirBranch?: string
+): { readonly oursLabel: string; readonly theirsLabel: string } {
+  if (status !== undefined && isDeleteConflictFile(status)) {
+    return getDeleteConflictLabels(status, ourBranch, theirBranch)
+  }
+
+  const oursLabel = ourBranch
+    ? `Use current file from ${ourBranch}`
+    : 'Use current file'
+  const theirsLabel = theirBranch
+    ? `Use incoming file from ${theirBranch}`
+    : 'Use incoming file'
+  return { oursLabel, theirsLabel }
+}

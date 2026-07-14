@@ -6,6 +6,7 @@ import {
   getDeletedSide,
   getDeleteConflictLabels,
   getDeleteConflictChoiceLabel,
+  getOursTheirsLabels,
 } from '../../src/ui/multi-commit-operation/dialog/copilot-resolution-helpers'
 import {
   AppFileStatusKind,
@@ -212,5 +213,47 @@ describe('getDeleteConflictChoiceLabel', () => {
       getDeleteConflictChoiceLabel('theirs', makeDeletedByThem()),
       'Delete file'
     )
+  })
+})
+
+// ---------------------------------------------------------------------------
+// getOursTheirsLabels
+// ---------------------------------------------------------------------------
+
+describe('getOursTheirsLabels', () => {
+  it('returns delete conflict labels for a delete-vs-modify file', () => {
+    const { oursLabel, theirsLabel } = getOursTheirsLabels(
+      makeDeletedByUs(),
+      'main',
+      'feature'
+    )
+    assert.equal(oursLabel, 'Delete file on main')
+    assert.equal(theirsLabel, 'Keep file from feature')
+  })
+
+  it('returns text conflict labels for a non-delete conflict', () => {
+    const { oursLabel, theirsLabel } = getOursTheirsLabels(
+      makeConflictWithMarkers(),
+      'main',
+      'feature'
+    )
+    assert.equal(oursLabel, 'Use current file from main')
+    assert.equal(theirsLabel, 'Use incoming file from feature')
+  })
+
+  it('returns text conflict labels when status is undefined', () => {
+    const { oursLabel, theirsLabel } = getOursTheirsLabels(
+      undefined,
+      'main',
+      'feature'
+    )
+    assert.equal(oursLabel, 'Use current file from main')
+    assert.equal(theirsLabel, 'Use incoming file from feature')
+  })
+
+  it('omits branch names when not provided', () => {
+    const { oursLabel, theirsLabel } = getOursTheirsLabels(undefined)
+    assert.equal(oursLabel, 'Use current file')
+    assert.equal(theirsLabel, 'Use incoming file')
   })
 })
