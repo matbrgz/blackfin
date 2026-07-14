@@ -3423,37 +3423,56 @@ export function getAccountForEndpoint(
   )
 }
 
+function pkceChallengeParams(codeChallenge: string): string {
+  return `code_challenge=${codeChallenge}&code_challenge_method=S256`
+}
+
 export function getOAuthAuthorizationURL(
   endpoint: string,
-  state: string
+  state: string,
+  codeChallenge: string
 ): string {
   const urlBase = getHTMLURL(endpoint)
   const scope = encodeURIComponent(oauthScopes.join(' '))
+  const pkceParams = pkceChallengeParams(codeChallenge)
 
   return new window.URL(
-    `/login/oauth/authorize?client_id=${ClientID}&scope=${scope}&state=${state}`,
+    `/login/oauth/authorize?client_id=${ClientID}&scope=${scope}&state=${state}&${pkceParams}`,
     urlBase
   ).toString()
 }
 
-export function getBitbucketOAuthAuthorizationURL(state: string): string {
-  return `https://bitbucket.org/site/oauth2/authorize?client_id=${ClientIDBitbucket}&response_type=code&state=${state}`
+export function getBitbucketOAuthAuthorizationURL(
+  state: string,
+  codeChallenge: string
+): string {
+  const pkceParams = pkceChallengeParams(codeChallenge)
+  return `https://bitbucket.org/site/oauth2/authorize?client_id=${ClientIDBitbucket}&response_type=code&state=${state}&${pkceParams}`
 }
 
-export function getGitLabOAuthAuthorizationURL(state: string): string {
+export function getGitLabOAuthAuthorizationURL(
+  state: string,
+  codeChallenge: string
+): string {
   const scope = encodeURIComponent('read_user read_api read_repository')
   const encodedRedirectUri = encodeURIComponent(oauthRedirectUri)
-  return `https://gitlab.com/oauth/authorize?client_id=${ClientIDGitLab}&redirect_uri=${encodedRedirectUri}&response_type=code&scope=${scope}&state=${state}`
+  const pkceParams = pkceChallengeParams(codeChallenge)
+  return `https://gitlab.com/oauth/authorize?client_id=${ClientIDGitLab}&redirect_uri=${encodedRedirectUri}&response_type=code&scope=${scope}&state=${state}&${pkceParams}`
 }
 
-export function getCodebergOAuthAuthorizationURL(state: string): string {
+export function getCodebergOAuthAuthorizationURL(
+  state: string,
+  codeChallenge: string
+): string {
   const encodedRedirectUri = encodeURIComponent(oauthRedirectUri)
-  return `https://codeberg.org/login/oauth/authorize?client_id=${ClientIDCodeberg}&redirect_uri=${encodedRedirectUri}&response_type=code&state=${state}`
+  const pkceParams = pkceChallengeParams(codeChallenge)
+  return `https://codeberg.org/login/oauth/authorize?client_id=${ClientIDCodeberg}&redirect_uri=${encodedRedirectUri}&response_type=code&state=${state}&${pkceParams}`
 }
 
 export async function requestOAuthToken(
   endpoint: string,
-  code: string
+  code: string,
+  codeVerifier: string
 ): Promise<[string, string, number] | null> {
   try {
     const urlBase = getHTMLURL(endpoint)
@@ -3466,6 +3485,7 @@ export async function requestOAuthToken(
         client_id: ClientID,
         client_secret: ClientSecret,
         code: code,
+        code_verifier: codeVerifier,
       }
     )
     tryUpdateEndpointVersionFromResponse(endpoint, response)
@@ -3479,7 +3499,8 @@ export async function requestOAuthToken(
 }
 
 export async function requestOAuthTokenBitbucket(
-  code: string
+  code: string,
+  codeVerifier: string
 ): Promise<[string, string, number] | null> {
   try {
     const response = await fetch(
@@ -3490,7 +3511,7 @@ export async function requestOAuthTokenBitbucket(
           Authorization: `Basic ${BitbucketBasicAuth()}`,
           'Content-Type': 'application/x-www-form-urlencoded',
         },
-        body: `grant_type=authorization_code&code=${code}`,
+        body: `grant_type=authorization_code&code=${code}&code_verifier=${codeVerifier}`,
       }
     )
 
@@ -3504,7 +3525,8 @@ export async function requestOAuthTokenBitbucket(
 }
 
 export async function requestOAuthTokenGitLab(
-  code: string
+  code: string,
+  codeVerifier: string
 ): Promise<[string, string, number] | null> {
   try {
     const response = await fetch('https://gitlab.com/oauth/token', {
@@ -3518,6 +3540,7 @@ export async function requestOAuthTokenGitLab(
         code: code,
         grant_type: 'authorization_code',
         redirect_uri: oauthRedirectUri,
+        code_verifier: codeVerifier,
       }),
     })
 
@@ -3531,7 +3554,8 @@ export async function requestOAuthTokenGitLab(
 }
 
 export async function requestOAuthTokenCodeberg(
-  code: string
+  code: string,
+  codeVerifier: string
 ): Promise<[string, string, number] | null> {
   try {
     const response = await fetch(
@@ -3547,6 +3571,7 @@ export async function requestOAuthTokenCodeberg(
           code: code,
           grant_type: 'authorization_code',
           redirect_uri: oauthRedirectUri,
+          code_verifier: codeVerifier,
         }),
       }
     )
