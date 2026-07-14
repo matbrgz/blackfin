@@ -11,7 +11,13 @@ import { Account } from '../../models/account'
 import { API, IAPIPullRequest, MaxResultsError } from '../api'
 import { fatalError } from '../fatal-error'
 import { RepositoriesStore } from './repositories-store'
-import { PullRequest, PullRequestRef } from '../../models/pull-request'
+import {
+  PullRequest,
+  PullRequestRef,
+  PullRequestState,
+} from '../../models/pull-request'
+import { toPullRequestState } from '../pull-request-state'
+import { selectPullRequestsToPrune } from '../pull-request-prune'
 import { structuralEquals } from '../equality'
 import { Emitter, Disposable } from 'event-kit'
 import { APIError } from '../http'
@@ -167,21 +173,60 @@ export class PullRequestStore {
       : undefined
   }
 
-  /** Gets all stored pull requests for the given repository. */
+  /**
+   * Gets the *open* stored pull requests for the given repository.
+   *
+   * The database now also holds closed and merged PRs, but this method keeps its
+   * long-standing meaning — the PR list and PR bar consume it and must not start
+   * showing merged PRs — by filtering to open. New consumers that want other
+   * states use `getAllWithState`/`getForHeadRefs`.
+   */
   public async getAll(repository: GitHubRepository) {
     const records = await this.db.getAllPullRequestsInRepository(repository)
+    const open = records.filter(r => (r.state ?? 'open') === 'open')
+    const result = await this.materialize(open)
+
+    // Reversing the results in place manually instead of using
+    // .reverse on the IndexedDB query has been measured to have favorable
+    // performance characteristics for repositories with a lot of pull
+    // requests since it means Dexie is able to leverage the IndexedDB
+    // getAll method as opposed to creating a reverse cursor. Reversing
+    // in place versus unshifting is also dramatically more performant.
+    return result.reverse()
+  }
+
+  /** Gets the stored pull requests whose state is one of the given states. */
+  public async getAllWithState(
+    repository: GitHubRepository,
+    states: ReadonlyArray<PullRequestState>
+  ) {
+    const records = await this.db.getPullRequestsWithState(repository, states)
+    return this.materialize(records)
+  }
+
+  /**
+   * Gets the stored pull request for each of the given head refs, with its
+   * state — the read #59's fleet board and #57's PR badge consume.
+   */
+  public async getForHeadRefs(
+    repository: GitHubRepository,
+    headRefs: ReadonlyArray<string>
+  ) {
+    const records = await this.db.getPullRequestsForHeadRefs(
+      repository,
+      headRefs
+    )
+    return this.materialize(records)
+  }
+
+  /** Turn stored records into `PullRequest` models, resolving their repos once. */
+  private async materialize(records: ReadonlyArray<IPullRequest>) {
     const result = new Array<PullRequest>()
 
     // In order to avoid what would otherwise be a very expensive
     // N+1 (N+2 really) query where we look up the head and base
     // GitHubRepository from IndexedDB for each pull request we'll memoize
     // already retrieved GitHubRepository instances.
-    //
-    // This optimization decreased the run time of this method from 6
-    // seconds to just under 26 ms while testing using an internal
-    // repository with 1k+ PRs. Even in the worst-case scenario (i.e
-    // a repository with a huge number of open PRs from forks) this
-    // will reduce the N+2 to N+1.
     const store = this.repositoryStore
     const getRepo = mem(store.findGitHubRepositoryByID.bind(store))
 
@@ -206,18 +251,15 @@ export class PullRequestStore {
           new PullRequestRef(record.base.ref, record.base.sha, baseRepository),
           record.author,
           record.draft ?? false,
-          record.body
+          record.body,
+          record.state ?? 'open',
+          record.mergedAt != null ? new Date(record.mergedAt) : null,
+          record.closedAt != null ? new Date(record.closedAt) : null
         )
       )
     }
 
-    // Reversing the results in place manually instead of using
-    // .reverse on the IndexedDB query has been measured to have favorable
-    // performance characteristics for repositories with a lot of pull
-    // requests since it means Dexie is able to leverage the IndexedDB
-    // getAll method as opposed to creating a reverse cursor. Reversing
-    // in place versus unshifting is also dramatically more performant.
-    return result.reverse()
+    return result
   }
 
   /**
@@ -293,27 +335,31 @@ export class PullRequestStore {
 
       const baseGitHubRepo = await upsertRepo(endpoint, pr.base.repo, login)
 
-      if (pr.state === 'closed') {
-        prsToDelete.push(getPullRequestKey(baseGitHubRepo, pr.number))
-        continue
-      }
+      // Closed and merged PRs are no longer deleted by state — the board needs
+      // to know a branch was integrated. They are upserted with their state
+      // below, and bounded by retention pruning, not by deletion on sight.
+      const state = toPullRequestState(pr)
 
-      // `pr.head.repo` represents the source of the pull request. It might be
-      // a branch associated with the current repository, or a fork of the
-      // current repository.
-      //
-      // In cases where the user has removed the fork of the repository after
-      // opening a pull request, this can be `null`, and the app will not store
-      // this pull request.
-      if (pr.head.repo == null) {
+      // `pr.head.repo` is the PR's source. It might be a branch of the current
+      // repository, or a fork. It is null when the user deleted the fork the PR
+      // came from. An *open* PR from a vanished fork is not actionable and
+      // matches no local branch, so we still skip it. A closed or merged one is
+      // exactly what this cache now keeps, so we retain it and treat the base
+      // repo — where the branch was integrated — as its head, the fork's own
+      // record being gone. `getPullRequestsForHeadRefs` keys off `head.ref`,
+      // not `head.repoId`, so this fallback matches nothing it shouldn't.
+      if (pr.head.repo == null && state === 'open') {
         log.debug(
-          `Unable to store pull request #${pr.number} for repository ${repository.fullName} as it has no head repository associated with it`
+          `Unable to store open pull request #${pr.number} for repository ${repository.fullName} as it has no head repository associated with it`
         )
         prsToDelete.push(getPullRequestKey(baseGitHubRepo, pr.number))
         continue
       }
 
-      const headRepo = await upsertRepo(endpoint, pr.head.repo, login)
+      const headRepo =
+        pr.head.repo == null
+          ? baseGitHubRepo
+          : await upsertRepo(endpoint, pr.head.repo, login)
 
       prsToUpsert.push({
         number: pr.number,
@@ -333,6 +379,9 @@ export class PullRequestStore {
         body: pr.body,
         author: pr.user.login,
         draft: pr.draft ?? false,
+        state,
+        mergedAt: pr.merged_at ?? null,
+        closedAt: pr.closed_at ?? null,
       })
     }
 
@@ -359,10 +408,46 @@ export class PullRequestStore {
         await this.db.deletePullRequests(prsToDelete)
         await this.db.putPullRequests(prsToUpsert)
         await this.db.setLastUpdated(repository, new Date(mostRecentlyUpdated))
+        await this.pruneStalePullRequests(repository)
       }
     )
 
     return true
+  }
+
+  /**
+   * Keep the cache bounded now that closed and merged PRs are retained. Runs in
+   * the same transaction as the upsert; the actual policy is a pure function.
+   * Open PRs' branches are treated as worth keeping, so a merged PR on a branch
+   * that still has an open PR survives.
+   */
+  private async pruneStalePullRequests(repository: GitHubRepository) {
+    const rows = await this.db.getAllPullRequestsInRepository(repository)
+
+    // Branches worth keeping by name. Open PRs' head refs are the set we can
+    // build here; the local checked-out/worktree branches a merged PR might
+    // still matter to are #59's to supply once it wires them through. Until
+    // then a long-merged PR on such a branch is bounded only by age and the cap.
+    const knownHeadRefs = new Set(
+      rows.filter(r => (r.state ?? 'open') === 'open').map(r => r.head.ref)
+    )
+
+    const prunable = rows.map(r => ({
+      key: getPullRequestKey(repository, r.number),
+      state: r.state ?? 'open',
+      updatedAt: r.updatedAt,
+      headRef: r.head.ref,
+    }))
+
+    const toPrune = selectPullRequestsToPrune(
+      prunable,
+      knownHeadRefs,
+      Date.now()
+    )
+
+    if (toPrune.length > 0) {
+      await this.db.deletePullRequests([...toPrune])
+    }
   }
 }
 

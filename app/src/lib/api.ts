@@ -939,7 +939,7 @@ interface IAPIPullRequestRef {
    */
   readonly repo: IAPIRepository | null
 }
-interface IBitbucketAPIPullRequestRef {
+export interface IBitbucketAPIPullRequestRef {
   readonly branch: {
     readonly name: string
   }
@@ -969,9 +969,13 @@ export interface IAPIPullRequest {
   readonly base: IAPIPullRequestRef
   readonly body: string
   readonly state: 'open' | 'closed'
+  /** ISO8601 timestamp of the merge, or null/absent if the PR was not merged. */
+  readonly merged_at?: string | null
+  /** ISO8601 timestamp of the close, or null/absent if the PR is open. */
+  readonly closed_at?: string | null
   readonly draft?: boolean
 }
-interface IBitbucketAPIPullRequest {
+export interface IBitbucketAPIPullRequest {
   readonly id: number
   readonly title: string
   readonly created_on: string
@@ -983,7 +987,9 @@ interface IBitbucketAPIPullRequest {
   readonly state: 'OPEN' | 'MERGED' | 'DECLINED'
   readonly type: 'pullrequest'
 }
-function toIAPIPullRequest(pr: IBitbucketAPIPullRequest): IAPIPullRequest {
+export function toIAPIPullRequest(
+  pr: IBitbucketAPIPullRequest
+): IAPIPullRequest {
   return {
     number: pr.id,
     title: pr.title,
@@ -994,6 +1000,10 @@ function toIAPIPullRequest(pr: IBitbucketAPIPullRequest): IAPIPullRequest {
     base: toIAPIPullRequestRef(pr.destination),
     body: pr.description,
     state: pr.state === 'OPEN' ? 'open' : 'closed',
+    // Bitbucket already knows a PR was merged; don't flatten that away. This
+    // payload has no merge instant, so `updated_on` is the honest approximation.
+    merged_at: pr.state === 'MERGED' ? pr.updated_on : null,
+    closed_at: pr.state === 'DECLINED' ? pr.updated_on : null,
   }
 }
 
@@ -1105,7 +1115,7 @@ function toIAPIFullRepositoryFromGitLab(
   }
 }
 
-interface IGitLabAPIMergeRequest {
+export interface IGitLabAPIMergeRequest {
   readonly iid: number
   readonly title: string
   readonly description: string
@@ -1121,7 +1131,7 @@ interface IGitLabAPIMergeRequest {
   readonly draft: boolean
   readonly web_url: string
 }
-function toIAPIPullRequestFromGitLab(
+export function toIAPIPullRequestFromGitLab(
   mr: IGitLabAPIMergeRequest,
   sourceRepo: IGitLabAPIRepository | null,
   targetRepo: IGitLabAPIRepository | null
@@ -1143,7 +1153,11 @@ function toIAPIPullRequestFromGitLab(
       repo: targetRepo ? toIAPIFullRepositoryFromGitLab(targetRepo) : null,
     },
     body: mr.description,
-    state: mr.state === 'opened' ? 'open' : 'closed',
+    // GitLab's `locked` is not an end of life; treat only `closed`/`merged` as
+    // closed, and propagate the merge that the state already tells us about.
+    state: mr.state === 'closed' || mr.state === 'merged' ? 'closed' : 'open',
+    merged_at: mr.state === 'merged' ? mr.updated_at : null,
+    closed_at: mr.state === 'closed' ? mr.updated_at : null,
     draft: mr.draft,
   }
 }
