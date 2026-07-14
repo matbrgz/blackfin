@@ -60,6 +60,65 @@ export function allErrorCodes(): ReadonlyArray<CLIErrorCode> {
   return Object.keys(EXIT_CODE_BY_ERROR) as Array<CLIErrorCode>
 }
 
+/** A process exit code, its short name, and what it means to an agent. */
+export interface ICLIExitCodeInfo {
+  readonly code: number
+  readonly name: string
+  readonly meaning: string
+}
+
+// The distinct exit codes, each explained for the agent reading the schema
+// (#62). Several error codes share one exit (usage/unknown-command → 2), so
+// this groups by number — it is the human-facing projection of
+// EXIT_CODE_BY_ERROR, not a second source of truth. A test asserts every code
+// the union can produce has an entry here, so the two cannot drift.
+const EXIT_CODE_INFO: ReadonlyArray<ICLIExitCodeInfo> = [
+  { code: ExitSuccess, name: 'ok', meaning: 'Command succeeded.' },
+  {
+    code: 2,
+    name: 'usage',
+    meaning: 'Unknown command or bad argument. Re-read the schema.',
+  },
+  {
+    code: 3,
+    name: 'unauthorized',
+    meaning:
+      'The agent CLI is disabled, the token is stale, or you are rate-limited. Do not retry in a loop; tell the user.',
+  },
+  {
+    code: 4,
+    name: 'app-not-running',
+    meaning: 'Blackfin is not open. Query commands never launch it.',
+  },
+  {
+    code: 5,
+    name: 'failed',
+    meaning:
+      'The command ran and failed, or the cwd is not a repository. Read error.message.',
+  },
+  {
+    code: 6,
+    name: 'needs-confirmation',
+    meaning:
+      'A human must approve this in the Blackfin window. This is NOT an error.',
+  },
+  {
+    code: 7,
+    name: 'timeout',
+    meaning: 'Blackfin did not answer in time.',
+  },
+  {
+    code: 70,
+    name: 'internal',
+    meaning: 'An unexpected internal error. Report it; do not retry in a loop.',
+  },
+]
+
+/** The exit codes the CLI can return, explained — the schema (#62) publishes this. */
+export function exitCodeTable(): ReadonlyArray<ICLIExitCodeInfo> {
+  return EXIT_CODE_INFO
+}
+
 export type CLIArgValue = string | number | boolean | ReadonlyArray<string>
 
 export interface ICLIRequest {

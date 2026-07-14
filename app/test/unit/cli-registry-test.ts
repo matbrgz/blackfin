@@ -40,6 +40,25 @@ describe('CLI command registry', () => {
     assert.strictEqual(ping?.mutates, false)
     assert.strictEqual(ping?.requiresApp, true)
   })
+
+  it('names commands in kebab-case, subcommands as "<group> <verb>"', () => {
+    // Each space-separated segment is lowercase kebab-case — never camelCase
+    // like `contextEffective`, which an agent reading the schema would not type.
+    const segment = /^[a-z][a-z0-9]*(-[a-z0-9]+)*$/
+    for (const command of allCommands()) {
+      for (const part of command.name.split(' ')) {
+        assert.match(part, segment, `${command.name} is not kebab-case`)
+      }
+    }
+  })
+
+  it('capabilities is a non-mutating command that does not need the app', () => {
+    const cap = resolveCommand('capabilities')
+    assert.ok(cap !== null)
+    assert.strictEqual(cap?.mutates, false)
+    assert.strictEqual(cap?.requiresApp, false)
+    assert.strictEqual(cap?.confirmation, 'none')
+  })
 })
 
 describe('ping command', () => {
