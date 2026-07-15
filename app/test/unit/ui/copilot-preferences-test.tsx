@@ -500,6 +500,7 @@ describe('CopilotPreferences', () => {
             endpoint: 'https://api.octocorp.ghe.com',
             id: 2,
             login: 'octo',
+            name: 'Octo Cat',
             isCopilotDesktopEnabled: true,
             copilotLicenseType: 'COPILOT_BUSINESS',
           }),
@@ -509,7 +510,7 @@ describe('CopilotPreferences', () => {
 
     assert.ok(screen.getAllByRole('button', { name: /Auto/ }).length > 0)
     assert.ok(screen.getByText('@octo (Octo Cat)'))
-    assert.ok(screen.getByText('https://octocorp.ghe.com'))
+    assert.ok(screen.getByText('https://octocorp.ghe.com/'))
     assert.strictEqual(screen.queryByText('@mona'), null)
     assert.strictEqual(screen.queryByText('View Copilot plans'), null)
   })
@@ -542,7 +543,7 @@ describe('CopilotPreferences', () => {
     assert.ok(screen.getByText('Mona Lisa'))
     assert.ok(screen.getByText('@mona'))
     assert.ok(screen.getByText('@octo (Octo Cat)'))
-    assert.ok(screen.getByText('https://octocorp.ghe.com'))
+    assert.ok(screen.getByText('https://octocorp.ghe.com/'))
     assert.strictEqual(
       view.container.querySelector('.copilot-model-picker'),
       null
