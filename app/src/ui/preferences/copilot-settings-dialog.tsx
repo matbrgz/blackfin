@@ -26,9 +26,7 @@ interface ICopilotSettingsDialogProps {
   readonly onAlwaysUseCopilotForConflictResolutionChanged: (
     checked: boolean
   ) => void
-  readonly onAddBYOKProvider: () => void
-  readonly onEditBYOKProvider: (provider: IBYOKProvider) => void
-  readonly onDeleteBYOKProvider: (provider: IBYOKProvider) => void
+  readonly onConfigureCustomProviders: () => void
   readonly onDismissed: () => void
 }
 
@@ -97,9 +95,7 @@ export class CopilotSettingsDialog extends React.Component<ICopilotSettingsDialo
             onAlwaysUseCopilotForConflictResolutionChanged={
               this.props.onAlwaysUseCopilotForConflictResolutionChanged
             }
-            onAddBYOKProvider={this.props.onAddBYOKProvider}
-            onEditBYOKProvider={this.props.onEditBYOKProvider}
-            onDeleteBYOKProvider={this.props.onDeleteBYOKProvider}
+            onConfigureCustomProviders={this.props.onConfigureCustomProviders}
           />
         </DialogContent>
         <DialogFooter>

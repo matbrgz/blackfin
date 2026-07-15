@@ -40,9 +40,7 @@ interface ICopilotPreferencesProps {
   readonly onAlwaysUseCopilotForConflictResolutionChanged: (
     checked: boolean
   ) => void
-  readonly onAddBYOKProvider: () => void
-  readonly onEditBYOKProvider: (provider: IBYOKProvider) => void
-  readonly onDeleteBYOKProvider: (provider: IBYOKProvider) => void
+  readonly onConfigureCustomProviders: () => void
   readonly onConfigureModels: (account: Account) => void
 }
 
@@ -102,9 +100,7 @@ export class CopilotPreferences extends React.Component<ICopilotPreferencesProps
         onAlwaysUseCopilotForConflictResolutionChanged={
           this.props.onAlwaysUseCopilotForConflictResolutionChanged
         }
-        onAddBYOKProvider={this.props.onAddBYOKProvider}
-        onEditBYOKProvider={this.props.onEditBYOKProvider}
-        onDeleteBYOKProvider={this.props.onDeleteBYOKProvider}
+        onConfigureCustomProviders={this.props.onConfigureCustomProviders}
       />
     )
   }

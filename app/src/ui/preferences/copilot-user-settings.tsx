@@ -1,7 +1,6 @@
 import * as React from 'react'
 import {
   encodeModelKey,
-  isLocalBaseUrl,
   parseModelKey,
   type IBYOKProvider,
 } from '../../lib/copilot/byok'
@@ -13,7 +12,6 @@ import {
   type CopilotQuotaSnapshots,
 } from '../../lib/stores/copilot-store'
 import type { Account } from '../../models/account'
-import { Button } from '../lib/button'
 import { Checkbox, CheckboxValue } from '../lib/checkbox'
 import {
   CopilotModelPicker,
@@ -22,9 +20,6 @@ import {
 } from '../lib/copilot-model-picker'
 import { LinkButton } from '../lib/link-button'
 import { Row } from '../lib/row'
-import { Octicon } from '../octicons'
-import * as octicons from '../octicons/octicons.generated'
-import { TabBar } from '../tab-bar'
 import { CopilotModelSelectionInfo } from './copilot-model-selection-info'
 import { SnapshotCard } from './snapshot-card'
 import type { Model } from '@github/copilot-sdk/dist/generated/rpc'
@@ -44,25 +39,11 @@ interface ICopilotUserSettingsProps {
   readonly onAlwaysUseCopilotForConflictResolutionChanged: (
     checked: boolean
   ) => void
-  readonly onAddBYOKProvider: () => void
-  readonly onEditBYOKProvider: (provider: IBYOKProvider) => void
-  readonly onDeleteBYOKProvider: (provider: IBYOKProvider) => void
-}
-
-interface ICopilotUserSettingsState {
-  readonly selectedTabIndex: number
+  readonly onConfigureCustomProviders: () => void
 }
 
 /** User-configurable Copilot settings with optional provider management. */
-export class CopilotUserSettings extends React.Component<
-  ICopilotUserSettingsProps,
-  ICopilotUserSettingsState
-> {
-  public constructor(props: ICopilotUserSettingsProps) {
-    super(props)
-    this.state = { selectedTabIndex: 0 }
-  }
-
+export class CopilotUserSettings extends React.Component<ICopilotUserSettingsProps> {
   private onCommitMessageModelChanged = (model: string) => {
     this.props.onSelectedCopilotModelChanged('commit-message-generation', model)
   }
@@ -79,43 +60,8 @@ export class CopilotUserSettings extends React.Component<
     )
   }
 
-  private onAddBYOKProviderClick = () => this.props.onAddBYOKProvider()
-
-  private onEditBYOKProviderClick = (provider: IBYOKProvider) => () =>
-    this.props.onEditBYOKProvider(provider)
-
-  private onDeleteBYOKProviderClick = (provider: IBYOKProvider) => () =>
-    this.props.onDeleteBYOKProvider(provider)
-
-  private onTabClicked = (index: number) => {
-    this.setState({ selectedTabIndex: index })
-  }
-
   public render() {
-    if (!this.props.showBYOKSettings) {
-      return this.renderContent(this.renderModelPicker())
-    }
-
-    return (
-      <>
-        <TabBar
-          selectedIndex={this.state.selectedTabIndex}
-          onTabClicked={this.onTabClicked}
-        >
-          <span>Models</span>
-          <span>Providers</span>
-        </TabBar>
-        {this.renderContent(this.renderCurrentTab())}
-      </>
-    )
-  }
-
-  private renderCurrentTab(): JSX.Element {
-    if (this.state.selectedTabIndex === 1) {
-      return this.renderBYOKProviders()
-    }
-
-    return this.renderModelPicker()
+    return this.renderContent(this.renderModelPicker())
   }
 
   private renderContent(content: JSX.Element): JSX.Element {
@@ -235,6 +181,11 @@ export class CopilotUserSettings extends React.Component<
           byokProviders={byokProviders}
           value={value}
           onChange={onChange}
+          onConfigureCustomProviders={
+            this.props.showBYOKSettings
+              ? this.props.onConfigureCustomProviders
+              : undefined
+          }
           maxHeight={maxHeight}
         />
         {selectionInfo === null ? null : (
@@ -309,73 +260,5 @@ export class CopilotUserSettings extends React.Component<
       providerId: firstProvider.id,
       modelId: firstByokModel.id,
     })
-  }
-
-  private renderBYOKProviders(): JSX.Element {
-    const { byokProviders } = this.props
-    return (
-      <>
-        {byokProviders.length === 0 ? (
-          <p className="copilot-byok-empty">
-            Add a custom provider to use your own API keys with
-            OpenAI-compatible endpoints, Azure, Anthropic, or local providers
-            like Ollama.
-          </p>
-        ) : (
-          <ul className="copilot-byok-entry-list">
-            {byokProviders.map(this.renderBYOKProvider)}
-          </ul>
-        )}
-        <Button onClick={this.onAddBYOKProviderClick}>
-          {__DARWIN__ ? 'Add Provider…' : 'Add provider…'}
-        </Button>
-      </>
-    )
-  }
-
-  private renderBYOKProvider = (provider: IBYOKProvider) => {
-    const modelCount = provider.models.length
-    const modelLabel = modelCount === 1 ? '1 model' : `${modelCount} models`
-    const isLocal = isLocalBaseUrl(provider.baseUrl)
-    return (
-      <li key={provider.id} className="copilot-byok-entry">
-        <div className="copilot-byok-entry-info">
-          <div className="copilot-byok-entry-title">
-            <span>{provider.name}</span>
-            {isLocal && (
-              <span className="copilot-byok-provider-badge">Local</span>
-            )}
-          </div>
-          <span className="copilot-byok-entry-meta">
-            {this.formatProviderType(provider)} · {modelLabel}
-          </span>
-        </div>
-        <div className="copilot-byok-entry-actions">
-          <Button
-            onClick={this.onEditBYOKProviderClick(provider)}
-            ariaLabel={`Edit ${provider.name}`}
-          >
-            <Octicon symbol={octicons.pencil} />
-          </Button>
-          <Button
-            onClick={this.onDeleteBYOKProviderClick(provider)}
-            ariaLabel={`Remove ${provider.name}`}
-          >
-            <Octicon symbol={octicons.trash} />
-          </Button>
-        </div>
-      </li>
-    )
-  }
-
-  private formatProviderType(provider: IBYOKProvider): string {
-    switch (provider.type) {
-      case 'openai':
-        return 'OpenAI-compatible'
-      case 'azure':
-        return 'Azure'
-      case 'anthropic':
-        return 'Anthropic'
-    }
   }
 }

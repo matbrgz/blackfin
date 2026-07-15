@@ -25,11 +25,6 @@
   overflow: hidden;
 }
 
-.dialog-content.copilot-tab > .tab-bar {
-  flex-shrink: 0;
-  min-height: var(--tab-bar-height);
-}
-
 #preferences,
 .copilot-settings-dialog,
 #test-copilot-snapshot-card {
@@ -390,6 +385,15 @@
     .copilot-model-picker-cost-details-row:not(:last-child) {
       margin-bottom: var(--spacing-third);
     }
+  }
+}
+
+#copilot-custom-providers-dialog {
+  width: 500px;
+
+  .dialog-content {
+    max-height: 400px;
+    overflow-y: auto;
   }
 }
 

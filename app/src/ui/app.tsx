@@ -73,6 +73,7 @@ import { AppMenuBar } from './app-menu'
 import { UpdateAvailable, renderBanner } from './banners'
 import { Preferences } from './preferences'
 import { CopilotSettingsDialog } from './preferences/copilot-settings-dialog'
+import { CopilotCustomProvidersDialog } from './preferences/copilot-custom-providers-dialog'
 import { EditCopilotBYOKProviderDialog } from './copilot/edit-byok-provider-dialog'
 import { EditCopilotBYOKModelDialog } from './copilot/edit-byok-model-dialog'
 import { ConfirmDeleteCopilotBYOKProviderDialog } from './copilot/confirm-delete-byok-provider-dialog'
@@ -1614,6 +1615,12 @@ export class App extends React.Component<IAppProps, IAppState> {
     })
   }
 
+  private onConfigureCopilotCustomProviders = () => {
+    this.props.dispatcher.showPopup({
+      type: PopupType.CopilotCustomProviders,
+    })
+  }
+
   private popupContent(popup: Popup, isTopMost: boolean): JSX.Element | null {
     if (popup.id === undefined) {
       // Should not be possible... but if it does we want to know about it.
@@ -1792,9 +1799,18 @@ export class App extends React.Component<IAppProps, IAppState> {
             onAlwaysUseCopilotForConflictResolutionChanged={
               this.onAlwaysUseCopilotForConflictResolutionChanged
             }
-            onAddBYOKProvider={this.onAddCopilotBYOKProvider}
-            onEditBYOKProvider={this.onEditCopilotBYOKProvider}
-            onDeleteBYOKProvider={this.onDeleteCopilotBYOKProvider}
+            onConfigureCustomProviders={this.onConfigureCopilotCustomProviders}
+            onDismissed={onPopupDismissedFn}
+          />
+        )
+      case PopupType.CopilotCustomProviders:
+        return (
+          <CopilotCustomProvidersDialog
+            key="copilot-custom-providers"
+            providers={this.state.byokProviders}
+            onAddProvider={this.onAddCopilotBYOKProvider}
+            onEditProvider={this.onEditCopilotBYOKProvider}
+            onDeleteProvider={this.onDeleteCopilotBYOKProvider}
             onDismissed={onPopupDismissedFn}
           />
         )

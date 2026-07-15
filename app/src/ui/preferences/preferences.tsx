@@ -582,9 +582,7 @@ export class Preferences extends React.Component<
             onAlwaysUseCopilotForConflictResolutionChanged={
               this.onAlwaysUseCopilotForConflictResolutionChanged
             }
-            onAddBYOKProvider={this.onAddBYOKProvider}
-            onEditBYOKProvider={this.onEditBYOKProvider}
-            onDeleteBYOKProvider={this.onDeleteBYOKProvider}
+            onConfigureCustomProviders={this.onConfigureCustomProviders}
             onConfigureModels={this.onConfigureCopilotModels}
           />
         )
@@ -939,24 +937,9 @@ export class Preferences extends React.Component<
     return this.props.accounts.some(enableCopilotSdkCommitMessageGeneration)
   }
 
-  private onAddBYOKProvider = () => {
+  private onConfigureCustomProviders = () => {
     this.props.dispatcher.showPopup({
-      type: PopupType.EditCopilotBYOKProvider,
-      provider: null,
-    })
-  }
-
-  private onEditBYOKProvider = (provider: IBYOKProvider) => {
-    this.props.dispatcher.showPopup({
-      type: PopupType.EditCopilotBYOKProvider,
-      provider,
-    })
-  }
-
-  private onDeleteBYOKProvider = (provider: IBYOKProvider) => {
-    this.props.dispatcher.showPopup({
-      type: PopupType.ConfirmDeleteCopilotBYOKProvider,
-      provider,
+      type: PopupType.CopilotCustomProviders,
     })
   }
 

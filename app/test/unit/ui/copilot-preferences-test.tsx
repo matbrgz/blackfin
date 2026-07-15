@@ -277,9 +277,7 @@ function defaults() {
     alwaysUseCopilotForConflictResolution: false,
     onSelectedCopilotModelChanged: () => {},
     onAlwaysUseCopilotForConflictResolutionChanged: () => {},
-    onAddBYOKProvider: () => {},
-    onEditBYOKProvider: () => {},
-    onDeleteBYOKProvider: () => {},
+    onConfigureCustomProviders: () => {},
     onConfigureModels: () => {},
   }
 }
@@ -550,7 +548,7 @@ describe('CopilotPreferences', () => {
       null
     )
     assert.strictEqual(
-      screen.getAllByRole('button', { name: /Configure models…/i }).length,
+      screen.getAllByRole('button', { name: /Configure…/i }).length,
       2
     )
   })
@@ -591,7 +589,7 @@ describe('CopilotPreferences', () => {
     const octoCard = cards[1]
     assert.ok(octoCard instanceof HTMLElement)
     fireEvent.click(
-      within(octoCard).getByRole('button', { name: /Configure models…/i })
+      within(octoCard).getByRole('button', { name: /Configure…/i })
     )
 
     assert.deepStrictEqual(configuredAccounts, [octo])
@@ -1111,46 +1109,41 @@ describe('CopilotPreferences', () => {
     assert.ok(!buttonText.includes('Ollama'))
   })
 
-  it('hides the Providers tab when showBYOKSettings is false', () => {
+  it('always shows models without settings tabs', () => {
     const view = render(<CopilotPreferences {...defaults()} />)
     const tabs = view.container.querySelectorAll('[role="tab"]')
     assert.strictEqual(tabs.length, 0)
+    assert.ok(getModelPickerButtons(view.container).length > 0)
   })
 
-  it('shows the Providers tab when enabled', () => {
+  it('hides custom provider configuration when BYOK settings are disabled', () => {
     const view = render(
-      <CopilotPreferences {...defaults()} showBYOKSettings={true} />
+      <CopilotPreferences {...defaults()} showBYOKSettings={false} />
     )
-    const tabs = view.container.querySelectorAll('[role="tab"]')
-    const providersTab = Array.from(tabs).find(t =>
-      (t.textContent ?? '').toLowerCase().includes('providers')
+    fireEvent.click(getModelPickerButton(view.container))
+    assert.strictEqual(
+      screen.queryByRole('button', { name: 'Configure custom providers…' }),
+      null
     )
-    assert.ok(providersTab)
   })
 
-  it('invokes onAddBYOKProvider when the Add button is clicked', () => {
+  it('opens custom provider configuration from the model picker', () => {
     let called = 0
     const view = render(
       <CopilotPreferences
         {...defaults()}
         showBYOKSettings={true}
-        onAddBYOKProvider={() => {
+        onConfigureCustomProviders={() => {
           called += 1
         }}
       />
     )
-    const tabs = view.container.querySelectorAll('[role="tab"]')
-    const providersTab = Array.from(tabs).find(t =>
-      (t.textContent ?? '').toLowerCase().includes('providers')
+
+    fireEvent.click(getModelPickerButton(view.container))
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Configure custom providers…' })
     )
-    assert.ok(providersTab)
-    fireEvent.click(providersTab!)
-    const buttons = view.container.querySelectorAll('button')
-    const addButton = Array.from(buttons).find(b =>
-      (b.textContent ?? '').toLowerCase().includes('add provider')
-    )
-    assert.ok(addButton)
-    fireEvent.click(addButton!)
+
     assert.strictEqual(called, 1)
   })
 
