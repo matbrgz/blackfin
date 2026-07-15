@@ -82,6 +82,8 @@ import {
   WorkingDirectoryFileChange,
   WorkingDirectoryStatus,
   AppFileStatusKind,
+  isConflictedFileStatus,
+  GitStatusEntry,
 } from '../../models/status'
 import { TipState, tipEquals, IValidBranch } from '../../models/tip'
 import {
@@ -6524,15 +6526,24 @@ export class AppStore extends TypedBaseStore<IAppState> {
       readonly ourRef: string | undefined
       readonly theirRef: string | undefined
     },
-    conflictedFiles: ReadonlyArray<{ readonly path: string }>,
+    conflictedFiles: ReadonlyArray<WorkingDirectoryFileChange>,
     state: IRepositoryState
   ): Promise<IConflictResolutionContext> {
+    // Enrich file entries with delete-vs-modify metadata so
+    // buildConflictContext includes them instead of skipping.
+    const filesWithDeleteInfo = conflictedFiles.map(f => {
+      const deletedSide = getDeletedSideFromStatus(f)
+      return deletedSide !== undefined
+        ? { path: f.path, deletedSide }
+        : { path: f.path }
+    })
+
     const contextTimer = startTimer('build conflict context', repository)
     const fileContext = await buildConflictContext(
       labels.ourLabel,
       labels.theirLabel,
       repository.path,
-      conflictedFiles
+      filesWithDeleteInfo
     )
     contextTimer.done()
 
@@ -7043,6 +7054,38 @@ export class AppStore extends TypedBaseStore<IAppState> {
 
     for (const resolution of copilotResolutions) {
       if (manualResolutions.has(resolution.path)) {
+        continue
+      }
+
+      // Delete-vs-modify conflicts are resolved by setting a manual
+      // resolution (ours/theirs) rather than writing file content.
+      // The existing stageManualConflictResolution flow handles the
+      // actual git checkout --ours/--theirs and staging at commit time.
+      if (resolution.deleteConflictAction !== undefined) {
+        const file = state.changesState.workingDirectory.files.find(
+          f => f.path === resolution.path
+        )
+        if (file === undefined) {
+          continue
+        }
+        const deletedSide = getDeletedSideFromStatus(file)
+        if (deletedSide === undefined) {
+          continue
+        }
+        // "keep" → choose the non-deleted side, "delete" → choose the deleted side
+        const manualChoice =
+          resolution.deleteConflictAction === 'keep'
+            ? deletedSide === 'ours'
+              ? ManualConflictResolution.theirs
+              : ManualConflictResolution.ours
+            : deletedSide === 'ours'
+            ? ManualConflictResolution.ours
+            : ManualConflictResolution.theirs
+        this._updateManualConflictResolution(
+          repository,
+          resolution.path,
+          manualChoice
+        )
         continue
       }
 
@@ -10469,4 +10512,31 @@ function constrain(
     min,
     max: constrainedMax,
   }
+}
+
+/**
+ * For a conflicted file, determine which side deleted the file (if any).
+ * Returns `'ours'` or `'theirs'` for delete-vs-modify conflicts, or
+ * `undefined` for other conflict types.
+ */
+function getDeletedSideFromStatus(
+  file: WorkingDirectoryFileChange
+): 'ours' | 'theirs' | undefined {
+  if (!isConflictedFileStatus(file.status)) {
+    return undefined
+  }
+  const { entry } = file.status
+  if (
+    entry.us === GitStatusEntry.Deleted &&
+    entry.them !== GitStatusEntry.Deleted
+  ) {
+    return 'ours'
+  }
+  if (
+    entry.them === GitStatusEntry.Deleted &&
+    entry.us !== GitStatusEntry.Deleted
+  ) {
+    return 'theirs'
+  }
+  return undefined
 }
