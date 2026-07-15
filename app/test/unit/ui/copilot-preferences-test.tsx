@@ -657,9 +657,9 @@ describe('CopilotPreferences', () => {
     assert.ok(settingsScroll instanceof HTMLElement)
     assert.ok(usageSection instanceof HTMLElement)
     assert.strictEqual(settingsScroll.contains(modelPicker), true)
-    assert.strictEqual(settingsScroll.contains(usageSection), false)
+    assert.strictEqual(settingsScroll.contains(usageSection), true)
     assert.strictEqual(
-      modelPicker.compareDocumentPosition(usageSection) &
+      usageSection.compareDocumentPosition(modelPicker) &
         Node.DOCUMENT_POSITION_FOLLOWING,
       Node.DOCUMENT_POSITION_FOLLOWING
     )

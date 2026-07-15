@@ -125,10 +125,8 @@
   }
 
   .copilot-usage-section {
-    flex-shrink: 0;
-    padding: var(--spacing);
-    border-top: var(--base-border);
     min-width: 0;
+    margin-bottom: var(--spacing-double);
   }
 
   .copilot-tab-content {

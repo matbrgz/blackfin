@@ -68,9 +68,9 @@ export class CopilotUserSettings extends React.Component<ICopilotUserSettingsPro
     return (
       <div className="copilot-tab-content">
         <div className="copilot-settings-scroll">
+          {this.renderUsage()}
           <div className="copilot-section">{content}</div>
         </div>
-        {this.renderUsage()}
       </div>
     )
   }

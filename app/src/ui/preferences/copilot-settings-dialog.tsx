@@ -73,7 +73,7 @@ export class CopilotSettingsDialog extends React.Component<ICopilotSettingsDialo
       <Dialog
         id="copilot-settings-dialog"
         className="copilot-settings-dialog"
-        title={`Copilot Settings: @${this.props.account.login}`}
+        title={__DARWIN__ ? 'Copilot Settings' : 'Copilot settings'}
         onSubmit={this.props.onDismissed}
         onDismissed={this.props.onDismissed}
         onDialogRef={this.setDialogElement}
