@@ -190,12 +190,14 @@ export class TestCopilotSnapshotCardDialog extends React.Component<
           </div>
         </DialogContent>
         <DialogFooter>
-          <Button type="button" onClick={this.onUseTokenBasedBillingPreset}>
-            AI credits preset
-          </Button>
-          <Button type="button" onClick={this.onUseRateLimitPreset}>
-            Rate limit preset
-          </Button>
+          <div className="test-copilot-snapshot-card-footer-buttons">
+            <Button type="button" onClick={this.onUseTokenBasedBillingPreset}>
+              AI credits preset
+            </Button>
+            <Button type="button" onClick={this.onUseRateLimitPreset}>
+              Rate limit preset
+            </Button>
+          </div>
           <OkCancelButtonGroup okButtonText="Done" />
         </DialogFooter>
       </Dialog>

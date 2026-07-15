@@ -415,6 +415,18 @@
     overflow-y: auto;
   }
 
+  .test-copilot-snapshot-card-footer-buttons {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--spacing-half);
+    padding: 0 0 var(--spacing) 0;
+
+    .button-component {
+      margin-right: 0;
+    }
+  }
+
   .test-copilot-snapshot-card-fieldset {
     padding: 0;
     margin: 0 0 var(--spacing-double);
