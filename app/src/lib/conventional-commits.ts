@@ -101,7 +101,7 @@ export function parseConventionalCommit(
 
   // The Conventional Commits spec allows any casing for the type, normalise to lower case
   const rawType = matchedType.toLowerCase()
-  const baseLabel = conventionalCommitLabelsByType.get(rawType) ?? rawType
+  const baseLabel = conventionalCommitLabelsByType.get(rawType) ?? matchedType
 
   const isBreaking = matcher.group(4) !== null
 
