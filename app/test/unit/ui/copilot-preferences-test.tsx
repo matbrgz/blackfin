@@ -554,6 +554,34 @@ describe('CopilotPreferences', () => {
     )
   })
 
+  it('makes multiple account Snapshot cards scrollable', () => {
+    const view = render(
+      <CopilotPreferences
+        {...defaults()}
+        accounts={[
+          makeAccount(),
+          makeAccount({
+            endpoint: 'https://api.octocorp.ghe.com',
+            id: 2,
+            login: 'octo',
+            name: 'Octo Cat',
+            copilotLicenseType: 'COPILOT_BUSINESS',
+          }),
+        ]}
+      />
+    )
+
+    const settingsScroll = view.container.querySelector(
+      '.copilot-settings-scroll'
+    )
+    const snapshotGroups = view.container.querySelector(
+      '.copilot-account-snapshot-groups'
+    )
+    assert.ok(settingsScroll instanceof HTMLElement)
+    assert.ok(snapshotGroups instanceof HTMLElement)
+    assert.strictEqual(settingsScroll.contains(snapshotGroups), true)
+  })
+
   it('requests account-specific Copilot settings from a Snapshot card', () => {
     const mona = makeAccount()
     const octo = makeAccount({
