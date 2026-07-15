@@ -1657,7 +1657,7 @@ export class CopilotStore extends BaseStore {
         )
       )
     } finally {
-      await this.stopClient(client)
+      this.stopClient(client)
     }
   }
 }
