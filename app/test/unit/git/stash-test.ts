@@ -392,6 +392,7 @@ describe('git/stash', () => {
         stashSha: 'xyz',
         tree: 'xyz',
         parents: ['abc'],
+        createdAt: new Date(),
         files: { kind: StashedChangesLoadStates.NotLoaded },
       }
 
@@ -409,6 +410,7 @@ describe('git/stash', () => {
         stashSha: 'xyz',
         tree: 'xyz',
         parents: ['abc'],
+        createdAt: new Date(),
         files: { kind: StashedChangesLoadStates.NotLoaded },
       }
       await generateTestStashEntry(repository, 'master', true)
