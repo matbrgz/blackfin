@@ -13,6 +13,9 @@ export interface IStashEntry {
   /** The SHA of the commit object created as a result of stashing. */
   readonly stashSha: string
 
+  /** The date when the stash entry was created. */
+  readonly createdAt: Date
+
   /** The list of files this stash touches */
   readonly files: StashedFileChanges
 

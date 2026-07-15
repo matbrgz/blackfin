@@ -51,6 +51,7 @@ export async function getStashes(repository: Repository): Promise<StashResult> {
     message: '%gs',
     tree: '%T',
     parents: '%P',
+    date: '%aI',
   })
 
   const result = await git(
@@ -71,7 +72,7 @@ export async function getStashes(repository: Repository): Promise<StashResult> {
 
   const entries = parse(result.stdout)
 
-  for (const { name, message, stashSha, tree, parents } of entries) {
+  for (const { name, message, stashSha, tree, parents, date } of entries) {
     const details = extractStashDetails(message)
 
     if (details !== null) {
@@ -82,10 +83,13 @@ export async function getStashes(repository: Repository): Promise<StashResult> {
         customName: details.customName,
         tree,
         parents: parents.length > 0 ? parents.split(' ') : [],
+        createdAt: new Date(date),
         files,
       })
     }
   }
+
+  desktopEntries.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
 
   return { desktopEntries, stashEntryCount: entries.length - 1 }
 }
@@ -97,14 +101,18 @@ export async function getStashes(repository: Repository): Promise<StashResult> {
  */
 export async function moveStashEntry(
   repository: Repository,
-  { stashSha, parents, tree, customName }: IStashEntry,
+  { stashSha, parents, tree, customName, createdAt }: IStashEntry,
   branchName: string
 ) {
   const message = `On ${branchName}: ${createDesktopStashMessage(
     branchName,
     customName
   )}`
-  await replaceStashEntry(repository, { stashSha, parents, tree }, message)
+  await replaceStashEntry(
+    repository,
+    { stashSha, parents, tree, createdAt },
+    message
+  )
 }
 
 /**
@@ -117,17 +125,21 @@ export async function renameStashEntry(
   entry: IStashEntry,
   newName: string | null
 ) {
-  const customName = newName !== null && newName.length > 0 ? newName : null
+  const customName = newName?.trim() || null
   if (customName === entry.customName) {
     return
   }
 
-  const { branchName, stashSha, parents, tree } = entry
+  const { branchName, stashSha, parents, tree, createdAt } = entry
   const message = `On ${branchName}: ${createDesktopStashMessage(
     branchName,
     customName
   )}`
-  await replaceStashEntry(repository, { stashSha, parents, tree }, message)
+  await replaceStashEntry(
+    repository,
+    { stashSha, parents, tree, createdAt },
+    message
+  )
 }
 
 /**
@@ -140,15 +152,18 @@ async function replaceStashEntry(
     stashSha,
     parents,
     tree,
-  }: Pick<IStashEntry, 'stashSha' | 'parents' | 'tree'>,
+    createdAt,
+  }: Pick<IStashEntry, 'stashSha' | 'parents' | 'tree' | 'createdAt'>,
   message: string
 ) {
   const parentArgs = parents.flatMap(p => ['-p', p])
+  const date = createdAt.toISOString()
 
   const { stdout: commitId } = await git(
     ['commit-tree', ...parentArgs, '-m', message, '--no-gpg-sign', tree],
     repository.path,
-    'moveStashEntryToBranch'
+    'moveStashEntryToBranch',
+    { env: { GIT_AUTHOR_DATE: date, GIT_COMMITTER_DATE: date } }
   )
 
   await git(

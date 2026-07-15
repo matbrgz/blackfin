@@ -24,6 +24,7 @@
         min-width: auto;
         height: auto;
         padding: var(--spacing-half);
+        flex-shrink: 0;
 
         .octicon {
           fill: var(--text-secondary-color);
@@ -38,7 +39,7 @@
     h3 {
       font-weight: var(--font-weight-light);
       font-size: var(--font-size-xl);
-      line-height: 1;
+      line-height: 1.2;
       margin: 0;
       overflow: hidden;
       text-overflow: ellipsis;
