@@ -274,7 +274,11 @@ describe('git/stash', () => {
       assert.equal(entries.length, 2)
 
       const entryToRename = entries[1]
-      await renameStashEntry(repository, entryToRename, 'my stash')
+      const returnedEntry = await renameStashEntry(
+        repository,
+        entryToRename,
+        'my stash'
+      )
 
       entries = (await getStashes(repository)).desktopEntries
       assert.equal(entries.length, 2)
@@ -287,6 +291,10 @@ describe('git/stash', () => {
 
       // the entry is recreated, so the old SHA no longer exists
       assert(!entries.some(e => e.stashSha === entryToRename.stashSha))
+
+      // the returned entry points to the recreated stash
+      assert.equal(returnedEntry.stashSha, renamed.stashSha)
+      assert.equal(returnedEntry.customName, 'my stash')
     })
 
     it('clears the custom name when given null', async t => {
@@ -318,12 +326,17 @@ describe('git/stash', () => {
       entries = (await getStashes(repository)).desktopEntries
       const entry = entries[0]
 
-      await renameStashEntry(repository, entry, 'my stash')
+      const returnedEntry = await renameStashEntry(
+        repository,
+        entry,
+        'my stash'
+      )
 
       entries = (await getStashes(repository)).desktopEntries
       assert.equal(entries.length, 1)
       assert.equal(entries[0].stashSha, entry.stashSha)
       assert.equal(entries[0].customName, 'my stash')
+      assert.equal(returnedEntry, entry)
     })
   })
 

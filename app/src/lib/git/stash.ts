@@ -124,10 +124,10 @@ export async function renameStashEntry(
   repository: Repository,
   entry: IStashEntry,
   newName: string | null
-) {
+): Promise<IStashEntry> {
   const customName = newName?.trim() || null
   if (customName === entry.customName) {
-    return
+    return entry
   }
 
   const { branchName, stashSha, parents, tree, createdAt } = entry
@@ -135,11 +135,12 @@ export async function renameStashEntry(
     branchName,
     customName
   )}`
-  await replaceStashEntry(
+  const newSha = await replaceStashEntry(
     repository,
     { stashSha, parents, tree, createdAt },
     message
   )
+  return { ...entry, stashSha: newSha, customName }
 }
 
 /**
@@ -155,7 +156,7 @@ async function replaceStashEntry(
     createdAt,
   }: Pick<IStashEntry, 'stashSha' | 'parents' | 'tree' | 'createdAt'>,
   message: string
-) {
+): Promise<string> {
   const parentArgs = parents.flatMap(p => ['-p', p])
   const date = createdAt.toISOString()
 
@@ -165,14 +166,17 @@ async function replaceStashEntry(
     'moveStashEntryToBranch',
     { env: { GIT_AUTHOR_DATE: date, GIT_COMMITTER_DATE: date } }
   )
+  const newSha = commitId.trim()
 
   await git(
-    ['stash', 'store', '-m', message, commitId.trim()],
+    ['stash', 'store', '-m', message, newSha],
     repository.path,
     'moveStashEntryToBranch'
   )
 
   await dropDesktopStashEntry(repository, stashSha)
+
+  return newSha
 }
 
 /**

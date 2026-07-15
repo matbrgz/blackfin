@@ -10074,9 +10074,25 @@ export class AppStore extends TypedBaseStore<IAppState> {
     newName: string | null
   ) {
     const gitStore = this.gitStoreCache.get(repository)
-    await gitStore.performFailableOperation(() => {
+    const renamedEntry = await gitStore.performFailableOperation(() => {
       return renameStashEntry(repository, stashEntry, newName)
     })
+
+    // Renaming recreates the stash entry with a new sha, point the selection at the
+    // new entry before reloading.
+    if (renamedEntry !== undefined) {
+      this.repositoryStateCache.updateChangesState(repository, state => {
+        const { selection } = state
+        if (
+          selection.kind !== ChangesSelectionKind.Stash ||
+          selection.selectedStashEntry?.stashSha !== stashEntry.stashSha
+        ) {
+          return { selection }
+        }
+        return { selection: { ...selection, selectedStashEntry: renamedEntry } }
+      })
+      this.emitUpdate()
+    }
 
     await gitStore.loadStashEntries()
   }
