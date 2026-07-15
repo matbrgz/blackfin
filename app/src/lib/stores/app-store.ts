@@ -397,7 +397,6 @@ import { BypassReasonType } from '../../ui/secret-scanning/bypass-push-protectio
 import {
   selectReferencedContext,
   fallbackReferencedContext,
-  getCopilotConflictResolutionErrorMessage,
   IConflictResolutionProgress,
   ICopilotResolutionSummary,
   IFileResolution,
@@ -6501,8 +6500,8 @@ export class AppStore extends TypedBaseStore<IAppState> {
         return null
       }
       // Propagate real failures (auth, network, rate limiting, timeouts, bad
-      // model output) so the caller can surface a cause-specific, actionable
-      // message instead of a single generic "no results" error.
+      // model output) so the caller can surface the underlying error message
+      // instead of a single generic "no results" error.
       log.warn('AppStore: Copilot conflict resolution failed', e)
       throw e
     } finally {
@@ -6980,12 +6979,10 @@ export class AppStore extends TypedBaseStore<IAppState> {
 
       this.statsStore.increment('copilotConflictResolutionErrorCount')
 
-      // Surface a cause-specific, actionable message to the user so they
-      // understand why they were routed back to manual conflict resolution and
-      // what to do next (sign in again, retry later, check their connection).
-      // Mirrors the pattern used by `_generateCommitMessage`.
-      const message = getCopilotConflictResolutionErrorMessage(e)
-      this.emitError(new ErrorWithMetadata(new Error(message), { repository }))
+      // Surface the underlying error to the user so they understand why they
+      // were routed back to manual conflict resolution. Mirrors the pattern
+      // used by `_generateCommitMessage`.
+      this.emitError(new ErrorWithMetadata(e, { repository }))
 
       // Transition back to manual conflict resolution
       this.repositoryStateCache.updateMultiCommitOperationState(

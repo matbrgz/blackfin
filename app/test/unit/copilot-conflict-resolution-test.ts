@@ -10,8 +10,6 @@ import {
   createDependencyAwareChunks,
   selectReferencedContext,
   fallbackReferencedContext,
-  getCopilotConflictResolutionErrorMessage,
-  CopilotValidationError,
 } from '../../src/lib/copilot-conflict-resolution'
 import {
   IFileConflictContext,
@@ -1302,61 +1300,5 @@ describe('fallbackReferencedContext', () => {
 
   it('returns empty when there are no commits or pull requests', () => {
     assert.equal(fallbackReferencedContext(makeResolutionContext()).length, 0)
-  })
-})
-
-describe('getCopilotConflictResolutionErrorMessage', () => {
-  it('reports a model failure for validation errors', () => {
-    const message = getCopilotConflictResolutionErrorMessage(
-      new CopilotValidationError('missing path')
-    )
-    assert.match(message, /Copilot couldn't resolve these conflicts/)
-  })
-
-  it('reports a timeout for timeout errors', () => {
-    const message = getCopilotConflictResolutionErrorMessage(
-      new Error('Copilot conflict resolution timed out')
-    )
-    assert.match(message, /timed out/)
-  })
-
-  it('reports rate limiting', () => {
-    const message = getCopilotConflictResolutionErrorMessage(
-      new Error('Request failed with status 429 Too Many Requests')
-    )
-    assert.match(message, /rate limit/i)
-  })
-
-  it('reports an expired session for auth errors', () => {
-    const message = getCopilotConflictResolutionErrorMessage(
-      new Error('Cannot create Copilot client: Account has no token')
-    )
-    assert.match(message, /Sign in to Copilot again/)
-  })
-
-  it('reports an auth failure for 401 responses', () => {
-    const err = Object.assign(new Error('Request failed'), { status: 401 })
-    const message = getCopilotConflictResolutionErrorMessage(err)
-    assert.match(message, /Sign in to Copilot again/)
-  })
-
-  it('reports a connectivity problem for network errors', () => {
-    const err = Object.assign(new Error('request to https failed'), {
-      code: 'ENOTFOUND',
-    })
-    const message = getCopilotConflictResolutionErrorMessage(err)
-    assert.match(message, /Check your internet connection/)
-  })
-
-  it('falls back to a generic model failure for unknown errors', () => {
-    const message = getCopilotConflictResolutionErrorMessage(
-      new Error('something unexpected')
-    )
-    assert.match(message, /Copilot couldn't resolve these conflicts/)
-  })
-
-  it('handles non-Error values', () => {
-    const message = getCopilotConflictResolutionErrorMessage('boom')
-    assert.match(message, /Copilot couldn't resolve these conflicts/)
   })
 })
