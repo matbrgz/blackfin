@@ -332,9 +332,7 @@ export class SnapshotCard extends React.Component<ISnapshotCardProps> {
             </div>
           </div>
           {onConfigureModels !== undefined && (
-            <Button onClick={this.onConfigureModelsClick}>
-              {__DARWIN__ ? 'Configure…' : 'Configure…'}
-            </Button>
+            <Button onClick={this.onConfigureModelsClick}>Configure…</Button>
           )}
         </div>
         {snapshots === null
