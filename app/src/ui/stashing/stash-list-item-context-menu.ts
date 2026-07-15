@@ -17,6 +17,10 @@ export const generateStashListContextMenu = (
 ) => {
   const items: ReadonlyArray<IMenuItem> = [
     {
+      label: 'Rename…',
+      action: () => onRename(config),
+    },
+    {
       label: 'Restore Changes',
       action: () => onRestore(config),
     },
@@ -39,6 +43,15 @@ async function onRestore(config: IStashListItemContextMenuConfig) {
     })
     dispatcher.postError(errorWithMetadata)
   }
+}
+
+function onRename(config: IStashListItemContextMenuConfig) {
+  const { stashEntry, repository, dispatcher } = config
+  dispatcher.showPopup({
+    type: PopupType.RenameStash,
+    stash: stashEntry,
+    repository,
+  })
 }
 
 async function onDiscard(config: IStashListItemContextMenuConfig) {

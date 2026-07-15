@@ -3139,6 +3139,15 @@ export class Dispatcher {
     return this.appStore._popStashEntry(repository, stashEntry)
   }
 
+  /** Sets or clears (`null`) the custom name of the given stash */
+  public renameStash(
+    repository: Repository,
+    stashEntry: IStashEntry,
+    newName: string | null
+  ) {
+    return this.appStore._renameStashEntry(repository, stashEntry, newName)
+  }
+
   /**
    * Set the width of the commit summary column in the
    * history view to the given value.

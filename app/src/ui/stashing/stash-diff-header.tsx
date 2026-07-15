@@ -40,10 +40,22 @@ export class StashDiffHeader extends React.Component<
 
   public render() {
     const { isRestoring, isDiscarding } = this.state
+    const { stashEntry } = this.props
 
     return (
       <div className="header">
-        <h3>Stashed changes</h3>
+        <div className="title-row">
+          <h3>{stashEntry.customName ?? 'Stashed changes'}</h3>
+          <Button
+            className="rename-stash-button"
+            onClick={this.onRenameClick}
+            tooltip="Rename stash"
+            ariaLabel="Rename stash"
+            disabled={isRestoring || isDiscarding}
+          >
+            <Octicon symbol={octicons.pencil} />
+          </Button>
+        </div>
         <div className="row button-group">
           <Button
             onClick={this.onCloseClick}
@@ -75,6 +87,16 @@ export class StashDiffHeader extends React.Component<
         </div>
       </div>
     )
+  }
+
+  private onRenameClick = () => {
+    const { dispatcher, repository, stashEntry } = this.props
+
+    dispatcher.showPopup({
+      type: PopupType.RenameStash,
+      stash: stashEntry,
+      repository,
+    })
   }
 
   private onDiscardClick = async () => {

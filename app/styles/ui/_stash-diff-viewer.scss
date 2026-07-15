@@ -12,11 +12,37 @@
     border-bottom: var(--base-border);
     padding: var(--spacing-triple) var(--spacing-double);
 
+    .title-row {
+      display: flex;
+      align-items: center;
+      margin-bottom: var(--spacing);
+
+      .rename-stash-button {
+        margin-left: var(--spacing);
+        border: none;
+        background: transparent;
+        min-width: auto;
+        height: auto;
+        padding: var(--spacing-half);
+
+        .octicon {
+          fill: var(--text-secondary-color);
+        }
+
+        &:hover .octicon {
+          fill: var(--text-color);
+        }
+      }
+    }
+
     h3 {
       font-weight: var(--font-weight-light);
       font-size: var(--font-size-xl);
       line-height: 1;
-      margin-bottom: var(--spacing);
+      margin: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
 
     .row {

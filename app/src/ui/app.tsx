@@ -125,6 +125,7 @@ import { getCurrentBranchForcePushState } from '../lib/rebase'
 import { Banner, BannerType } from '../models/banner'
 import { StashAndSwitchBranch } from './stash-changes/stash-and-switch-branch-dialog'
 import { ConfirmDiscardStashDialog } from './stashing/confirm-discard-stash'
+import { RenameStashDialog } from './stashing/rename-stash-dialog'
 import { ConfirmCheckoutCommitDialog } from './checkout/confirm-checkout-commit'
 import { ConfirmDeletePushedTagDialog } from './tag/confirm-delete-pushed-tag'
 import { CreateTutorialRepositoryDialog } from './no-repositories/create-tutorial-repository-dialog'
@@ -2264,6 +2265,19 @@ export class App extends React.Component<IAppProps, IAppState> {
             askForConfirmationOnDiscardStash={
               this.state.askForConfirmationOnDiscardStash
             }
+            repository={repository}
+            stash={stash}
+            onDismissed={onPopupDismissedFn}
+          />
+        )
+      }
+      case PopupType.RenameStash: {
+        const { repository, stash } = popup
+
+        return (
+          <RenameStashDialog
+            key="rename-stash-dialog"
+            dispatcher={this.props.dispatcher}
             repository={repository}
             stash={stash}
             onDismissed={onPopupDismissedFn}

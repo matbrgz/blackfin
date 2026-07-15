@@ -342,6 +342,7 @@ import {
   popStashEntry,
   dropDesktopStashEntry,
   moveStashEntry,
+  renameStashEntry,
 } from '../git/stash'
 import {
   UncommittedChangesStrategy,
@@ -10063,6 +10064,20 @@ export class AppStore extends TypedBaseStore<IAppState> {
     )
 
     this.statsStore.increment('stashDiscardCount')
+    await gitStore.loadStashEntries()
+  }
+
+  /** This shouldn't be called directly. See `Dispatcher`. */
+  public async _renameStashEntry(
+    repository: Repository,
+    stashEntry: IStashEntry,
+    newName: string | null
+  ) {
+    const gitStore = this.gitStoreCache.get(repository)
+    await gitStore.performFailableOperation(() => {
+      return renameStashEntry(repository, stashEntry, newName)
+    })
+
     await gitStore.loadStashEntries()
   }
 
