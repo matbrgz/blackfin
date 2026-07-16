@@ -1,6 +1,5 @@
 import type {
   CopilotModelsByAccount,
-  CopilotModelSelections,
   CopilotModelSelectionsByAccount,
   CopilotQuotaSnapshotsByAccount,
   CopilotQuotaSnapshots,
@@ -420,13 +419,7 @@ export interface IAppState {
   /** Whether the changes filter is shown */
   readonly showChangesFilter: boolean
 
-  /**
-   * Per-feature Copilot model selections. An absent key means the default
-   * model will be used for that feature.
-   */
-  readonly selectedCopilotModels: CopilotModelSelections
-
-  /** Account-scoped selections. Missing features fall back to legacy selections. */
+  /** Account-scoped Copilot model selections. */
   readonly selectedCopilotModelsByAccount: CopilotModelSelectionsByAccount
 
   /**

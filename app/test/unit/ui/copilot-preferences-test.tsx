@@ -17,6 +17,7 @@ import { CopilotPreferences } from '../../../src/ui/preferences/copilot'
 import {
   DefaultCopilotModel,
   type CopilotFeature,
+  type CopilotModelSelections,
   type ICopilotQuotaSnapshot,
   getCopilotAccountCacheKey,
 } from '../../../src/lib/stores/copilot-store'
@@ -266,7 +267,6 @@ afterEach(() => {
 
 function defaults() {
   return {
-    selectedCopilotModels: {},
     selectedCopilotModelsByAccount: new Map(),
     copilotModels: models,
     copilotModelsByAccount: new Map(),
@@ -284,6 +284,10 @@ function defaults() {
     onConfigureCustomProviders: () => {},
     onConfigureModels: () => {},
   }
+}
+
+function selectionsForDefaultAccount(selections: CopilotModelSelections) {
+  return new Map([[getCopilotAccountCacheKey(makeAccount()), selections]])
 }
 
 function getModelPickerButton(container: HTMLElement): HTMLButtonElement {
@@ -907,12 +911,12 @@ describe('CopilotPreferences', () => {
     const view = render(
       <CopilotPreferences
         {...defaults()}
-        selectedCopilotModels={{
+        selectedCopilotModelsByAccount={selectionsForDefaultAccount({
           'commit-message-generation': encodeModelKey({
             kind: 'copilot',
             modelId: 'usage-billed-model',
           }),
-        }}
+        })}
       />
     )
 
@@ -986,12 +990,12 @@ describe('CopilotPreferences', () => {
       <CopilotPreferences
         {...defaults()}
         copilotModels={[partiallyPricedModel]}
-        selectedCopilotModels={{
+        selectedCopilotModelsByAccount={selectionsForDefaultAccount({
           'commit-message-generation': encodeModelKey({
             kind: 'copilot',
             modelId: 'partially-priced-model',
           }),
-        }}
+        })}
       />
     )
 
@@ -1023,12 +1027,12 @@ describe('CopilotPreferences', () => {
       <CopilotPreferences
         {...defaults()}
         copilotModels={[missingBatchSizeModel]}
-        selectedCopilotModels={{
+        selectedCopilotModelsByAccount={selectionsForDefaultAccount({
           'commit-message-generation': encodeModelKey({
             kind: 'copilot',
             modelId: 'missing-batch-size-model',
           }),
-        }}
+        })}
       />
     )
 
@@ -1048,7 +1052,9 @@ describe('CopilotPreferences', () => {
     const view = render(
       <CopilotPreferences
         {...defaults()}
-        selectedCopilotModels={{ 'commit-message-generation': 'claude-sonnet' }}
+        selectedCopilotModelsByAccount={selectionsForDefaultAccount({
+          'commit-message-generation': 'claude-sonnet',
+        })}
       />
     )
 
@@ -1062,13 +1068,13 @@ describe('CopilotPreferences', () => {
       <CopilotPreferences
         {...defaults()}
         byokProviders={[ollamaProvider]}
-        selectedCopilotModels={{
+        selectedCopilotModelsByAccount={selectionsForDefaultAccount({
           'commit-message-generation': encodeModelKey({
             kind: 'byok',
             providerId: ollamaProvider.id,
             modelId: 'llama3',
           }),
-        }}
+        })}
       />
     )
 
@@ -1105,7 +1111,9 @@ describe('CopilotPreferences', () => {
     const view = render(
       <CopilotPreferences
         {...defaults()}
-        selectedCopilotModels={{ 'commit-message-generation': 'claude-sonnet' }}
+        selectedCopilotModelsByAccount={selectionsForDefaultAccount({
+          'commit-message-generation': 'claude-sonnet',
+        })}
         onSelectedCopilotModelChanged={(_, f, m) =>
           changed.push({ feature: f, model: m })
         }
@@ -1137,9 +1145,9 @@ describe('CopilotPreferences', () => {
     const view = render(
       <CopilotPreferences
         {...defaults()}
-        selectedCopilotModels={{
+        selectedCopilotModelsByAccount={selectionsForDefaultAccount({
           'commit-message-generation': 'deleted-model',
-        }}
+        })}
       />
     )
 
@@ -1152,13 +1160,13 @@ describe('CopilotPreferences', () => {
     const view = render(
       <CopilotPreferences
         {...defaults()}
-        selectedCopilotModels={{
+        selectedCopilotModelsByAccount={selectionsForDefaultAccount({
           'commit-message-generation': encodeModelKey({
             kind: 'byok',
             providerId: 'missing-provider',
             modelId: 'llama3',
           }),
-        }}
+        })}
       />
     )
 
@@ -1173,9 +1181,9 @@ describe('CopilotPreferences', () => {
       <CopilotPreferences
         {...defaults()}
         copilotModels={onlyOtherModel}
-        selectedCopilotModels={{
+        selectedCopilotModelsByAccount={selectionsForDefaultAccount({
           'commit-message-generation': 'deleted-model',
-        }}
+        })}
       />
     )
 
@@ -1190,9 +1198,9 @@ describe('CopilotPreferences', () => {
         {...defaults()}
         copilotModels={[]}
         byokProviders={[ollamaProvider]}
-        selectedCopilotModels={{
+        selectedCopilotModelsByAccount={selectionsForDefaultAccount({
           'commit-message-generation': 'deleted-model',
-        }}
+        })}
       />
     )
 

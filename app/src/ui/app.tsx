@@ -204,7 +204,6 @@ import {
 } from '../lib/feature-flag'
 import {
   getCopilotAccountCacheKey,
-  getCopilotModelSelectionsForAccount,
   type CopilotFeature,
 } from '../lib/stores/copilot-store'
 import {
@@ -1576,10 +1575,10 @@ export class App extends React.Component<IAppProps, IAppState> {
   }
 
   private getSelectedCopilotModelsForAccount(account: Account) {
-    return getCopilotModelSelectionsForAccount(
-      this.state.selectedCopilotModels,
-      this.state.selectedCopilotModelsByAccount,
-      account
+    return (
+      this.state.selectedCopilotModelsByAccount.get(
+        getCopilotAccountCacheKey(account)
+      ) ?? {}
     )
   }
 
@@ -1768,7 +1767,6 @@ export class App extends React.Component<IAppProps, IAppState> {
             onEditGlobalGitConfig={this.editGlobalGitConfig}
             underlineLinks={this.state.underlineLinks}
             showDiffCheckMarks={this.state.showDiffCheckMarks}
-            selectedCopilotModels={this.state.selectedCopilotModels}
             selectedCopilotModelsByAccount={
               this.state.selectedCopilotModelsByAccount
             }
@@ -2461,7 +2459,7 @@ export class App extends React.Component<IAppProps, IAppState> {
         )
         const selectedCopilotModels =
           account === undefined
-            ? this.state.selectedCopilotModels
+            ? {}
             : this.getSelectedCopilotModelsForAccount(account)
         const copilotModels =
           account === undefined

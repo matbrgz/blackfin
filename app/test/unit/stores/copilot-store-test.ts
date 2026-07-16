@@ -15,7 +15,7 @@ import {
   DefaultCopilotModel,
   getCopilotGHHost,
   getCopilotAccountCacheKey,
-  getCopilotModelSelectionsForAccount,
+  migrateCopilotModelSelectionsToAccounts,
   getCopilotModelCacheKey,
   getLowestReasoningEffort,
   getPreferredDefaultModel,
@@ -228,8 +228,8 @@ describe('getCopilotModelCacheKey', () => {
   })
 })
 
-describe('getCopilotModelSelectionsForAccount', () => {
-  it('uses account overrides and falls back per feature to legacy selections', () => {
+describe('migrateCopilotModelSelectionsToAccounts', () => {
+  it('copies legacy selections to every account and preserves overrides', () => {
     const account = makeAccount({ id: 1 })
     const otherAccount = makeAccount({ id: 2 })
     const legacySelections = {
@@ -243,23 +243,18 @@ describe('getCopilotModelSelectionsForAccount', () => {
       ],
     ])
 
-    assert.deepStrictEqual(
-      getCopilotModelSelectionsForAccount(
-        legacySelections,
-        selectionsByAccount,
-        account
-      ),
-      {
-        'commit-message-generation': 'account-commit',
-        'conflict-resolution': 'legacy-conflict',
-      }
+    const migrated = migrateCopilotModelSelectionsToAccounts(
+      legacySelections,
+      selectionsByAccount,
+      [account, otherAccount]
     )
+
+    assert.deepStrictEqual(migrated.get(getCopilotAccountCacheKey(account)), {
+      'commit-message-generation': 'account-commit',
+      'conflict-resolution': 'legacy-conflict',
+    })
     assert.deepStrictEqual(
-      getCopilotModelSelectionsForAccount(
-        legacySelections,
-        selectionsByAccount,
-        otherAccount
-      ),
+      migrated.get(getCopilotAccountCacheKey(otherAccount)),
       legacySelections
     )
   })

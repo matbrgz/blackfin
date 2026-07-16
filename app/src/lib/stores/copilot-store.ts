@@ -138,16 +138,23 @@ export type CopilotModelSelectionsByAccount = ReadonlyMap<
   CopilotModelSelections
 >
 
-/** Resolve account selections, falling back per feature to legacy globals. */
-export function getCopilotModelSelectionsForAccount(
+/** Migrate legacy selections to each account, preserving existing overrides. */
+export function migrateCopilotModelSelectionsToAccounts(
   legacySelections: CopilotModelSelections,
   selectionsByAccount: CopilotModelSelectionsByAccount,
-  account: Account
-): CopilotModelSelections {
-  return {
-    ...legacySelections,
-    ...selectionsByAccount.get(getCopilotAccountCacheKey(account)),
+  accounts: ReadonlyArray<Account>
+): CopilotModelSelectionsByAccount {
+  const migrated = new Map(selectionsByAccount)
+
+  for (const account of accounts) {
+    const accountKey = getCopilotAccountCacheKey(account)
+    migrated.set(accountKey, {
+      ...legacySelections,
+      ...migrated.get(accountKey),
+    })
   }
+
+  return migrated
 }
 
 /**

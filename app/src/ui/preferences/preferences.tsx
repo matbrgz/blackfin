@@ -46,7 +46,6 @@ import { CopilotPreferences } from './copilot'
 import type {
   CopilotFeature,
   CopilotModelsByAccount,
-  CopilotModelSelections,
   CopilotModelSelectionsByAccount,
   CopilotQuotaSnapshotsByAccount,
   CopilotQuotaSnapshots,
@@ -119,7 +118,6 @@ interface IPreferencesProps {
   readonly onEditGlobalGitConfig: () => void
   readonly underlineLinks: boolean
   readonly showDiffCheckMarks: boolean
-  readonly selectedCopilotModels: CopilotModelSelections
   readonly selectedCopilotModelsByAccount: CopilotModelSelectionsByAccount
   readonly copilotModels: ReadonlyArray<Model> | null
   readonly copilotModelsByAccount: CopilotModelsByAccount
@@ -189,7 +187,6 @@ interface IPreferencesState {
   // Whether the preferences related to Git hooks environment have been changed
   readonly hooksPreferencesDirty: boolean
 
-  readonly selectedCopilotModels: CopilotModelSelections
   readonly selectedCopilotModelsByAccount: CopilotModelSelectionsByAccount
   readonly alwaysUseCopilotForConflictResolution: boolean
   readonly selectedDateFormat?: DateFormat
@@ -259,7 +256,6 @@ export class Preferences extends React.Component<
       cacheGitHookEnv: getCacheHooksEnv(),
       selectedGitHookEnvShell: getGitHookEnvShell(),
       hooksPreferencesDirty: false,
-      selectedCopilotModels: this.props.selectedCopilotModels,
       selectedCopilotModelsByAccount: this.props.selectedCopilotModelsByAccount,
       alwaysUseCopilotForConflictResolution:
         this.props.alwaysUseCopilotForConflictResolution,
@@ -346,10 +342,6 @@ export class Preferences extends React.Component<
   }
 
   public componentDidUpdate(prevProps: IPreferencesProps) {
-    if (prevProps.selectedCopilotModels !== this.props.selectedCopilotModels) {
-      this.setState({ selectedCopilotModels: this.props.selectedCopilotModels })
-    }
-
     if (
       prevProps.selectedCopilotModelsByAccount !==
       this.props.selectedCopilotModelsByAccount
@@ -577,7 +569,6 @@ export class Preferences extends React.Component<
       case PreferencesTab.Copilot:
         View = (
           <CopilotPreferences
-            selectedCopilotModels={this.state.selectedCopilotModels}
             selectedCopilotModelsByAccount={
               this.state.selectedCopilotModelsByAccount
             }

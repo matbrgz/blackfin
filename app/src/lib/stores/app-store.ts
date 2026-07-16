@@ -24,7 +24,7 @@ import type {
 import {
   CommitMessageGenerationCancelledError,
   getCopilotAccountCacheKey,
-  getCopilotModelSelectionsForAccount,
+  migrateCopilotModelSelectionsToAccounts,
 } from './copilot-store'
 import {
   IBYOKProvider,
@@ -730,7 +730,6 @@ export class AppStore extends TypedBaseStore<IAppState> {
 
   private showChangesFilter: boolean = false
 
-  private selectedCopilotModels: CopilotModelSelections = {}
   private selectedCopilotModelsByAccount: CopilotModelSelectionsByAccount =
     new Map()
   private copilotModels: ReadonlyArray<Model> | null = null
@@ -1377,7 +1376,6 @@ export class AppStore extends TypedBaseStore<IAppState> {
       alwaysUseCopilotForConflictResolution:
         this.alwaysUseCopilotForConflictResolution,
       showChangesFilter: this.showChangesFilter,
-      selectedCopilotModels: this.selectedCopilotModels,
       selectedCopilotModelsByAccount: this.selectedCopilotModelsByAccount,
       copilotModels: this.copilotModels,
       copilotModelsByAccount: this.copilotModelsByAccount,
@@ -2674,9 +2672,9 @@ export class AppStore extends TypedBaseStore<IAppState> {
       showChangesFilterDefault
     )
 
-    this.selectedCopilotModels = this.loadCopilotModelSelections()
     this.selectedCopilotModelsByAccount =
       this.loadCopilotModelSelectionsByAccount()
+    this.migrateCopilotModelSelections()
     this.byokProviders = loadBYOKProviders()
 
     this.emitUpdateNow()
@@ -10147,7 +10145,7 @@ export class AppStore extends TypedBaseStore<IAppState> {
     }
   }
 
-  private loadCopilotModelSelections(): CopilotModelSelections {
+  private loadLegacyCopilotModelSelections(): CopilotModelSelections {
     const raw = localStorage.getItem(selectedCopilotModelsKey)
     if (raw !== null) {
       try {
@@ -10163,12 +10161,9 @@ export class AppStore extends TypedBaseStore<IAppState> {
     // Migrate from the old single-model key
     const legacy = localStorage.getItem('selected-copilot-model')
     if (legacy !== null) {
-      localStorage.removeItem('selected-copilot-model')
-      const selections: CopilotModelSelections = {
+      return {
         'commit-message-generation': legacy,
       }
-      localStorage.setItem(selectedCopilotModelsKey, JSON.stringify(selections))
-      return selections
     }
 
     return {}
@@ -10204,24 +10199,28 @@ export class AppStore extends TypedBaseStore<IAppState> {
     )
   }
 
-  private getSelectedCopilotModels(account: Account): CopilotModelSelections {
-    return getCopilotModelSelectionsForAccount(
-      this.selectedCopilotModels,
-      this.selectedCopilotModelsByAccount,
-      account
-    )
+  private migrateCopilotModelSelections(): void {
+    const legacySelections = this.loadLegacyCopilotModelSelections()
+    if (Object.keys(legacySelections).length > 0) {
+      this.selectedCopilotModelsByAccount =
+        migrateCopilotModelSelectionsToAccounts(
+          legacySelections,
+          this.selectedCopilotModelsByAccount,
+          this.accounts
+        )
+      this.saveCopilotModelSelectionsByAccount()
+    }
+
+    localStorage.removeItem(selectedCopilotModelsKey)
+    localStorage.removeItem('selected-copilot-model')
   }
 
-  private saveCopilotModelSelections() {
-    const keys = Object.keys(this.selectedCopilotModels)
-    if (keys.length === 0) {
-      localStorage.removeItem(selectedCopilotModelsKey)
-    } else {
-      localStorage.setItem(
-        selectedCopilotModelsKey,
-        JSON.stringify(this.selectedCopilotModels)
-      )
-    }
+  private getSelectedCopilotModels(account: Account): CopilotModelSelections {
+    return (
+      this.selectedCopilotModelsByAccount.get(
+        getCopilotAccountCacheKey(account)
+      ) ?? {}
+    )
   }
 
   /** This shouldn't be called directly. See 'Dispatcher'. */
@@ -10242,8 +10241,8 @@ export class AppStore extends TypedBaseStore<IAppState> {
   }
 
   /**
-   * Resolves a stored Copilot model selection (the composite key persisted in
-   * `selectedCopilotModels`) into a {@link CopilotModelRequest} suitable for
+   * Resolves a stored account Copilot model selection into a
+   * {@link CopilotModelRequest} suitable for
    * {@link CopilotStore.generateCommitMessage}. BYOK provider secrets are
    * read from the OS keychain at call time.
    */
@@ -10401,9 +10400,6 @@ export class AppStore extends TypedBaseStore<IAppState> {
    * so a transient empty list doesn't downgrade valid selections.
    */
   private scrubMissingCopilotModelSelections(): void {
-    const legacySelections = this.scrubCopilotModelSelections(
-      this.selectedCopilotModels
-    )
     const selectionsByAccount = new Map<string, CopilotModelSelections>()
 
     for (const [accountKey, selections] of this
@@ -10415,11 +10411,6 @@ export class AppStore extends TypedBaseStore<IAppState> {
       if (Object.keys(updated).length > 0) {
         selectionsByAccount.set(accountKey, updated)
       }
-    }
-
-    if (legacySelections !== this.selectedCopilotModels) {
-      this.selectedCopilotModels = legacySelections
-      this.saveCopilotModelSelections()
     }
 
     if (

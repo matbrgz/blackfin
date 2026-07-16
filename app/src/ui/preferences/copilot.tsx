@@ -5,7 +5,6 @@ import { enableCopilotSdkCommitMessageGeneration } from '../../lib/feature-flag'
 import {
   type CopilotFeature,
   getCopilotAccountCacheKey,
-  getCopilotModelSelectionsForAccount,
   type CopilotModelsByAccount,
   type CopilotModelSelections,
   type CopilotModelSelectionsByAccount,
@@ -24,7 +23,6 @@ import { CopilotUserSettings } from './copilot-user-settings'
 import { SnapshotCard } from './snapshot-card'
 
 interface ICopilotPreferencesProps {
-  readonly selectedCopilotModels: CopilotModelSelections
   readonly selectedCopilotModelsByAccount: CopilotModelSelectionsByAccount
   readonly copilotModels: ReadonlyArray<Model> | null
   readonly copilotModelsByAccount: CopilotModelsByAccount
@@ -181,10 +179,10 @@ export class CopilotPreferences extends React.Component<ICopilotPreferencesProps
   }
 
   private getSelectedCopilotModels(account: Account): CopilotModelSelections {
-    return getCopilotModelSelectionsForAccount(
-      this.props.selectedCopilotModels,
-      this.props.selectedCopilotModelsByAccount,
-      account
+    return (
+      this.props.selectedCopilotModelsByAccount.get(
+        getCopilotAccountCacheKey(account)
+      ) ?? {}
     )
   }
 
