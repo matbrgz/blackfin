@@ -11,6 +11,7 @@ import {
   WorkingDirectoryStatus,
   WorkingDirectoryFileChange,
   isConflictWithMarkers,
+  isManualConflict,
 } from '../../../models/status'
 import { getUnmergedFiles, isConflictedFile } from '../../../lib/status'
 import { assertNever } from '../../../lib/fatal-error'
@@ -44,6 +45,10 @@ import {
   CopilotFileResolutionChoice,
   getResolutionChoiceForFile,
   resolutionChoices,
+  isDeleteConflictFile,
+  getDeletedSide,
+  getDeleteConflictChoiceLabel,
+  getOursTheirsLabels,
 } from './copilot-resolution-helpers'
 
 interface ICopilotConflictsDialogProps {
@@ -147,13 +152,12 @@ export class CopilotConflictsDialog extends React.Component<
   private onResolutionDropdownClick = (path: string) => {
     const currentChoice = this.getResolutionForFile(path)
     const { ourBranch, theirBranch } = this.props.conflictState
-
-    const oursLabel = ourBranch
-      ? `Use current file from ${ourBranch}`
-      : 'Use current file'
-    const theirsLabel = theirBranch
-      ? `Use incoming file from ${theirBranch}`
-      : 'Use incoming file'
+    const fileStatus = this.getConflictedFileStatus(path)
+    const { oursLabel, theirsLabel } = getOursTheirsLabels(
+      fileStatus,
+      ourBranch,
+      theirBranch
+    )
 
     const items: ReadonlyArray<IMenuItem> = [
       {
@@ -251,6 +255,14 @@ export class CopilotConflictsDialog extends React.Component<
     return this.props.copilotResolutions?.find(r => r.path === path)
   }
 
+  private getConflictedFileStatus(path: string) {
+    const file = this.props.workingDirectory.files.find(f => f.path === path)
+    if (file === undefined || !isConflictedFile(file.status)) {
+      return undefined
+    }
+    return file.status
+  }
+
   private isFileResolvedExternally(file: WorkingDirectoryFileChange): boolean {
     if (!isConflictedFile(file.status)) {
       return false
@@ -288,21 +300,54 @@ export class CopilotConflictsDialog extends React.Component<
   private renderConflictedFile(file: WorkingDirectoryFileChange): JSX.Element {
     const resolution = this.getResolutionForPath(file.path)
     const choice = this.getResolutionForFile(file.path)
-    const { label: choiceLabel, icon: choiceIcon } = resolutionChoices[choice]
     const reasoning = resolution?.reasoning
+    const fileStatus = isConflictedFile(file.status) ? file.status : undefined
+    const isDeleteConflict =
+      fileStatus !== undefined && isDeleteConflictFile(fileStatus)
 
-    const reasoningText =
-      choice === 'copilot' && reasoning
-        ? reasoning
-        : choice === 'ours'
-        ? `Using changes from ${
-            this.props.conflictState.ourBranch ?? 'current branch'
-          }`
-        : choice === 'theirs'
-        ? `Using changes from ${
-            this.props.conflictState.theirBranch ?? 'incoming branch'
-          }`
+    // Use "Keep file" / "Delete file" labels for delete-vs-modify conflicts
+    let choiceLabel: string
+    let choiceIcon: typeof octicons.copilot
+    if (isDeleteConflict && isManualConflict(fileStatus)) {
+      choiceLabel = getDeleteConflictChoiceLabel(choice, fileStatus)
+      choiceIcon =
+        choice === 'copilot' ? octicons.copilot : resolutionChoices[choice].icon
+    } else {
+      const resolved = resolutionChoices[choice]
+      choiceLabel = resolved.label
+      choiceIcon = resolved.icon
+    }
+
+    let reasoningText: string | undefined
+    if (choice === 'copilot' && reasoning) {
+      reasoningText = reasoning
+    } else if (isDeleteConflict) {
+      const deletedSide = isManualConflict(fileStatus!)
+        ? getDeletedSide(fileStatus!)
         : undefined
+      const { ourBranch, theirBranch } = this.props.conflictState
+      if (deletedSide === 'ours') {
+        const branch = ourBranch ?? 'current branch'
+        reasoningText =
+          choice === 'ours'
+            ? `Deleting file (deleted on ${branch})`
+            : `Keeping modified file`
+      } else if (deletedSide === 'theirs') {
+        const branch = theirBranch ?? 'incoming branch'
+        reasoningText =
+          choice === 'theirs'
+            ? `Deleting file (deleted on ${branch})`
+            : `Keeping modified file`
+      }
+    } else if (choice === 'ours') {
+      reasoningText = `Using changes from ${
+        this.props.conflictState.ourBranch ?? 'current branch'
+      }`
+    } else if (choice === 'theirs') {
+      reasoningText = `Using changes from ${
+        this.props.conflictState.theirBranch ?? 'incoming branch'
+      }`
+    }
 
     const onDropdownClick = this.getResolutionDropdownClickHandler(file.path)
     const onOverflowClick = this.getOverflowMenuClickHandler(file.path)

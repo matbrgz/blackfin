@@ -884,4 +884,96 @@ describe('copilot-conflict-context', () => {
       assert.ok(result.includes('const b = 2'))
     })
   })
+
+  describe('formatConflictContextForPrompt with delete-vs-modify', () => {
+    it('renders delete-vs-modify conflict with scenario description', () => {
+      const context: ICopilotConflictContext = {
+        ourLabel: 'main',
+        theirLabel: 'feature',
+        files: [
+          {
+            path: 'utils.ts',
+            hunks: [],
+            deleteConflict: { deletedSide: 'theirs' },
+          },
+        ],
+      }
+
+      const result = formatConflictContextForPrompt(
+        toResolutionContext(context)
+      )
+
+      assert.ok(result.includes('File: utils.ts (delete-vs-modify conflict)'))
+      assert.ok(
+        result.includes(
+          'Deleted on "feature" (theirs), modified on "main" (ours)'
+        )
+      )
+      assert.ok(result.includes('"action": "keep"'))
+      assert.ok(result.includes('"action": "delete"'))
+    })
+
+    it('renders ours-deleted scenario correctly', () => {
+      const context: ICopilotConflictContext = {
+        ourLabel: 'main',
+        theirLabel: 'feature',
+        files: [
+          {
+            path: 'old-file.ts',
+            hunks: [],
+            deleteConflict: { deletedSide: 'ours' },
+          },
+        ],
+      }
+
+      const result = formatConflictContextForPrompt(
+        toResolutionContext(context)
+      )
+
+      assert.ok(
+        result.includes(
+          'Deleted on "main" (ours), modified on "feature" (theirs)'
+        )
+      )
+    })
+
+    it('renders mixed text and delete-vs-modify files', () => {
+      const context: ICopilotConflictContext = {
+        ourLabel: 'main',
+        theirLabel: 'feature',
+        files: [
+          {
+            path: 'text.ts',
+            hunks: [
+              {
+                oursContent: 'const a = 1',
+                theirsContent: 'const a = 2',
+                baseContent: null,
+                contextBefore: '',
+                contextAfter: '',
+              },
+            ],
+          },
+          {
+            path: 'deleted.ts',
+            hunks: [],
+            deleteConflict: { deletedSide: 'theirs' },
+          },
+        ],
+      }
+
+      const result = formatConflictContextForPrompt(
+        toResolutionContext(context)
+      )
+
+      // Text conflict rendered normally
+      assert.ok(result.includes('File: text.ts'))
+      assert.ok(result.includes('const a = 1'))
+      assert.ok(result.includes('const a = 2'))
+
+      // Delete conflict rendered with scenario
+      assert.ok(result.includes('File: deleted.ts (delete-vs-modify conflict)'))
+      assert.ok(result.includes('Deleted on "feature"'))
+    })
+  })
 })

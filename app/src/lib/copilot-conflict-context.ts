@@ -25,7 +25,7 @@ export interface IConflictHunk {
 export interface IFileConflictContext {
   /** Repository-relative file path */
   readonly path: string
-  /** All conflict hunks in the file (empty if skipped) */
+  /** All conflict hunks in the file (empty if skipped or delete-vs-modify) */
   readonly hunks: ReadonlyArray<IConflictHunk>
   /** If the file was skipped, the reason why (shown in prompt so Copilot knows) */
   readonly skippedReason?: string
@@ -35,6 +35,16 @@ export interface IFileConflictContext {
    * resolutions into the original content. Omitted when the file is skipped.
    */
   readonly rawContent?: string
+  /**
+   * Present when this is a delete-vs-modify conflict (no text markers).
+   * One side deleted the file while the other modified it; the model
+   * responds with `"action": "keep"` or `"action": "delete"` instead of
+   * per-hunk resolutions.
+   */
+  readonly deleteConflict?: {
+    /** Which side of the merge deleted the file. */
+    readonly deletedSide: 'ours' | 'theirs'
+  }
 }
 
 /**
@@ -294,10 +304,25 @@ export async function buildConflictContext(
   ourLabel: string,
   theirLabel: string,
   workingDirectory: string,
-  files: ReadonlyArray<{ readonly path: string }>
+  files: ReadonlyArray<{
+    readonly path: string
+    /** Which side deleted the file (for delete-vs-modify conflicts). */
+    readonly deletedSide?: 'ours' | 'theirs'
+  }>
 ): Promise<ICopilotConflictContext> {
   const results = await Promise.all(
     files.map(async (file): Promise<IFileConflictContext> => {
+      // Delete-vs-modify conflicts have no text markers on disk. Include
+      // them in the context with metadata so the model can recommend
+      // keep or delete — no file content is needed.
+      if (file.deletedSide !== undefined) {
+        return {
+          path: file.path,
+          hunks: [],
+          deleteConflict: { deletedSide: file.deletedSide },
+        }
+      }
+
       // Guard against path traversal and symlink escapes (cross-platform)
       let absolutePath: string | null
       try {
@@ -421,6 +446,29 @@ export function formatConflictContextForPrompt(
 
   for (const file of context.files) {
     const safePath = sanitizeForMarkdown(file.path)
+
+    if (file.deleteConflict) {
+      const { deletedSide } = file.deleteConflict
+      const deletedLabel =
+        deletedSide === 'ours' ? context.ourLabel : context.theirLabel
+      const modifiedLabel =
+        deletedSide === 'ours' ? context.theirLabel : context.ourLabel
+
+      parts.push(`## File: ${safePath} (delete-vs-modify conflict)`)
+      parts.push('')
+      parts.push(
+        `Deleted on "${deletedLabel}" (${deletedSide}), modified on "${modifiedLabel}" (${
+          deletedSide === 'ours' ? 'theirs' : 'ours'
+        }).`
+      )
+      parts.push('')
+      parts.push(
+        'Respond with `"action": "keep"` to preserve the modified file, or `"action": "delete"` to accept the deletion.'
+      )
+      parts.push('')
+      continue
+    }
+
     parts.push(`## File: ${safePath}`)
     parts.push('')
 
