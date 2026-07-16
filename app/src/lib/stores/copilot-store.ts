@@ -164,14 +164,20 @@ const ModelListCacheTTL = 10 * 60 * 1000
 
 const QuotaSnapshotsCacheTTL = 10 * 60 * 1000
 
-function isCopilotQuotaSnapshot(
+function normalizeCopilotQuotaSnapshot(
   snapshot: AccountQuotaSnapshot | undefined
-): snapshot is ICopilotQuotaSnapshot {
-  return (
-    snapshot !== undefined &&
+): ICopilotQuotaSnapshot | null {
+  if (snapshot === undefined) {
+    return null
+  }
+
+  const tokenBasedBilling =
     'tokenBasedBilling' in snapshot &&
     typeof snapshot.tokenBasedBilling === 'boolean'
-  )
+      ? snapshot.tokenBasedBilling
+      : false
+
+  return { ...snapshot, tokenBasedBilling }
 }
 
 /** Returns the cache key used for account-scoped Copilot metadata. */
@@ -1650,12 +1656,16 @@ export class CopilotStore extends BaseStore {
         gitHubToken: account.token,
       })
 
-      return new Map(
-        Object.entries(result.quotaSnapshots).filter(
-          (entry): entry is [string, ICopilotQuotaSnapshot] =>
-            isCopilotQuotaSnapshot(entry[1])
-        )
-      )
+      const quotaSnapshots = new Map<string, ICopilotQuotaSnapshot>()
+
+      for (const [key, snapshot] of Object.entries(result.quotaSnapshots)) {
+        const normalizedSnapshot = normalizeCopilotQuotaSnapshot(snapshot)
+        if (normalizedSnapshot !== null) {
+          quotaSnapshots.set(key, normalizedSnapshot)
+        }
+      }
+
+      return quotaSnapshots
     } finally {
       this.stopClient(client)
     }
