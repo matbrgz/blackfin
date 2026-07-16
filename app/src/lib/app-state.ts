@@ -5,6 +5,7 @@ import type {
   IFileResolution,
   IConflictResolutionProgress,
   ICopilotResolutionSummary,
+  ICopilotSkippedFile,
 } from './copilot-conflict-resolution'
 import { Account } from '../models/account'
 import { CommitIdentity } from '../models/commit-identity'
@@ -1080,6 +1081,14 @@ export interface IMultiCommitOperationState {
    * successful resolution so the result dialog can display per-file reasoning.
    */
   readonly copilotResolutions: ReadonlyArray<IFileResolution> | null
+
+  /**
+   * Conflicted files Copilot did not resolve, with the reason each was skipped
+   * (too large, unreadable, no parseable markers, etc.). Null when Copilot
+   * hasn't been invoked or hasn't yet completed. Surfaced in the result dialog
+   * so the user can resolve these manually before continuing.
+   */
+  readonly copilotSkippedFiles: ReadonlyArray<ICopilotSkippedFile> | null
 
   /**
    * Progress of the in-flight Copilot conflict resolution request. Null when
