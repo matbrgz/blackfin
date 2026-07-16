@@ -36,6 +36,7 @@ interface IAccountOptions {
   readonly login?: string
   readonly avatarURL?: string
   readonly name?: string
+  readonly features?: ReadonlyArray<string>
 }
 
 function makeAccount(options: IAccountOptions = {}): Account {
@@ -59,7 +60,9 @@ function makeAccount(options: IAccountOptions = {}): Account {
     'free',
     'https://copilot-proxy.githubusercontent.com',
     isCopilotDesktopEnabled,
-    [],
+    options.features ?? [
+      'desktop_enable_copilot_sdk_commit_message_generation',
+    ],
     copilotLicenseType
   )
 }
@@ -551,6 +554,33 @@ describe('CopilotPreferences', () => {
     assert.strictEqual(
       screen.getAllByRole('button', { name: /Configure…/i }).length,
       2
+    )
+  })
+
+  it('excludes accounts without Copilot SDK access from settings', () => {
+    render(
+      <CopilotPreferences
+        {...defaults()}
+        accounts={[
+          makeAccount(),
+          makeAccount({
+            endpoint: 'https://api.octocorp.ghe.com',
+            id: 2,
+            login: 'octo',
+            name: 'Octo Cat',
+            features: [],
+            copilotLicenseType: 'COPILOT_BUSINESS',
+          }),
+        ]}
+      />
+    )
+
+    assert.ok(screen.getAllByRole('button', { name: /Auto/ }).length > 0)
+    assert.ok(screen.getByText('Mona Lisa'))
+    assert.strictEqual(screen.queryByText('@octo (Octo Cat)'), null)
+    assert.strictEqual(
+      screen.queryByRole('heading', { name: 'GitHub Enterprise' }),
+      null
     )
   })
 

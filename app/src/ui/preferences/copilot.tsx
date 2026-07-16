@@ -1,6 +1,7 @@
 import * as React from 'react'
 import type { IBYOKProvider } from '../../lib/copilot/byok'
 import { isGHES } from '../../lib/endpoint-capabilities'
+import { enableCopilotSdkCommitMessageGeneration } from '../../lib/feature-flag'
 import {
   type CopilotFeature,
   getCopilotAccountCacheKey,
@@ -158,6 +159,7 @@ export class CopilotPreferences extends React.Component<ICopilotPreferencesProps
   private getCopilotSettingsAccounts(): ReadonlyArray<Account> {
     return this.getCopilotAccounts().filter(
       account =>
+        enableCopilotSdkCommitMessageGeneration(account) &&
         account.isCopilotDesktopEnabled === true &&
         account.copilotLicenseType !== undefined &&
         account.copilotLicenseType !== CopilotLicenseTypeNoAccess
