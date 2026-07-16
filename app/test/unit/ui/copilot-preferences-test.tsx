@@ -267,6 +267,7 @@ afterEach(() => {
 function defaults() {
   return {
     selectedCopilotModels: {},
+    selectedCopilotModelsByAccount: new Map(),
     copilotModels: models,
     copilotModelsByAccount: new Map(),
     copilotQuotaSnapshots: quotaSnapshots,
@@ -1081,7 +1082,7 @@ describe('CopilotPreferences', () => {
     const view = render(
       <CopilotPreferences
         {...defaults()}
-        onSelectedCopilotModelChanged={(f, m) =>
+        onSelectedCopilotModelChanged={(_, f, m) =>
           changed.push({ feature: f, model: m })
         }
       />
@@ -1105,7 +1106,7 @@ describe('CopilotPreferences', () => {
       <CopilotPreferences
         {...defaults()}
         selectedCopilotModels={{ 'commit-message-generation': 'claude-sonnet' }}
-        onSelectedCopilotModelChanged={(f, m) =>
+        onSelectedCopilotModelChanged={(_, f, m) =>
           changed.push({ feature: f, model: m })
         }
       />
@@ -1252,7 +1253,7 @@ describe('CopilotPreferences', () => {
       const view = render(
         <CopilotPreferences
           {...defaults()}
-          onSelectedCopilotModelChanged={(f, m) =>
+          onSelectedCopilotModelChanged={(_, f, m) =>
             changed.push({ feature: f, model: m })
           }
         />

@@ -137,6 +137,7 @@ import memoizeOne from 'memoize-one'
 import { AheadBehindStore } from '../lib/stores/ahead-behind-store'
 import {
   getAccountForCommitMessageGeneration,
+  getAccountForCopilotConflictResolution,
   getAccountForRepository,
 } from '../lib/get-account-for-repository'
 import { CommitOneLine } from '../models/commit'
@@ -203,6 +204,7 @@ import {
 } from '../lib/feature-flag'
 import {
   getCopilotAccountCacheKey,
+  getCopilotModelSelectionsForAccount,
   type CopilotFeature,
 } from '../lib/stores/copilot-store'
 import {
@@ -1573,19 +1575,20 @@ export class App extends React.Component<IAppProps, IAppState> {
     )
   }
 
+  private getSelectedCopilotModelsForAccount(account: Account) {
+    return getCopilotModelSelectionsForAccount(
+      this.state.selectedCopilotModels,
+      this.state.selectedCopilotModelsByAccount,
+      account
+    )
+  }
+
   private onSelectedCopilotModelChanged = (
+    account: Account,
     feature: CopilotFeature,
     model: string | null
   ) => {
-    const selectedCopilotModels = { ...this.state.selectedCopilotModels }
-
-    if (model === null) {
-      delete selectedCopilotModels[feature]
-    } else {
-      selectedCopilotModels[feature] = model
-    }
-
-    this.props.dispatcher.setSelectedCopilotModels(selectedCopilotModels)
+    this.props.dispatcher.setSelectedCopilotModel(account, feature, model)
   }
 
   private onAlwaysUseCopilotForConflictResolutionChanged = (
@@ -1766,6 +1769,9 @@ export class App extends React.Component<IAppProps, IAppState> {
             underlineLinks={this.state.underlineLinks}
             showDiffCheckMarks={this.state.showDiffCheckMarks}
             selectedCopilotModels={this.state.selectedCopilotModels}
+            selectedCopilotModelsByAccount={
+              this.state.selectedCopilotModelsByAccount
+            }
             copilotModels={this.state.copilotModels}
             copilotModelsByAccount={this.state.copilotModelsByAccount}
             copilotQuotaSnapshots={this.state.copilotQuotaSnapshots}
@@ -1783,7 +1789,9 @@ export class App extends React.Component<IAppProps, IAppState> {
           <CopilotSettingsDialog
             key={`copilot-settings-${getCopilotAccountCacheKey(popup.account)}`}
             account={popup.account}
-            selectedCopilotModels={this.state.selectedCopilotModels}
+            selectedCopilotModels={this.getSelectedCopilotModelsForAccount(
+              popup.account
+            )}
             copilotModels={this.getCopilotModelsForAccount(popup.account)}
             copilotQuotaSnapshots={this.getCopilotQuotaSnapshotsForAccount(
               popup.account
@@ -2447,6 +2455,19 @@ export class App extends React.Component<IAppProps, IAppState> {
           return null
         }
 
+        const account = getAccountForCopilotConflictResolution(
+          this.state.accounts,
+          popup.repository
+        )
+        const selectedCopilotModels =
+          account === undefined
+            ? this.state.selectedCopilotModels
+            : this.getSelectedCopilotModelsForAccount(account)
+        const copilotModels =
+          account === undefined
+            ? this.state.copilotModels
+            : this.getCopilotModelsForAccount(account)
+
         return (
           <MultiCommitOperation
             key="multi-commit-operation"
@@ -2465,8 +2486,8 @@ export class App extends React.Component<IAppProps, IAppState> {
               this.state.copilotConflictResolutionClickCount === 0
             }
             copilotConflictResolutionModel={getConflictResolutionModelDisplay(
-              this.state.selectedCopilotModels['conflict-resolution'] ?? null,
-              this.state.copilotModels,
+              selectedCopilotModels['conflict-resolution'] ?? null,
+              copilotModels,
               this.state.byokProviders
             )}
             openFileInExternalEditor={this.openFileInExternalEditor}

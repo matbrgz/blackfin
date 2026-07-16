@@ -16,6 +16,7 @@ import {
 import type {
   CopilotFeature,
   CopilotModelSelections,
+  CopilotModelSelectionsByAccount,
   CopilotModelsByAccount,
   CopilotQuotaSnapshots,
   CopilotQuotaSnapshotsByAccount,
@@ -23,6 +24,7 @@ import type {
 import {
   CommitMessageGenerationCancelledError,
   getCopilotAccountCacheKey,
+  getCopilotModelSelectionsForAccount,
 } from './copilot-store'
 import {
   IBYOKProvider,
@@ -558,6 +560,7 @@ const alwaysUseCopilotForConflictResolutionKey =
 export const showChangesFilterKey = 'show-changes-filter'
 
 const selectedCopilotModelsKey = 'selected-copilot-models'
+const selectedCopilotModelsByAccountKey = 'selected-copilot-models-by-account'
 const CopilotLicenseTypeNoAccess = 'NO_ACCESS'
 export const showChangesFilterDefault = true
 
@@ -728,6 +731,8 @@ export class AppStore extends TypedBaseStore<IAppState> {
   private showChangesFilter: boolean = false
 
   private selectedCopilotModels: CopilotModelSelections = {}
+  private selectedCopilotModelsByAccount: CopilotModelSelectionsByAccount =
+    new Map()
   private copilotModels: ReadonlyArray<Model> | null = null
   private copilotModelsByAccount: CopilotModelsByAccount = new Map()
   private copilotQuotaSnapshots: CopilotQuotaSnapshots | null = null
@@ -1373,6 +1378,7 @@ export class AppStore extends TypedBaseStore<IAppState> {
         this.alwaysUseCopilotForConflictResolution,
       showChangesFilter: this.showChangesFilter,
       selectedCopilotModels: this.selectedCopilotModels,
+      selectedCopilotModelsByAccount: this.selectedCopilotModelsByAccount,
       copilotModels: this.copilotModels,
       copilotModelsByAccount: this.copilotModelsByAccount,
       copilotQuotaSnapshots: this.copilotQuotaSnapshots,
@@ -2669,6 +2675,8 @@ export class AppStore extends TypedBaseStore<IAppState> {
     )
 
     this.selectedCopilotModels = this.loadCopilotModelSelections()
+    this.selectedCopilotModelsByAccount =
+      this.loadCopilotModelSelectionsByAccount()
     this.byokProviders = loadBYOKProviders()
 
     this.emitUpdateNow()
@@ -6379,7 +6387,9 @@ export class AppStore extends TypedBaseStore<IAppState> {
               diff,
               repository.path,
               await this.resolveCopilotModelRequest(
-                this.selectedCopilotModels['commit-message-generation'] ?? null
+                this.getSelectedCopilotModels(account)[
+                  'commit-message-generation'
+                ] ?? null
               ),
               this.repositoryStateCache
                 .get(repository)
@@ -6554,7 +6564,7 @@ export class AppStore extends TypedBaseStore<IAppState> {
         repository
       )
       const modelRequest = await this.resolveCopilotModelRequest(
-        this.selectedCopilotModels['conflict-resolution'] ?? null
+        this.getSelectedCopilotModels(account)['conflict-resolution'] ?? null
       )
       try {
         const result = await this.copilotStore.resolveConflicts(
@@ -6885,12 +6895,19 @@ export class AppStore extends TypedBaseStore<IAppState> {
     }
 
     const { conflictState } = step
+    const account = getAccountForCopilotConflictResolution(
+      this.accounts,
+      repository
+    )
+    if (!account) {
+      return
+    }
 
     // Controller used to actually cancel the in-flight SDK turn when the user
     // clicks "Stop" (see _abortCopilotConflictResolution).
     const abortController = new AbortController()
     const copilotResolutionModel = getConflictResolutionModelDisplay(
-      this.selectedCopilotModels['conflict-resolution'] ?? null,
+      this.getSelectedCopilotModels(account)['conflict-resolution'] ?? null,
       this.copilotModels,
       this.byokProviders
     )
@@ -10102,22 +10119,31 @@ export class AppStore extends TypedBaseStore<IAppState> {
 
   /** This shouldn't be called directly. See 'Dispatcher'. */
   public _setSelectedCopilotModel(
+    account: Account,
     feature: CopilotFeature,
     model: string | null
   ) {
-    const current = this.selectedCopilotModels[feature] ?? null
+    const accountKey = getCopilotAccountCacheKey(account)
+    const currentSelections =
+      this.selectedCopilotModelsByAccount.get(accountKey) ?? {}
+    const current = currentSelections[feature] ?? null
     if (model !== current) {
+      const updatedSelections = { ...currentSelections }
       if (model === null) {
-        const updated = { ...this.selectedCopilotModels }
-        delete updated[feature]
-        this.selectedCopilotModels = updated
+        delete updatedSelections[feature]
       } else {
-        this.selectedCopilotModels = {
-          ...this.selectedCopilotModels,
-          [feature]: model,
-        }
+        updatedSelections[feature] = model
       }
-      this.saveCopilotModelSelections()
+
+      const updatedByAccount = new Map(this.selectedCopilotModelsByAccount)
+      if (Object.keys(updatedSelections).length === 0) {
+        updatedByAccount.delete(accountKey)
+      } else {
+        updatedByAccount.set(accountKey, updatedSelections)
+      }
+      this.selectedCopilotModelsByAccount = updatedByAccount
+      this.saveCopilotModelSelectionsByAccount()
+      this.emitUpdate()
     }
   }
 
@@ -10148,6 +10174,44 @@ export class AppStore extends TypedBaseStore<IAppState> {
     return {}
   }
 
+  private loadCopilotModelSelectionsByAccount(): CopilotModelSelectionsByAccount {
+    const raw = localStorage.getItem(selectedCopilotModelsByAccountKey)
+    if (raw === null) {
+      return new Map()
+    }
+
+    try {
+      const parsed: unknown = JSON.parse(raw)
+      if (typeof parsed === 'object' && parsed !== null) {
+        return new Map(Object.entries(parsed))
+      }
+    } catch {
+      // Ignore invalid persisted selections.
+    }
+
+    return new Map()
+  }
+
+  private saveCopilotModelSelectionsByAccount(): void {
+    if (this.selectedCopilotModelsByAccount.size === 0) {
+      localStorage.removeItem(selectedCopilotModelsByAccountKey)
+      return
+    }
+
+    localStorage.setItem(
+      selectedCopilotModelsByAccountKey,
+      JSON.stringify(Object.fromEntries(this.selectedCopilotModelsByAccount))
+    )
+  }
+
+  private getSelectedCopilotModels(account: Account): CopilotModelSelections {
+    return getCopilotModelSelectionsForAccount(
+      this.selectedCopilotModels,
+      this.selectedCopilotModelsByAccount,
+      account
+    )
+  }
+
   private saveCopilotModelSelections() {
     const keys = Object.keys(this.selectedCopilotModels)
     if (keys.length === 0) {
@@ -10161,15 +10225,20 @@ export class AppStore extends TypedBaseStore<IAppState> {
   }
 
   /** This shouldn't be called directly. See 'Dispatcher'. */
-  public _setSelectedCopilotModels(models: CopilotModelSelections) {
-    this.selectedCopilotModels = { ...models }
+  public _setSelectedCopilotModelsByAccount(
+    modelsByAccount: CopilotModelSelectionsByAccount
+  ) {
+    this.selectedCopilotModelsByAccount = new Map(
+      [...modelsByAccount].map(([key, models]) => [key, { ...models }])
+    )
     // The Preferences dialog keeps its own copy of the selections in
     // component state. If the user deletes/edits a BYOK provider through
     // the popup stack while the dialog is open, that local copy can still
     // reference a model that no longer exists; scrub on save so we never
     // resurrect a stale selection.
     this.scrubMissingCopilotModelSelections()
-    this.saveCopilotModelSelections()
+    this.saveCopilotModelSelectionsByAccount()
+    this.emitUpdate()
   }
 
   /**
@@ -10332,10 +10401,46 @@ export class AppStore extends TypedBaseStore<IAppState> {
    * so a transient empty list doesn't downgrade valid selections.
    */
   private scrubMissingCopilotModelSelections(): void {
+    const legacySelections = this.scrubCopilotModelSelections(
+      this.selectedCopilotModels
+    )
+    const selectionsByAccount = new Map<string, CopilotModelSelections>()
+
+    for (const [accountKey, selections] of this
+      .selectedCopilotModelsByAccount) {
+      const updated = this.scrubCopilotModelSelections(
+        selections,
+        this.copilotModelsByAccount.get(accountKey)
+      )
+      if (Object.keys(updated).length > 0) {
+        selectionsByAccount.set(accountKey, updated)
+      }
+    }
+
+    if (legacySelections !== this.selectedCopilotModels) {
+      this.selectedCopilotModels = legacySelections
+      this.saveCopilotModelSelections()
+    }
+
+    if (
+      selectionsByAccount.size !== this.selectedCopilotModelsByAccount.size ||
+      [...selectionsByAccount].some(
+        ([key, selections]) =>
+          selections !== this.selectedCopilotModelsByAccount.get(key)
+      )
+    ) {
+      this.selectedCopilotModelsByAccount = selectionsByAccount
+      this.saveCopilotModelSelectionsByAccount()
+    }
+  }
+
+  private scrubCopilotModelSelections(
+    selections: CopilotModelSelections,
+    copilotModels?: ReadonlyArray<Model> | null
+  ): CopilotModelSelections {
     const updated: CopilotModelSelections = {}
-    let changed = false
-    const copilotModels = this.copilotModels
-    for (const [feature, raw] of Object.entries(this.selectedCopilotModels)) {
+
+    for (const [feature, raw] of Object.entries(selections)) {
       if (raw === undefined) {
         continue
       }
@@ -10346,25 +10451,23 @@ export class AppStore extends TypedBaseStore<IAppState> {
           provider === undefined ||
           !provider.models.some(m => m.id === key.modelId)
         ) {
-          changed = true
           continue
         }
       } else if (
         key.kind === 'copilot' &&
         key.modelId !== '' &&
+        copilotModels !== undefined &&
         copilotModels !== null &&
         !copilotModels.some(m => m.id === key.modelId)
       ) {
-        changed = true
         continue
       }
       updated[feature as CopilotFeature] = raw
     }
 
-    if (changed) {
-      this.selectedCopilotModels = updated
-      this.saveCopilotModelSelections()
-    }
+    return Object.keys(updated).length === Object.keys(selections).length
+      ? selections
+      : updated
   }
 
   /** This shouldn't be called directly. See 'Dispatcher'. */

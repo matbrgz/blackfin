@@ -20,6 +20,7 @@ interface ICopilotSettingsDialogProps {
   readonly showBYOKSettings: boolean
   readonly alwaysUseCopilotForConflictResolution: boolean
   readonly onSelectedCopilotModelChanged: (
+    account: Account,
     feature: CopilotFeature,
     model: string | null
   ) => void

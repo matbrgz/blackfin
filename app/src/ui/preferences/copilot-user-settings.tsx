@@ -33,6 +33,7 @@ interface ICopilotUserSettingsProps {
   readonly showBYOKSettings: boolean
   readonly alwaysUseCopilotForConflictResolution: boolean
   readonly onSelectedCopilotModelChanged: (
+    account: Account,
     feature: CopilotFeature,
     model: string | null
   ) => void
@@ -45,11 +46,19 @@ interface ICopilotUserSettingsProps {
 /** User-configurable Copilot settings with optional provider management. */
 export class CopilotUserSettings extends React.Component<ICopilotUserSettingsProps> {
   private onCommitMessageModelChanged = (model: string) => {
-    this.props.onSelectedCopilotModelChanged('commit-message-generation', model)
+    this.props.onSelectedCopilotModelChanged(
+      this.props.account,
+      'commit-message-generation',
+      model
+    )
   }
 
   private onConflictResolutionModelChanged = (model: string) => {
-    this.props.onSelectedCopilotModelChanged('conflict-resolution', model)
+    this.props.onSelectedCopilotModelChanged(
+      this.props.account,
+      'conflict-resolution',
+      model
+    )
   }
 
   private onAlwaysUseCopilotForConflictResolutionChanged = (

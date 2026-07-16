@@ -14,6 +14,8 @@ import {
   CopilotStore,
   DefaultCopilotModel,
   getCopilotGHHost,
+  getCopilotAccountCacheKey,
+  getCopilotModelSelectionsForAccount,
   getCopilotModelCacheKey,
   getLowestReasoningEffort,
   getPreferredDefaultModel,
@@ -222,6 +224,43 @@ describe('getCopilotModelCacheKey', () => {
     assert.notStrictEqual(
       getCopilotModelCacheKey(account),
       getCopilotModelCacheKey(sameIdDifferentEndpoint)
+    )
+  })
+})
+
+describe('getCopilotModelSelectionsForAccount', () => {
+  it('uses account overrides and falls back per feature to legacy selections', () => {
+    const account = makeAccount({ id: 1 })
+    const otherAccount = makeAccount({ id: 2 })
+    const legacySelections = {
+      'commit-message-generation': 'legacy-commit',
+      'conflict-resolution': 'legacy-conflict',
+    } as const
+    const selectionsByAccount = new Map([
+      [
+        getCopilotAccountCacheKey(account),
+        { 'commit-message-generation': 'account-commit' },
+      ],
+    ])
+
+    assert.deepStrictEqual(
+      getCopilotModelSelectionsForAccount(
+        legacySelections,
+        selectionsByAccount,
+        account
+      ),
+      {
+        'commit-message-generation': 'account-commit',
+        'conflict-resolution': 'legacy-conflict',
+      }
+    )
+    assert.deepStrictEqual(
+      getCopilotModelSelectionsForAccount(
+        legacySelections,
+        selectionsByAccount,
+        otherAccount
+      ),
+      legacySelections
     )
   })
 })

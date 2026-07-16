@@ -1,6 +1,7 @@
 import type {
   CopilotModelsByAccount,
   CopilotModelSelections,
+  CopilotModelSelectionsByAccount,
   CopilotQuotaSnapshotsByAccount,
   CopilotQuotaSnapshots,
 } from './stores/copilot-store'
@@ -424,6 +425,9 @@ export interface IAppState {
    * model will be used for that feature.
    */
   readonly selectedCopilotModels: CopilotModelSelections
+
+  /** Account-scoped selections. Missing features fall back to legacy selections. */
+  readonly selectedCopilotModelsByAccount: CopilotModelSelectionsByAccount
 
   /**
    * The list of available Copilot models fetched from the SDK.

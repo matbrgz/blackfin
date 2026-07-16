@@ -132,6 +132,24 @@ interface ICopilotQuotaCacheEntry {
  */
 export type CopilotModelSelections = Partial<Record<CopilotFeature, string>>
 
+/** Per-feature Copilot model selections keyed by account cache key. */
+export type CopilotModelSelectionsByAccount = ReadonlyMap<
+  string,
+  CopilotModelSelections
+>
+
+/** Resolve account selections, falling back per feature to legacy globals. */
+export function getCopilotModelSelectionsForAccount(
+  legacySelections: CopilotModelSelections,
+  selectionsByAccount: CopilotModelSelectionsByAccount,
+  account: Account
+): CopilotModelSelections {
+  return {
+    ...legacySelections,
+    ...selectionsByAccount.get(getCopilotAccountCacheKey(account)),
+  }
+}
+
 /**
  * Quota snapshots type from SDK, expanding it with the tokenBasedBilling field.
  * This shouldn't be necessary once the SDK is updated to include this field in

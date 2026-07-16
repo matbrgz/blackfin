@@ -47,9 +47,11 @@ import type {
   CopilotFeature,
   CopilotModelsByAccount,
   CopilotModelSelections,
+  CopilotModelSelectionsByAccount,
   CopilotQuotaSnapshotsByAccount,
   CopilotQuotaSnapshots,
 } from '../../lib/stores/copilot-store'
+import { getCopilotAccountCacheKey } from '../../lib/stores/copilot-store'
 import type { IBYOKProvider } from '../../lib/copilot/byok'
 import { PopupType } from '../../models/popup'
 import {
@@ -118,6 +120,7 @@ interface IPreferencesProps {
   readonly underlineLinks: boolean
   readonly showDiffCheckMarks: boolean
   readonly selectedCopilotModels: CopilotModelSelections
+  readonly selectedCopilotModelsByAccount: CopilotModelSelectionsByAccount
   readonly copilotModels: ReadonlyArray<Model> | null
   readonly copilotModelsByAccount: CopilotModelsByAccount
   readonly copilotQuotaSnapshots: CopilotQuotaSnapshots | null
@@ -187,6 +190,7 @@ interface IPreferencesState {
   readonly hooksPreferencesDirty: boolean
 
   readonly selectedCopilotModels: CopilotModelSelections
+  readonly selectedCopilotModelsByAccount: CopilotModelSelectionsByAccount
   readonly alwaysUseCopilotForConflictResolution: boolean
   readonly selectedDateFormat?: DateFormat
   readonly selectedTimeFormat?: TimeFormat
@@ -256,6 +260,7 @@ export class Preferences extends React.Component<
       selectedGitHookEnvShell: getGitHookEnvShell(),
       hooksPreferencesDirty: false,
       selectedCopilotModels: this.props.selectedCopilotModels,
+      selectedCopilotModelsByAccount: this.props.selectedCopilotModelsByAccount,
       alwaysUseCopilotForConflictResolution:
         this.props.alwaysUseCopilotForConflictResolution,
       selectedDateFormat: getDateFormatPreference(),
@@ -343,6 +348,16 @@ export class Preferences extends React.Component<
   public componentDidUpdate(prevProps: IPreferencesProps) {
     if (prevProps.selectedCopilotModels !== this.props.selectedCopilotModels) {
       this.setState({ selectedCopilotModels: this.props.selectedCopilotModels })
+    }
+
+    if (
+      prevProps.selectedCopilotModelsByAccount !==
+      this.props.selectedCopilotModelsByAccount
+    ) {
+      this.setState({
+        selectedCopilotModelsByAccount:
+          this.props.selectedCopilotModelsByAccount,
+      })
     }
 
     if (
@@ -563,6 +578,9 @@ export class Preferences extends React.Component<
         View = (
           <CopilotPreferences
             selectedCopilotModels={this.state.selectedCopilotModels}
+            selectedCopilotModelsByAccount={
+              this.state.selectedCopilotModelsByAccount
+            }
             copilotModels={this.props.copilotModels}
             copilotModelsByAccount={this.props.copilotModelsByAccount}
             copilotQuotaSnapshots={this.props.copilotQuotaSnapshots}
@@ -913,17 +931,31 @@ export class Preferences extends React.Component<
   }
 
   private onSelectedCopilotModelChanged = (
+    account: Account,
     feature: CopilotFeature,
     model: string | null
   ) => {
     this.setState(state => {
-      const selections = { ...state.selectedCopilotModels }
+      const accountKey = getCopilotAccountCacheKey(account)
+      const selections = {
+        ...state.selectedCopilotModelsByAccount.get(accountKey),
+      }
       if (model === null) {
         delete selections[feature]
       } else {
         selections[feature] = model
       }
-      return { selectedCopilotModels: selections }
+
+      const selectedCopilotModelsByAccount = new Map(
+        state.selectedCopilotModelsByAccount
+      )
+      if (Object.keys(selections).length === 0) {
+        selectedCopilotModelsByAccount.delete(accountKey)
+      } else {
+        selectedCopilotModelsByAccount.set(accountKey, selections)
+      }
+
+      return { selectedCopilotModelsByAccount }
     })
   }
 
@@ -1117,7 +1149,9 @@ export class Preferences extends React.Component<
 
     dispatcher.setDiffCheckMarksSetting(this.state.showDiffCheckMarks)
 
-    dispatcher.setSelectedCopilotModels(this.state.selectedCopilotModels)
+    dispatcher.setSelectedCopilotModelsByAccount(
+      this.state.selectedCopilotModelsByAccount
+    )
 
     dispatcher.setAlwaysUseCopilotForConflictResolution(
       this.state.alwaysUseCopilotForConflictResolution

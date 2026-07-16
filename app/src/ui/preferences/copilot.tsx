@@ -5,8 +5,10 @@ import { enableCopilotSdkCommitMessageGeneration } from '../../lib/feature-flag'
 import {
   type CopilotFeature,
   getCopilotAccountCacheKey,
+  getCopilotModelSelectionsForAccount,
   type CopilotModelsByAccount,
   type CopilotModelSelections,
+  type CopilotModelSelectionsByAccount,
   type CopilotQuotaSnapshotsByAccount,
   type CopilotQuotaSnapshots,
 } from '../../lib/stores/copilot-store'
@@ -23,6 +25,7 @@ import { SnapshotCard } from './snapshot-card'
 
 interface ICopilotPreferencesProps {
   readonly selectedCopilotModels: CopilotModelSelections
+  readonly selectedCopilotModelsByAccount: CopilotModelSelectionsByAccount
   readonly copilotModels: ReadonlyArray<Model> | null
   readonly copilotModelsByAccount: CopilotModelsByAccount
   readonly copilotQuotaSnapshots: CopilotQuotaSnapshots | null
@@ -35,6 +38,7 @@ interface ICopilotPreferencesProps {
   readonly onOpenCopilotFeatureSettings: () => void
   readonly alwaysUseCopilotForConflictResolution: boolean
   readonly onSelectedCopilotModelChanged: (
+    account: Account,
     feature: CopilotFeature,
     model: string | null
   ) => void
@@ -89,7 +93,7 @@ export class CopilotPreferences extends React.Component<ICopilotPreferencesProps
     return (
       <CopilotUserSettings
         account={account}
-        selectedCopilotModels={this.props.selectedCopilotModels}
+        selectedCopilotModels={this.getSelectedCopilotModels(account)}
         copilotModels={this.getCopilotModels(account)}
         copilotQuotaSnapshots={this.getCopilotQuotaSnapshots(account)}
         byokProviders={this.props.byokProviders}
@@ -174,6 +178,14 @@ export class CopilotPreferences extends React.Component<ICopilotPreferencesProps
     }
 
     return this.props.copilotModels
+  }
+
+  private getSelectedCopilotModels(account: Account): CopilotModelSelections {
+    return getCopilotModelSelectionsForAccount(
+      this.props.selectedCopilotModels,
+      this.props.selectedCopilotModelsByAccount,
+      account
+    )
   }
 
   private getCopilotQuotaSnapshots(
