@@ -735,6 +735,38 @@ describe('CopilotPreferences', () => {
     assert.ok(screen.getByText('30%'))
   })
 
+  it('describes unlimited quotas as determinate progress', () => {
+    render(
+      <CopilotPreferences
+        {...defaults()}
+        copilotQuotaSnapshots={
+          new Map<string, ICopilotQuotaSnapshot>([
+            [
+              'chat',
+              makeQuotaSnapshot({
+                isUnlimitedEntitlement: true,
+                entitlementRequests: -1,
+                usedRequests: 0,
+                remainingPercentage: 100,
+              }),
+            ],
+          ])
+        }
+      />
+    )
+
+    const progressBar = screen.getByRole('progressbar', {
+      name: 'No usage limit',
+    })
+    assert.strictEqual(progressBar.getAttribute('aria-valuenow'), '0')
+    assert.strictEqual(progressBar.getAttribute('aria-valuemin'), '0')
+    assert.strictEqual(progressBar.getAttribute('aria-valuemax'), '100')
+    assert.strictEqual(
+      progressBar.getAttribute('aria-valuetext'),
+      'No usage limit'
+    )
+  })
+
   it('renders token-based billing quota snapshots as AI credits', () => {
     render(
       <CopilotPreferences

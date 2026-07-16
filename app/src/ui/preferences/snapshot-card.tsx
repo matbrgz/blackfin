@@ -242,9 +242,10 @@ function QuotaProgressBar({ snapshot }: IQuotaProgressBarProps) {
     <div
       className={`copilot-snapshot-progress${disabled ? ' disabled' : ''}`}
       role="progressbar"
-      aria-valuenow={disabled ? undefined : usedPercentage}
-      aria-valuemin={disabled ? undefined : 0}
-      aria-valuemax={disabled ? undefined : 100}
+      aria-valuenow={usedPercentage}
+      aria-valuemin={0}
+      aria-valuemax={100}
+      aria-valuetext={disabled ? 'No usage limit' : undefined}
       aria-label={disabled ? 'No usage limit' : `${usedPercentage}% quota used`}
     >
       <div
