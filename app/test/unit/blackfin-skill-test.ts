@@ -165,7 +165,12 @@ describe('generateBlackfinSkill', () => {
       join(process.cwd(), 'app/static/skills/blackfin/SKILL.template.md'),
       'utf8'
     )
-    assert.strictEqual(onDisk, BlackfinSkillTemplate)
+    // Compare modulo line endings: a template literal normalizes CRLF to LF in
+    // its cooked value (per spec), while a Windows checkout may give the file
+    // CRLF, so a raw strict-equal would fail there for a line-ending difference
+    // that is not real drift. The .md is also pinned to eol=lf in .gitattributes.
+    const normalize = (s: string) => s.replace(/\r\n/g, '\n')
+    assert.strictEqual(normalize(onDisk), normalize(BlackfinSkillTemplate))
   })
 
   it('rejects an unsupported agent at compile time', () => {
