@@ -33,6 +33,9 @@ export function formatNumber(value: number, fmt?: INumberFormat): string {
 
   if (fmt.maximumFractionDigits !== undefined && decPart !== undefined) {
     truncatedDecPart = decPart.slice(0, fmt.maximumFractionDigits)
+    if (truncatedDecPart.length === 0) {
+      truncatedDecPart = undefined
+    }
   }
 
   // Insert a placeholder character for thousands groupings, then replace with

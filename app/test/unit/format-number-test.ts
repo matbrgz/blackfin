@@ -151,6 +151,16 @@ describe('formatNumber', () => {
       )
     })
 
+    it('omits the decimal separator when maximum fraction digits is zero', () => {
+      assert.strictEqual(
+        formatNumber(1234.5, {
+          ...commaThousandsDotDecimal,
+          maximumFractionDigits: 0,
+        }),
+        '1,234'
+      )
+    })
+
     it('leaves integers unchanged when maximum fraction digits is set', () => {
       assert.strictEqual(
         formatNumber(1234, {
