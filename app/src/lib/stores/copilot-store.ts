@@ -159,8 +159,8 @@ export function migrateCopilotModelSelectionsToAccounts(
 
 /**
  * Quota snapshots type from SDK, expanding it with the tokenBasedBilling field.
- * This shouldn't be necessary once the SDK is updated to include this field in
- * the generated types.
+ * HACK: This shouldn't be necessary once the SDK is updated to include this
+ * field in the generated types.
  */
 export interface ICopilotQuotaSnapshot extends AccountQuotaSnapshot {
   readonly tokenBasedBilling: boolean
