@@ -548,6 +548,24 @@ export interface IAPIIssue {
   readonly title: string
   readonly state: 'open' | 'closed'
   readonly updated_at: string
+  // The fields below are all optional additions (#73): every one is already
+  // present in the GitHub REST issues response, but the fork historically only
+  // typed the four above (the autocomplete never needed more). Keeping them
+  // optional is the type's backward-compatibility guarantee — nothing that
+  // constructs a narrower `IAPIIssue` breaks, and the pure mapper tolerates
+  // their absence.
+  readonly id?: number
+  readonly html_url?: string
+  readonly body?: string | null
+  readonly created_at?: string
+  /** Why a closed issue closed (`completed`, `not_planned`, ...). May be null. */
+  readonly state_reason?: string | null
+  readonly user?: IAPIIdentity
+  readonly assignees?: ReadonlyArray<IAPIIdentity>
+  readonly labels?: ReadonlyArray<{
+    readonly name: string
+    readonly color: string
+  }>
 }
 
 /** The combined state of a ref. */
