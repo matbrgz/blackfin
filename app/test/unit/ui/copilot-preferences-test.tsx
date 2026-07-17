@@ -768,6 +768,29 @@ describe('CopilotPreferences', () => {
     assert.ok(screen.getByText('30%'))
   })
 
+  it('renders code completions quota snapshots', () => {
+    render(
+      <CopilotPreferences
+        {...defaults()}
+        copilotQuotaSnapshotsByAccount={quotaSnapshotsForDefaultAccount(
+          new Map<string, ICopilotQuotaSnapshot>([
+            [
+              'completions',
+              makeQuotaSnapshot({
+                entitlementRequests: 100,
+                usedRequests: 25,
+                remainingPercentage: 75,
+              }),
+            ],
+          ])
+        )}
+      />
+    )
+
+    assert.ok(screen.getByText('Code completions'))
+    assert.ok(screen.getByText('25%'))
+  })
+
   it('describes unlimited quotas as determinate progress', () => {
     render(
       <CopilotPreferences

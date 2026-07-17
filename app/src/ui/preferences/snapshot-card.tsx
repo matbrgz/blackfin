@@ -26,7 +26,7 @@ const tokenBasedSnapshotDisplayNames: Record<string, string> = {
   premium_interactions: 'AI credits',
 }
 
-const quotaKeys = ['chat', 'premium_interactions']
+const quotaKeys = ['chat', 'completions', 'premium_interactions']
 const rateLimitKeys = ['session', 'weekly']
 
 export interface ICategorizedSnapshot {
