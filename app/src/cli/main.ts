@@ -1,6 +1,9 @@
 import { join, resolve } from 'path'
 import parse from 'minimist'
 import { execFile, spawn } from 'child_process'
+import { allCommands } from '../lib/cli/registry'
+import { buildCapabilities } from '../lib/cli/capabilities'
+import { renderCapabilities, resolveInvocation } from '../lib/cli/dispatch'
 
 const run = (...args: Array<string>) => {
   function cb(e: unknown | null, stderr?: string) {
@@ -35,24 +38,55 @@ const run = (...args: Array<string>) => {
 
 const args = parse(process.argv.slice(2), {
   alias: { help: 'h', branch: 'b' },
-  boolean: ['help'],
+  boolean: ['help', 'schema-only'],
 })
 
+// Build the capabilities document locally — the registry is compiled into this
+// bundle, so describing the CLI needs no app. `--schema-only` (and the app-closed
+// path) always report `running: false`.
+//
+// NOTE (runtime-deferred): a best-effort socket probe (short timeout) that fills
+// `app.running` / `app.version` when the app is open belongs to the CLI-client
+// increment (#61's `client.ts` + the socket connect), which is not wired into
+// this launcher yet. `--schema-only` must never attempt it; the other path may.
+const capabilitiesDocument = () =>
+  buildCapabilities(allCommands(), {
+    cliVersion: __APP_VERSION__,
+    app: { running: false, version: null },
+    now: () => new Date(),
+  })
+
 const usage = (exitCode = 1): never => {
-  process.stderr.write(
-    'Blackfin CLI usage: \n' +
-      '  blackfin-cli                           Open the current directory\n' +
-      '  blackfin-cli open [path]               Open the provided path\n' +
-      '  blackfin-cli clone [-b branch] <url>   Clone the repository by url or name/owner\n' +
-      '                                             (ex torvalds/linux), optionally checking\n' +
-      '                                             out the branch\n'
+  const stream = exitCode === 0 ? process.stdout : process.stderr
+  stream.write(
+    renderCapabilities(capabilitiesDocument(), 'human') +
+      '\n\n' +
+      'Launcher commands (start the app):\n' +
+      '  blackfin                           Open the current directory\n' +
+      '  blackfin open [path]               Open the provided path\n' +
+      '  blackfin clone [-b branch] <url>   Clone a repository by url or name/owner\n'
   )
   process.exit(exitCode)
 }
 
+// `capabilities` — the self-describing command. It answers locally, so it works
+// with the app closed and never launches it. `--json` is the default without a
+// TTY; a human at a terminal gets the table.
+const printCapabilities = (): never => {
+  const invocation = resolveInvocation(args, {
+    stdoutIsTTY: Boolean(process.stdout.isTTY),
+  })
+  process.stdout.write(
+    renderCapabilities(capabilitiesDocument(), invocation.format) + '\n'
+  )
+  process.exit(0)
+}
+
 delete process.env.ELECTRON_RUN_AS_NODE
 
-if (args.help || args._.at(0) === 'help') {
+if (args._.at(0) === 'capabilities') {
+  printCapabilities()
+} else if (args.help || args._.at(0) === 'help') {
   usage(0)
 } else if (args._.at(0) === 'clone') {
   const urlArg = args._.at(1)
