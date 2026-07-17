@@ -31,7 +31,10 @@ describe('CLI command registry', () => {
     assert.strictEqual(resolveCommand('pin'), null)
     assert.strictEqual(resolveCommand('pingg'), null)
     assert.strictEqual(resolveCommand(''), null)
-    assert.strictEqual(resolveCommand('context list'), null)
+    // `context` alone is not a command — only its subcommands are. A fuzzy
+    // router would resolve it to `context list`; exact resolution must not.
+    assert.strictEqual(resolveCommand('context'), null)
+    assert.strictEqual(resolveCommand('context frobnicate'), null)
   })
 
   it('ping is a non-mutating query that needs the app', () => {

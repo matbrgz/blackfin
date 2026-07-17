@@ -386,11 +386,362 @@ const checkpointGet: ICommandDescriptor = {
   },
 }
 
+// The six read-only commands (#63). Their declarative fields are complete here
+// — which is what puts them in the schema (#62) automatically — and their pure
+// projections live in `commands/read.ts`, fully unit-tested. What is deferred is
+// the `run` body: every one needs the workspace catalog, which is derived from
+// the renderer's `WorkspaceStore` (an IndexedDB-backed store), and reaching it
+// requires extending `ICommandContext` with workspace access. That wiring is the
+// dispatcher increment; until it lands, `run` throws a descriptive error naming
+// what remains, rather than returning misleading empty data. The resolution of
+// cwd → repository → worktree these commands stand on is already merged
+// (resolve-cwd.ts, #95).
+function readRunDeferred(
+  commandName: string
+): (ctx: ICommandContext) => Promise<never> {
+  return async () => {
+    throw new Error(
+      `${commandName}: the command descriptor and its pure projections (lib/cli/commands/read.ts) are complete and unit-tested, but its run needs the renderer WorkspaceStore, wired by the CLI dispatcher increment (ICommandContext must gain workspace access first).`
+    )
+  }
+}
+
+const jsonFlag: ICLIFlag = {
+  name: 'json',
+  type: 'boolean',
+  required: false,
+  default: true,
+  description: 'Emit JSON (the default when there is no TTY).',
+}
+
+// A `--refresh` rescans one repository before answering — the only read command
+// that touches the filesystem, so it declares `reads-filesystem` and is rate
+// limited (1 per repository / 30s) by the dispatcher. Default: answer from cache.
+const refreshFlag: ICLIFlag = {
+  name: 'refresh',
+  type: 'boolean',
+  required: false,
+  default: false,
+  description:
+    'Ask the app to rescan this repository before answering (slower; reads the filesystem). Defaults to answering from cache.',
+}
+
+const contextEffective: ICommandDescriptor = {
+  name: 'context effective',
+  summary:
+    'Show every context that governs this directory — project and the invisible global.',
+  description:
+    'The primary command. Reports everything that steers an agent in the current directory: the project’s own context plus all of the machine-global context that reaches it, each entry with its origin, scope, agent and role. Every global entry is annotated, because a rule in ~/.claude applies to every project and is invisible from inside any of them — this is the answer no other tool in the stack can give. Never paginated: the response is meant to be complete. Metadata only; never a file’s contents.',
+  mutates: false,
+  confirmation: 'none',
+  requiresApp: true,
+  scope: 'repository',
+  stability: 'stable',
+  since: CLISchemaVersion,
+  arguments: [],
+  flags: [jsonFlag, refreshFlag],
+  effects: ['reads-blackfin-state'],
+  exitCodes: [0, 2, 3, 4, 5, 7],
+  examples: [
+    {
+      cmd: 'blackfin context effective --json',
+      why: 'On your first turn in a worktree: learn what governs you here, including global rules this repository never mentions.',
+    },
+  ],
+  guardrails: [
+    'This is metadata, not the files themselves. To read a CLAUDE.md, open it — you have a filesystem. Blackfin gives you the map, not the contents.',
+  ],
+  output: {
+    kind: 'object',
+    fields: {
+      cwd: 'string',
+      repository: 'Repository | null',
+      worktree: 'Worktree | null',
+      summary: '{ project, global, brokenReferences }',
+      entries: 'array<ContextEntry>',
+      warnings: 'array<string>',
+    },
+  },
+  run: readRunDeferred('context effective'),
+}
+
+const contextList: ICommandDescriptor = {
+  name: 'context list',
+  summary: 'List the context items reaching this directory, filterable.',
+  description:
+    'A filterable, paginated list of context items that reach the current directory. Without a filter it is limited to the reach of the cwd; listing every project on the machine requires the explicit --all-projects flag, the most indiscreet call in the CLI. Filters compose as an intersection: --agent and --kind together return items matching both. Every response declares total and truncated. Metadata only.',
+  mutates: false,
+  confirmation: 'none',
+  requiresApp: true,
+  scope: 'repository',
+  stability: 'stable',
+  since: CLISchemaVersion,
+  arguments: [],
+  flags: [
+    {
+      name: 'scope',
+      type: 'enum',
+      required: false,
+      values: ['global', 'project', 'worktree'],
+      description: 'Restrict to one scope.',
+    },
+    {
+      name: 'agent',
+      type: 'string',
+      required: false,
+      description: 'Restrict to one agent (e.g. claude-code).',
+    },
+    {
+      name: 'kind',
+      type: 'string',
+      required: false,
+      description:
+        'Restrict to one kind (instructions, skill, command, subagent, prompt, settings, hook).',
+    },
+    {
+      name: 'limit',
+      type: 'number',
+      required: false,
+      default: 100,
+      description: 'Maximum items to return (default 100).',
+    },
+    {
+      name: 'offset',
+      type: 'number',
+      required: false,
+      default: 0,
+      description: 'Items to skip, for paging.',
+    },
+    {
+      name: 'all-projects',
+      type: 'boolean',
+      required: false,
+      default: false,
+      description:
+        'List across every project on the machine, not just those reaching this directory. Reveals every project name; use deliberately.',
+    },
+    jsonFlag,
+    refreshFlag,
+  ],
+  effects: ['reads-blackfin-state'],
+  exitCodes: [0, 2, 3, 4, 5, 7],
+  examples: [
+    {
+      cmd: 'blackfin context list --kind skill --json',
+      why: 'See the skills active for this directory without loading the full catalog.',
+    },
+  ],
+  guardrails: [
+    '--all-projects reveals the names of every project on this machine. Use it only when you genuinely need the machine-wide view.',
+  ],
+  output: {
+    kind: 'object',
+    fields: {
+      items: 'array<ContextEntry>',
+      total: 'number',
+      limit: 'number',
+      offset: 'number',
+      truncated: 'boolean',
+    },
+  },
+  run: readRunDeferred('context list'),
+}
+
+const contextShow: ICommandDescriptor = {
+  name: 'context show',
+  summary:
+    'Show one context item’s structure: headings, rules, references, broken refs.',
+  description:
+    'Describes a single context item by id or path: its headings, rule count, the references it makes, which of those are broken, and a content hash. The structural map of the file — never its body. To read the file, open it; you have a filesystem.',
+  mutates: false,
+  confirmation: 'none',
+  requiresApp: true,
+  scope: 'repository',
+  stability: 'stable',
+  since: CLISchemaVersion,
+  arguments: [
+    {
+      name: 'target',
+      type: 'string',
+      required: true,
+      description: 'The item’s id (e.g. repo:7:CLAUDE.md) or its path.',
+    },
+  ],
+  flags: [jsonFlag, refreshFlag],
+  effects: ['reads-blackfin-state'],
+  exitCodes: [0, 2, 3, 4, 5, 7],
+  examples: [
+    {
+      cmd: 'blackfin context show repo:7:CLAUDE.md --json',
+      why: 'Inspect a file’s headings and broken references without reading its body.',
+    },
+  ],
+  guardrails: [
+    'This returns structure, not content — headings and reference targets, never the text of the rules. Open the file to read it.',
+  ],
+  output: {
+    kind: 'object',
+    fields: {
+      id: 'string',
+      scope: 'string',
+      agent: 'string',
+      role: 'string',
+      kind: 'string',
+      path: 'string',
+      headings: 'array<{ level, text }>',
+      ruleCount: 'number',
+      references: 'array<Reference>',
+      brokenReferences: 'array<Reference>',
+      contentHash: 'string | null',
+    },
+  },
+  run: readRunDeferred('context show'),
+}
+
+const extensionList: ICommandDescriptor = {
+  name: 'extension list',
+  summary:
+    'List the skills, commands, subagents and MCPs active for this directory.',
+  description:
+    'Lists the extensions — skills, slash commands, subagents, MCP servers — active for the current scope: exactly what the Agents screen shows for the same directory, from the same catalog. For an MCP server, only its name and transport are reported; never the value of an environment variable. Metadata only.',
+  mutates: false,
+  confirmation: 'none',
+  requiresApp: true,
+  scope: 'repository',
+  stability: 'stable',
+  since: CLISchemaVersion,
+  arguments: [],
+  flags: [
+    {
+      name: 'kind',
+      type: 'string',
+      required: false,
+      description: 'Restrict to one kind (skill, command, subagent, mcp).',
+    },
+    {
+      name: 'agent',
+      type: 'string',
+      required: false,
+      description: 'Restrict to one agent (e.g. claude-code).',
+    },
+    {
+      name: 'enabled',
+      type: 'boolean',
+      required: false,
+      description: 'Restrict to enabled (or, when false, disabled) extensions.',
+    },
+    jsonFlag,
+    refreshFlag,
+  ],
+  effects: ['reads-blackfin-state'],
+  exitCodes: [0, 2, 3, 4, 5, 7],
+  examples: [
+    {
+      cmd: 'blackfin extension list --kind skill --json',
+      why: 'Discover the skills you can invoke here before starting work.',
+    },
+  ],
+  guardrails: [
+    'An MCP server is reported by name and transport only. Blackfin never prints the value of an environment variable or a secret. If you need one, ask the user.',
+  ],
+  output: {
+    kind: 'object',
+    fields: {
+      items: 'array<ContextEntry>',
+      total: 'number',
+      limit: 'number',
+      offset: 'number',
+      truncated: 'boolean',
+    },
+  },
+  run: readRunDeferred('extension list'),
+}
+
+const projectInfo: ICommandDescriptor = {
+  name: 'project info',
+  summary:
+    'Describe the project that contains this directory: remote, branch, worktrees, health.',
+  description:
+    'Reports the project that contains the current directory: its name, git dir, the branch of the current worktree, every worktree it has, and the health of its context (how many context files, how many broken references). Resolved by git dir, so a worktree the app knows but is not focused on is still recognised.',
+  mutates: false,
+  confirmation: 'none',
+  requiresApp: true,
+  scope: 'repository',
+  stability: 'stable',
+  since: CLISchemaVersion,
+  arguments: [],
+  flags: [jsonFlag, refreshFlag],
+  effects: ['reads-blackfin-state'],
+  exitCodes: [0, 2, 3, 4, 5, 7],
+  examples: [
+    {
+      cmd: 'blackfin project info --json',
+      why: 'Learn the project you are in, its worktrees, and whether its context is healthy.',
+    },
+  ],
+  guardrails: [],
+  output: {
+    kind: 'object',
+    fields: {
+      id: 'number',
+      name: 'string',
+      gitDir: 'string',
+      branch: 'string | null',
+      worktrees: 'array<Worktree>',
+      contextHealth: '{ contextFiles, brokenReferences }',
+    },
+  },
+  run: readRunDeferred('project info'),
+}
+
+const worktreeInfo: ICommandDescriptor = {
+  name: 'worktree info',
+  summary: 'Describe this worktree: path, branch, git dir, and lineage.',
+  description:
+    'Reports the worktree the current directory is in: its path, branch, and the stable common git dir that anchors it. Lineage and checkpoint are included once worktree metadata (#55) exists; until then they are reported as empty rather than guessed. Resolved by git dir, so this works even when the app has a different worktree of the same repository in focus.',
+  mutates: false,
+  confirmation: 'none',
+  requiresApp: true,
+  scope: 'worktree',
+  stability: 'stable',
+  since: CLISchemaVersion,
+  arguments: [],
+  flags: [jsonFlag],
+  effects: ['reads-blackfin-state'],
+  exitCodes: [0, 2, 3, 4, 5, 7],
+  examples: [
+    {
+      cmd: 'blackfin worktree info --json',
+      why: 'Learn what this worktree is for and how it sits inside the project.',
+    },
+  ],
+  guardrails: [],
+  output: {
+    kind: 'object',
+    fields: {
+      path: 'string',
+      branch: 'string | null',
+      gitDir: 'string',
+      isPrimary: 'boolean',
+      base: 'string | null',
+      lineage: 'array<string>',
+      checkpoint: 'null',
+    },
+  },
+  run: readRunDeferred('worktree info'),
+}
+
 const COMMANDS: ReadonlyArray<ICommandDescriptor> = [
   ping,
   capabilities,
   checkpointSet,
   checkpointGet,
+  contextEffective,
+  contextList,
+  contextShow,
+  extensionList,
+  projectInfo,
+  worktreeInfo,
 ]
 
 const COMMANDS_BY_NAME: ReadonlyMap<string, ICommandDescriptor> = new Map(
