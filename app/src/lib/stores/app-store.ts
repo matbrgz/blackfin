@@ -361,7 +361,11 @@ import {
   isValidTutorialStep,
 } from '../../models/tutorial-step'
 import { OnboardingTutorialAssessor } from './helpers/tutorial-assessor'
-import { getConflictedFiles, getUntrackedFiles } from '../status'
+import {
+  getConflictedFiles,
+  getUntrackedFiles,
+  hasUnresolvedConflicts,
+} from '../status'
 import { isBranchPushable } from '../helpers/push-control'
 import {
   findAssociatedPullRequest,
@@ -448,6 +452,7 @@ import {
   IConflictResolutionProgress,
   ICopilotResolutionSummary,
   IFileResolution,
+  ICopilotSkippedFile,
 } from '../copilot-conflict-resolution'
 import {
   buildConflictContext,
@@ -7463,6 +7468,7 @@ export class AppStore extends TypedBaseStore<IAppState> {
   ): Promise<{
     readonly resolutions: ReadonlyArray<IFileResolution>
     readonly summary: ICopilotResolutionSummary
+    readonly skippedFiles: ReadonlyArray<ICopilotSkippedFile>
   } | null> {
     if (!enableCopilotConflictResolution()) {
       return null
@@ -7547,6 +7553,15 @@ export class AppStore extends TypedBaseStore<IAppState> {
         const references =
           cited.length > 0 ? cited : fallbackReferencedContext(context)
 
+        // Files Copilot declined to resolve (too large, unreadable, no
+        // parseable markers, etc.) so the result dialog can surface them for
+        // manual resolution.
+        const skippedFiles = context.files.flatMap(f =>
+          f.skippedReason !== undefined
+            ? [{ path: f.path, reason: f.skippedReason }]
+            : []
+        )
+
         return {
           resolutions: result.resolutions,
           summary: {
@@ -7555,6 +7570,7 @@ export class AppStore extends TypedBaseStore<IAppState> {
             theirLabel: labels.theirLabel,
             references,
           },
+          skippedFiles,
         }
       } finally {
         resolveTimer.done()
@@ -7992,6 +8008,7 @@ export class AppStore extends TypedBaseStore<IAppState> {
             },
             copilotResolutions: result.resolutions,
             copilotResolutionSummary: result.summary,
+            copilotSkippedFiles: result.skippedFiles,
             copilotResolutionProgress: null,
             copilotResolutionAbortController: null,
           })
@@ -8013,6 +8030,7 @@ export class AppStore extends TypedBaseStore<IAppState> {
           },
           copilotResolutions: result.resolutions,
           copilotResolutionSummary: result.summary,
+          copilotSkippedFiles: result.skippedFiles,
           copilotResolutionProgress: null,
           copilotResolutionAbortController: null,
         })
@@ -8060,6 +8078,7 @@ export class AppStore extends TypedBaseStore<IAppState> {
           useCopilotConflictResolution: false,
           copilotResolutions: null,
           copilotResolutionSummary: null,
+          copilotSkippedFiles: null,
           copilotResolutionProgress: null,
           copilotResolutionAbortController: null,
         })
@@ -8164,6 +8183,23 @@ export class AppStore extends TypedBaseStore<IAppState> {
         log.warn(
           `Copilot resolution skipped: path outside repository: ${resolution.path}`
         )
+        continue
+      }
+
+      // If the user resolved this file externally (e.g. in their editor) while
+      // the result dialog was open, git status will report it with no remaining
+      // conflict markers. Overwriting it with Copilot's stored content would
+      // silently clobber their work, so skip it and let their resolution stand.
+      // This mirrors how the manual conflicts dialog determines a file is
+      // resolved (`hasUnresolvedConflicts`).
+      const onDiskFile = state.changesState.workingDirectory.files.find(
+        f => f.path === resolution.path
+      )
+      if (
+        onDiskFile !== undefined &&
+        isConflictedFileStatus(onDiskFile.status) &&
+        !hasUnresolvedConflicts(onDiskFile.status)
+      ) {
         continue
       }
 
@@ -10976,6 +11012,7 @@ export class AppStore extends TypedBaseStore<IAppState> {
       useCopilotConflictResolution: false,
       copilotResolutions: null,
       copilotResolutionSummary: null,
+      copilotSkippedFiles: null,
       copilotResolutionProgress: null,
       copilotResolutionAbortController: null,
       copilotResolutionModel: null,

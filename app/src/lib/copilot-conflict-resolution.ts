@@ -11,6 +11,18 @@ import {
 // Types & interfaces
 // ---------------------------------------------------------------------------
 
+/**
+ * A conflicted file that Copilot did not resolve, along with the reason it was
+ * skipped (e.g. too large, unreadable, no parseable markers). Surfaced in the
+ * result dialog so the user can resolve it manually.
+ */
+export interface ICopilotSkippedFile {
+  /** Repository-relative file path that was skipped. */
+  readonly path: string
+  /** Human-readable reason the file was skipped. */
+  readonly reason: string
+}
+
 /** Resolution suggestion for a single conflicted file. */
 export interface IFileResolution {
   /** Repository-relative file path that was resolved. */
