@@ -11,10 +11,8 @@ import { Avatar } from '../lib/avatar'
 import { Button } from '../lib/button'
 import { TooltippedContent } from '../lib/tooltipped-content'
 import { TooltipDirection } from '../lib/tooltip'
-
-const planUsageCountFormatter = new Intl.NumberFormat(undefined, {
-  maximumFractionDigits: 2,
-})
+import { formatNumber } from '../../lib/format-number'
+import { getNumberFormatPreference } from '../../models/formatting-preferences'
 
 const snapshotDisplayNames: Record<string, string> = {
   chat: 'Chat messages',
@@ -102,14 +100,15 @@ function formatAiCreditValue(credits: number): string {
   }
 
   if (credits < 0.01) {
-    return '<0.01'
+    return `<${formatNumber(0.01)}`
   }
 
   const maximumFractionDigits = credits >= 100 ? 0 : credits >= 10 ? 1 : 2
 
-  return new Intl.NumberFormat(undefined, {
+  return formatNumber(credits, {
+    ...getNumberFormatPreference(),
     maximumFractionDigits,
-  }).format(credits)
+  })
 }
 
 function formatUsedPercentage(snapshot: ICopilotQuotaSnapshot): string {
@@ -130,9 +129,13 @@ function formatUsageTooltip(
     )} / ${formatAiCreditValue(snapshot.entitlementRequests)} AI credits used`
   }
 
-  return `${planUsageCountFormatter.format(
-    snapshot.usedRequests
-  )} / ${planUsageCountFormatter.format(
+  const formatRequests = (value: number) =>
+    formatNumber(value, {
+      ...getNumberFormatPreference(),
+      maximumFractionDigits: 2,
+    })
+
+  return `${formatRequests(snapshot.usedRequests)} / ${formatRequests(
     snapshot.entitlementRequests
   )} ${displayName.toLowerCase()} used`
 }
