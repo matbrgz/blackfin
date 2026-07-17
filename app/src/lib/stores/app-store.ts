@@ -559,6 +559,8 @@ const alwaysUseCopilotForConflictResolutionKey =
 
 export const showChangesFilterKey = 'show-changes-filter'
 
+// TODO: to be removed after the migration period. Now Copilot models are stored
+// per account, not globally.
 const selectedCopilotModelsKey = 'selected-copilot-models'
 const selectedCopilotModelsByAccountKey = 'selected-copilot-models-by-account'
 const CopilotLicenseTypeNoAccess = 'NO_ACCESS'
@@ -10167,6 +10169,8 @@ export class AppStore extends TypedBaseStore<IAppState> {
     )
   }
 
+  // TODO: to be removed after the migration period. Now Copilot models are stored
+  // per account, not globally.
   private migrateCopilotModelSelections(): void {
     const legacySelections = this.loadLegacyCopilotModelSelections()
     if (Object.keys(legacySelections).length > 0) {
