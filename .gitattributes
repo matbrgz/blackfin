@@ -1,2 +1,3 @@
 /app/test/fixtures/** -text
 /app/static/win32/blackfin-cli.sh eol=lf
+/app/static/skills/blackfin/SKILL.template.md eol=lf
