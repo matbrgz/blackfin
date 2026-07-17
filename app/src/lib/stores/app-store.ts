@@ -10128,14 +10128,6 @@ export class AppStore extends TypedBaseStore<IAppState> {
       }
     }
 
-    // Migrate from the old single-model key
-    const legacy = localStorage.getItem('selected-copilot-model')
-    if (legacy !== null) {
-      return {
-        'commit-message-generation': legacy,
-      }
-    }
-
     return {}
   }
 
@@ -10184,7 +10176,6 @@ export class AppStore extends TypedBaseStore<IAppState> {
     }
 
     localStorage.removeItem(selectedCopilotModelsKey)
-    localStorage.removeItem('selected-copilot-model')
   }
 
   private getSelectedCopilotModels(account: Account): CopilotModelSelections {
