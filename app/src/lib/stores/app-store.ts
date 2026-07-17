@@ -1128,7 +1128,7 @@ export class AppStore extends TypedBaseStore<IAppState> {
       return
     }
 
-    this.fetchCopilotModelsForCurrentAccount().catch(e => {
+    this.fetchCopilotModelsForCurrentAccounts().catch(e => {
       log.warn(
         'AppStore: Failed to fetch Copilot models after account update',
         e
@@ -1148,7 +1148,7 @@ export class AppStore extends TypedBaseStore<IAppState> {
       return
     }
 
-    this.fetchCopilotQuotaSnapshotsForCurrentAccount().catch(e => {
+    this.fetchCopilotQuotaSnapshotsForCurrentAccounts().catch(e => {
       log.warn(
         'AppStore: Failed to fetch Copilot quota snapshots after account update',
         e
@@ -10426,15 +10426,15 @@ export class AppStore extends TypedBaseStore<IAppState> {
 
   /** This shouldn't be called directly. See 'Dispatcher'. */
   public async _fetchCopilotModels(): Promise<void> {
-    return this.fetchCopilotModelsForCurrentAccount()
+    return this.fetchCopilotModelsForCurrentAccounts()
   }
 
   /** This shouldn't be called directly. See 'Dispatcher'. */
   public async _fetchCopilotQuotaSnapshots(): Promise<void> {
-    return this.fetchCopilotQuotaSnapshotsForCurrentAccount()
+    return this.fetchCopilotQuotaSnapshotsForCurrentAccounts()
   }
 
-  private async fetchCopilotModelsForCurrentAccount(): Promise<void> {
+  private async fetchCopilotModelsForCurrentAccounts(): Promise<void> {
     const accounts = this.getCopilotSettingsAccounts()
     if (accounts.length === 0) {
       this.copilotModelsByAccount = new Map()
@@ -10457,7 +10457,7 @@ export class AppStore extends TypedBaseStore<IAppState> {
     this.emitUpdate()
   }
 
-  private async fetchCopilotQuotaSnapshotsForCurrentAccount(): Promise<void> {
+  private async fetchCopilotQuotaSnapshotsForCurrentAccounts(): Promise<void> {
     const accounts = this.getCopilotSettingsAccounts()
     if (accounts.length === 0) {
       this.copilotQuotaSnapshotsByAccount = new Map()
