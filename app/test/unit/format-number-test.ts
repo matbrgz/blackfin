@@ -133,6 +133,33 @@ describe('formatNumber', () => {
         '1 234 567.89'
       )
     })
+
+    it('truncates decimals to the maximum fraction digits', () => {
+      assert.strictEqual(
+        formatNumber(3.14159, {
+          ...commaThousandsDotDecimal,
+          maximumFractionDigits: 2,
+        }),
+        '3.14'
+      )
+      assert.strictEqual(
+        formatNumber(3.199, {
+          ...dotThousandsCommaDecimal,
+          maximumFractionDigits: 2,
+        }),
+        '3,19'
+      )
+    })
+
+    it('leaves integers unchanged when maximum fraction digits is set', () => {
+      assert.strictEqual(
+        formatNumber(1234, {
+          ...commaThousandsDotDecimal,
+          maximumFractionDigits: 2,
+        }),
+        '1,234'
+      )
+    })
   })
 
   describe('negative numbers', () => {
