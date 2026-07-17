@@ -18,6 +18,7 @@ import {
   DefaultCopilotModel,
   type CopilotFeature,
   type CopilotModelSelections,
+  type CopilotQuotaSnapshots,
   type ICopilotQuotaSnapshot,
   getCopilotAccountCacheKey,
 } from '../../../src/lib/stores/copilot-store'
@@ -268,10 +269,9 @@ afterEach(() => {
 function defaults() {
   return {
     selectedCopilotModelsByAccount: new Map(),
-    copilotModels: models,
-    copilotModelsByAccount: new Map(),
-    copilotQuotaSnapshots: quotaSnapshots,
-    copilotQuotaSnapshotsByAccount: new Map(),
+    copilotModelsByAccount: modelsForDefaultAccount(models),
+    copilotQuotaSnapshotsByAccount:
+      quotaSnapshotsForDefaultAccount(quotaSnapshots),
     accounts: [makeAccount()],
     byokProviders: [],
     showBYOKSettings: false,
@@ -288,6 +288,16 @@ function defaults() {
 
 function selectionsForDefaultAccount(selections: CopilotModelSelections) {
   return new Map([[getCopilotAccountCacheKey(makeAccount()), selections]])
+}
+
+function modelsForDefaultAccount(models: ReadonlyArray<Model> | null) {
+  return new Map([[getCopilotAccountCacheKey(makeAccount()), models]])
+}
+
+function quotaSnapshotsForDefaultAccount(
+  snapshots: CopilotQuotaSnapshots | null
+) {
+  return new Map([[getCopilotAccountCacheKey(makeAccount()), snapshots]])
 }
 
 function getModelPickerButton(container: HTMLElement): HTMLButtonElement {
@@ -351,7 +361,6 @@ describe('CopilotPreferences', () => {
     render(
       <CopilotPreferences
         {...defaults()}
-        copilotModels={null}
         accounts={[]}
         onSignIn={() => {
           called += 1
@@ -378,7 +387,6 @@ describe('CopilotPreferences', () => {
     render(
       <CopilotPreferences
         {...defaults()}
-        copilotModels={null}
         accounts={[
           makeAccount({
             endpoint: 'https://enterprise.example.com/api/v3',
@@ -499,20 +507,25 @@ describe('CopilotPreferences', () => {
   })
 
   it('uses Copilot when a GHE account has Copilot enabled', () => {
+    const account = makeAccount({
+      endpoint: 'https://api.octocorp.ghe.com',
+      id: 2,
+      login: 'octo',
+      name: 'Octo Cat',
+      isCopilotDesktopEnabled: true,
+      copilotLicenseType: 'COPILOT_BUSINESS',
+    })
+
     render(
       <CopilotPreferences
         {...defaults()}
-        accounts={[
-          makeAccount({ copilotLicenseType: 'NO_ACCESS' }),
-          makeAccount({
-            endpoint: 'https://api.octocorp.ghe.com',
-            id: 2,
-            login: 'octo',
-            name: 'Octo Cat',
-            isCopilotDesktopEnabled: true,
-            copilotLicenseType: 'COPILOT_BUSINESS',
-          }),
-        ]}
+        copilotModelsByAccount={
+          new Map([[getCopilotAccountCacheKey(account), models]])
+        }
+        copilotQuotaSnapshotsByAccount={
+          new Map([[getCopilotAccountCacheKey(account), quotaSnapshots]])
+        }
+        accounts={[makeAccount({ copilotLicenseType: 'NO_ACCESS' }), account]}
       />
     )
 
@@ -687,17 +700,32 @@ describe('CopilotPreferences', () => {
   })
 
   it('shows loading message when models not yet fetched', () => {
-    render(<CopilotPreferences {...defaults()} copilotModels={null} />)
+    render(
+      <CopilotPreferences
+        {...defaults()}
+        copilotModelsByAccount={modelsForDefaultAccount(null)}
+      />
+    )
     assert.ok(screen.getByText('Loading available models…'))
   })
 
   it('shows no-models message when fetch completed with empty result', () => {
-    render(<CopilotPreferences {...defaults()} copilotModels={[]} />)
+    render(
+      <CopilotPreferences
+        {...defaults()}
+        copilotModelsByAccount={modelsForDefaultAccount([])}
+      />
+    )
     assert.ok(screen.getByText('No Copilot models available.'))
   })
 
   it('shows a loading message when quota snapshots have not been fetched', () => {
-    render(<CopilotPreferences {...defaults()} copilotQuotaSnapshots={null} />)
+    render(
+      <CopilotPreferences
+        {...defaults()}
+        copilotQuotaSnapshotsByAccount={quotaSnapshotsForDefaultAccount(null)}
+      />
+    )
 
     assert.ok(screen.getByText('Loading Copilot usage…'))
   })
@@ -744,7 +772,7 @@ describe('CopilotPreferences', () => {
     render(
       <CopilotPreferences
         {...defaults()}
-        copilotQuotaSnapshots={
+        copilotQuotaSnapshotsByAccount={quotaSnapshotsForDefaultAccount(
           new Map<string, ICopilotQuotaSnapshot>([
             [
               'chat',
@@ -756,7 +784,7 @@ describe('CopilotPreferences', () => {
               }),
             ],
           ])
-        }
+        )}
       />
     )
 
@@ -776,7 +804,7 @@ describe('CopilotPreferences', () => {
     render(
       <CopilotPreferences
         {...defaults()}
-        copilotQuotaSnapshots={
+        copilotQuotaSnapshotsByAccount={quotaSnapshotsForDefaultAccount(
           new Map<string, ICopilotQuotaSnapshot>([
             [
               'chat',
@@ -808,7 +836,7 @@ describe('CopilotPreferences', () => {
               }),
             ],
           ])
-        }
+        )}
       />
     )
 
@@ -989,7 +1017,7 @@ describe('CopilotPreferences', () => {
     const view = render(
       <CopilotPreferences
         {...defaults()}
-        copilotModels={[partiallyPricedModel]}
+        copilotModelsByAccount={modelsForDefaultAccount([partiallyPricedModel])}
         selectedCopilotModelsByAccount={selectionsForDefaultAccount({
           'commit-message-generation': encodeModelKey({
             kind: 'copilot',
@@ -1026,7 +1054,9 @@ describe('CopilotPreferences', () => {
     render(
       <CopilotPreferences
         {...defaults()}
-        copilotModels={[missingBatchSizeModel]}
+        copilotModelsByAccount={modelsForDefaultAccount([
+          missingBatchSizeModel,
+        ])}
         selectedCopilotModelsByAccount={selectionsForDefaultAccount({
           'commit-message-generation': encodeModelKey({
             kind: 'copilot',
@@ -1180,7 +1210,7 @@ describe('CopilotPreferences', () => {
     const view = render(
       <CopilotPreferences
         {...defaults()}
-        copilotModels={onlyOtherModel}
+        copilotModelsByAccount={modelsForDefaultAccount(onlyOtherModel)}
         selectedCopilotModelsByAccount={selectionsForDefaultAccount({
           'commit-message-generation': 'deleted-model',
         })}
@@ -1196,7 +1226,7 @@ describe('CopilotPreferences', () => {
     const view = render(
       <CopilotPreferences
         {...defaults()}
-        copilotModels={[]}
+        copilotModelsByAccount={modelsForDefaultAccount([])}
         byokProviders={[ollamaProvider]}
         selectedCopilotModelsByAccount={selectionsForDefaultAccount({
           'commit-message-generation': 'deleted-model',

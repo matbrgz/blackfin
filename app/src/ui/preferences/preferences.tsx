@@ -48,7 +48,6 @@ import type {
   CopilotModelsByAccount,
   CopilotModelSelectionsByAccount,
   CopilotQuotaSnapshotsByAccount,
-  CopilotQuotaSnapshots,
 } from '../../lib/stores/copilot-store'
 import { getCopilotAccountCacheKey } from '../../lib/stores/copilot-store'
 import type { IBYOKProvider } from '../../lib/copilot/byok'
@@ -82,7 +81,6 @@ import {
   setNumberFormatPreference,
 } from '../../models/formatting-preferences'
 import { enableFormattingPreferences } from '../../lib/feature-flag'
-import type { Model } from '@github/copilot-sdk/dist/generated/rpc'
 
 interface IPreferencesProps {
   readonly dispatcher: Dispatcher
@@ -119,9 +117,7 @@ interface IPreferencesProps {
   readonly underlineLinks: boolean
   readonly showDiffCheckMarks: boolean
   readonly selectedCopilotModelsByAccount: CopilotModelSelectionsByAccount
-  readonly copilotModels: ReadonlyArray<Model> | null
   readonly copilotModelsByAccount: CopilotModelsByAccount
-  readonly copilotQuotaSnapshots: CopilotQuotaSnapshots | null
   readonly copilotQuotaSnapshotsByAccount: CopilotQuotaSnapshotsByAccount
   readonly byokProviders: ReadonlyArray<IBYOKProvider>
   readonly alwaysUseCopilotForConflictResolution: boolean
@@ -572,9 +568,7 @@ export class Preferences extends React.Component<
             selectedCopilotModelsByAccount={
               this.state.selectedCopilotModelsByAccount
             }
-            copilotModels={this.props.copilotModels}
             copilotModelsByAccount={this.props.copilotModelsByAccount}
-            copilotQuotaSnapshots={this.props.copilotQuotaSnapshots}
             copilotQuotaSnapshotsByAccount={
               this.props.copilotQuotaSnapshotsByAccount
             }

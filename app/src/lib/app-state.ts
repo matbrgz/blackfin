@@ -2,7 +2,6 @@ import type {
   CopilotModelsByAccount,
   CopilotModelSelectionsByAccount,
   CopilotQuotaSnapshotsByAccount,
-  CopilotQuotaSnapshots,
 } from './stores/copilot-store'
 import type { IBYOKProvider } from './copilot/byok'
 import type { IConflictResolutionModelDisplay } from './copilot/conflict-resolution-model'
@@ -69,7 +68,6 @@ import { IAPIRepoRuleset } from './api'
 import { ICustomIntegration } from './custom-integration'
 import { Emoji } from './emoji'
 import { IUpdateState } from '../ui/lib/update-store'
-import type { Model } from '@github/copilot-sdk/dist/generated/rpc'
 
 export enum SelectionType {
   Repository,
@@ -422,20 +420,8 @@ export interface IAppState {
   /** Account-scoped Copilot model selections. */
   readonly selectedCopilotModelsByAccount: CopilotModelSelectionsByAccount
 
-  /**
-   * The list of available Copilot models fetched from the SDK.
-   * Null when the list has not been fetched yet.
-   */
-  readonly copilotModels: ReadonlyArray<Model> | null
-
   /** Account-scoped Copilot model lists, keyed by Copilot account cache key. */
   readonly copilotModelsByAccount: CopilotModelsByAccount
-
-  /**
-   * Copilot quota snapshots fetched from the SDK. Null when the snapshots have
-   * not been fetched yet.
-   */
-  readonly copilotQuotaSnapshots: CopilotQuotaSnapshots | null
 
   /** Account-scoped Copilot quota snapshots, keyed by Copilot account cache key. */
   readonly copilotQuotaSnapshotsByAccount: CopilotQuotaSnapshotsByAccount

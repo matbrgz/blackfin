@@ -732,9 +732,7 @@ export class AppStore extends TypedBaseStore<IAppState> {
 
   private selectedCopilotModelsByAccount: CopilotModelSelectionsByAccount =
     new Map()
-  private copilotModels: ReadonlyArray<Model> | null = null
   private copilotModelsByAccount: CopilotModelsByAccount = new Map()
-  private copilotQuotaSnapshots: CopilotQuotaSnapshots | null = null
   private copilotQuotaSnapshotsByAccount: CopilotQuotaSnapshotsByAccount =
     new Map()
   private byokProviders: ReadonlyArray<IBYOKProvider> = []
@@ -1082,18 +1080,6 @@ export class AppStore extends TypedBaseStore<IAppState> {
     )
   }
 
-  private getCopilotSettingsAccount(): Account | undefined {
-    return this.getCopilotSettingsAccounts()[0]
-  }
-
-  private getCopilotModelsAccount(): Account | undefined {
-    return this.getCopilotSettingsAccount()
-  }
-
-  private getCopilotQuotaSnapshotsAccount(): Account | undefined {
-    return this.getCopilotSettingsAccount()
-  }
-
   private syncCopilotModelsFromCache(): void {
     const accounts = this.getCopilotSettingsAccounts()
     const copilotModelsByAccount = new Map<
@@ -1109,15 +1095,6 @@ export class AppStore extends TypedBaseStore<IAppState> {
     }
 
     this.copilotModelsByAccount = copilotModelsByAccount
-    const account = this.getCopilotModelsAccount()
-
-    if (account === undefined) {
-      this.copilotModels = null
-      return
-    }
-
-    this.copilotModels =
-      copilotModelsByAccount.get(getCopilotAccountCacheKey(account)) ?? null
   }
 
   private syncCopilotQuotaSnapshotsFromCache(): void {
@@ -1135,16 +1112,6 @@ export class AppStore extends TypedBaseStore<IAppState> {
     }
 
     this.copilotQuotaSnapshotsByAccount = copilotQuotaSnapshotsByAccount
-    const account = this.getCopilotQuotaSnapshotsAccount()
-
-    if (account === undefined) {
-      this.copilotQuotaSnapshots = null
-      return
-    }
-
-    this.copilotQuotaSnapshots =
-      copilotQuotaSnapshotsByAccount.get(getCopilotAccountCacheKey(account)) ??
-      null
   }
 
   private updateCopilotModelsForCurrentAccount(): void {
@@ -1377,9 +1344,7 @@ export class AppStore extends TypedBaseStore<IAppState> {
         this.alwaysUseCopilotForConflictResolution,
       showChangesFilter: this.showChangesFilter,
       selectedCopilotModelsByAccount: this.selectedCopilotModelsByAccount,
-      copilotModels: this.copilotModels,
       copilotModelsByAccount: this.copilotModelsByAccount,
-      copilotQuotaSnapshots: this.copilotQuotaSnapshots,
       copilotQuotaSnapshotsByAccount: this.copilotQuotaSnapshotsByAccount,
       byokProviders: this.byokProviders,
     }
@@ -6904,9 +6869,12 @@ export class AppStore extends TypedBaseStore<IAppState> {
     // Controller used to actually cancel the in-flight SDK turn when the user
     // clicks "Stop" (see _abortCopilotConflictResolution).
     const abortController = new AbortController()
+    const copilotModels =
+      this.copilotModelsByAccount.get(getCopilotAccountCacheKey(account)) ??
+      null
     const copilotResolutionModel = getConflictResolutionModelDisplay(
       this.getSelectedCopilotModels(account)['conflict-resolution'] ?? null,
-      this.copilotModels,
+      copilotModels,
       this.byokProviders
     )
     this.repositoryStateCache.updateMultiCommitOperationState(
@@ -10474,7 +10442,6 @@ export class AppStore extends TypedBaseStore<IAppState> {
   private async fetchCopilotModelsForCurrentAccount(): Promise<void> {
     const accounts = this.getCopilotSettingsAccounts()
     if (accounts.length === 0) {
-      this.copilotModels = null
       this.copilotModelsByAccount = new Map()
       this.emitUpdate()
       return
@@ -10489,9 +10456,7 @@ export class AppStore extends TypedBaseStore<IAppState> {
     }
 
     this.copilotModelsByAccount = copilotModelsByAccount
-    this.copilotModels =
-      copilotModelsByAccount.get(getCopilotAccountCacheKey(accounts[0])) ?? null
-    if (this.copilotModels !== null) {
+    if ([...copilotModelsByAccount.values()].some(models => models !== null)) {
       this.scrubMissingCopilotModelSelections()
     }
     this.emitUpdate()
@@ -10500,7 +10465,6 @@ export class AppStore extends TypedBaseStore<IAppState> {
   private async fetchCopilotQuotaSnapshotsForCurrentAccount(): Promise<void> {
     const accounts = this.getCopilotSettingsAccounts()
     if (accounts.length === 0) {
-      this.copilotQuotaSnapshots = null
       this.copilotQuotaSnapshotsByAccount = new Map()
       this.emitUpdate()
       return
@@ -10518,10 +10482,6 @@ export class AppStore extends TypedBaseStore<IAppState> {
     }
 
     this.copilotQuotaSnapshotsByAccount = copilotQuotaSnapshotsByAccount
-    this.copilotQuotaSnapshots =
-      copilotQuotaSnapshotsByAccount.get(
-        getCopilotAccountCacheKey(accounts[0])
-      ) ?? null
     this.emitUpdate()
   }
 

@@ -24,9 +24,7 @@ import { SnapshotCard } from './snapshot-card'
 
 interface ICopilotPreferencesProps {
   readonly selectedCopilotModelsByAccount: CopilotModelSelectionsByAccount
-  readonly copilotModels: ReadonlyArray<Model> | null
   readonly copilotModelsByAccount: CopilotModelsByAccount
-  readonly copilotQuotaSnapshots: CopilotQuotaSnapshots | null
   readonly copilotQuotaSnapshotsByAccount: CopilotQuotaSnapshotsByAccount
   readonly accounts: ReadonlyArray<Account>
   readonly byokProviders: ReadonlyArray<IBYOKProvider>
@@ -169,13 +167,11 @@ export class CopilotPreferences extends React.Component<ICopilotPreferencesProps
   }
 
   private getCopilotModels(account: Account): ReadonlyArray<Model> | null {
-    const key = getCopilotAccountCacheKey(account)
-
-    if (this.props.copilotModelsByAccount.has(key)) {
-      return this.props.copilotModelsByAccount.get(key) ?? null
-    }
-
-    return this.props.copilotModels
+    return (
+      this.props.copilotModelsByAccount.get(
+        getCopilotAccountCacheKey(account)
+      ) ?? null
+    )
   }
 
   private getSelectedCopilotModels(account: Account): CopilotModelSelections {
@@ -189,13 +185,11 @@ export class CopilotPreferences extends React.Component<ICopilotPreferencesProps
   private getCopilotQuotaSnapshots(
     account: Account
   ): CopilotQuotaSnapshots | null {
-    const key = getCopilotAccountCacheKey(account)
-
-    if (this.props.copilotQuotaSnapshotsByAccount.has(key)) {
-      return this.props.copilotQuotaSnapshotsByAccount.get(key) ?? null
-    }
-
-    return this.props.copilotQuotaSnapshots
+    return (
+      this.props.copilotQuotaSnapshotsByAccount.get(
+        getCopilotAccountCacheKey(account)
+      ) ?? null
+    )
   }
 
   private getCopilotAccessState(): CopilotAccessState {

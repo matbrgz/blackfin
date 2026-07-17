@@ -1562,7 +1562,7 @@ export class App extends React.Component<IAppProps, IAppState> {
     return (
       this.state.copilotModelsByAccount.get(
         getCopilotAccountCacheKey(account)
-      ) ?? this.state.copilotModels
+      ) ?? null
     )
   }
 
@@ -1570,7 +1570,7 @@ export class App extends React.Component<IAppProps, IAppState> {
     return (
       this.state.copilotQuotaSnapshotsByAccount.get(
         getCopilotAccountCacheKey(account)
-      ) ?? this.state.copilotQuotaSnapshots
+      ) ?? null
     )
   }
 
@@ -1770,9 +1770,7 @@ export class App extends React.Component<IAppProps, IAppState> {
             selectedCopilotModelsByAccount={
               this.state.selectedCopilotModelsByAccount
             }
-            copilotModels={this.state.copilotModels}
             copilotModelsByAccount={this.state.copilotModelsByAccount}
-            copilotQuotaSnapshots={this.state.copilotQuotaSnapshots}
             copilotQuotaSnapshotsByAccount={
               this.state.copilotQuotaSnapshotsByAccount
             }
@@ -2463,7 +2461,7 @@ export class App extends React.Component<IAppProps, IAppState> {
             : this.getSelectedCopilotModelsForAccount(account)
         const copilotModels =
           account === undefined
-            ? this.state.copilotModels
+            ? null
             : this.getCopilotModelsForAccount(account)
 
         return (
