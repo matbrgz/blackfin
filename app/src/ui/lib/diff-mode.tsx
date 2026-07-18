@@ -6,6 +6,9 @@ export const ShowDiffMinimapDefault = false
 const showDiffMinimapKey = 'show-diff-minimap'
 export const ShowWholeFileDefault = false
 const showWholeFileKey = 'show-whole-file'
+export const WrapDiffLinesDefault = true
+const wrapDiffLinesKey = 'wrap-diff-lines'
+export const DiffLineWrappingChangedEvent = 'diff-line-wrapping-changed'
 
 /**
  * Gets a value indicating whether not to present diffs in a split view mode
@@ -50,4 +53,42 @@ export function getShowWholeFile(): boolean {
  */
 export function setShowWholeFile(showWholeFile: boolean) {
   setBoolean(showWholeFileKey, showWholeFile)
+}
+
+/**
+ * Gets a value indicating whether text diff lines should wrap.
+ */
+export function getWrapDiffLines(): boolean {
+  return getBoolean(wrapDiffLinesKey, WrapDiffLinesDefault)
+}
+
+/**
+ * Persists the text diff line wrapping preference and notifies active diff
+ * surfaces so they can invalidate their measured row heights.
+ */
+export function setWrapDiffLines(wrapDiffLines: boolean) {
+  setBoolean(wrapDiffLinesKey, wrapDiffLines)
+  document.dispatchEvent(
+    new window.CustomEvent<boolean>(DiffLineWrappingChangedEvent, {
+      detail: wrapDiffLines,
+    })
+  )
+}
+
+/**
+ * Whether the file should preserve word boundaries when diff lines wrap.
+ */
+export function isMarkdownFile(path: string): boolean {
+  return /\.(?:md|markdown|mdown|mkd|mkdn|mdx)$/i.test(path)
+}
+
+/**
+ * Converts wheel input into the shared horizontal diff scroll delta.
+ */
+export function getDiffHorizontalScrollDelta(
+  deltaX: number,
+  deltaY: number,
+  shiftKey: boolean
+): number {
+  return shiftKey ? deltaY || deltaX : deltaX
 }

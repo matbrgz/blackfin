@@ -10,6 +10,11 @@ import {
 } from '../lib/popover'
 import { Tooltip, TooltipDirection } from '../lib/tooltip'
 import { createObservableRef } from '../lib/observable-ref'
+import {
+  DiffLineWrappingChangedEvent,
+  getWrapDiffLines,
+  setWrapDiffLines,
+} from '../lib/diff-mode'
 
 interface IDiffOptionsProps {
   readonly isInteractiveDiff: boolean
@@ -30,6 +35,7 @@ interface IDiffOptionsProps {
 
 interface IDiffOptionsState {
   readonly isPopoverOpen: boolean
+  readonly wrapDiffLines: boolean
 }
 
 export class DiffOptions extends React.Component<
@@ -44,7 +50,28 @@ export class DiffOptions extends React.Component<
     super(props)
     this.state = {
       isPopoverOpen: false,
+      wrapDiffLines: getWrapDiffLines(),
     }
+  }
+
+  public componentDidMount() {
+    document.addEventListener(
+      DiffLineWrappingChangedEvent,
+      this.onDiffLineWrappingChanged
+    )
+  }
+
+  public componentWillUnmount() {
+    document.removeEventListener(
+      DiffLineWrappingChangedEvent,
+      this.onDiffLineWrappingChanged
+    )
+  }
+
+  private onDiffLineWrappingChanged = (event: Event) => {
+    this.setState({
+      wrapDiffLines: (event as CustomEvent<boolean>).detail,
+    })
   }
 
   private onButtonClick = (event: React.FormEvent<HTMLButtonElement>) => {
@@ -90,6 +117,12 @@ export class DiffOptions extends React.Component<
     return this.props.onShowDiffMinimapChanged(event.currentTarget.checked)
   }
 
+  private onWrapDiffLinesChanged = (
+    event: React.FormEvent<HTMLInputElement>
+  ) => {
+    setWrapDiffLines(event.currentTarget.checked)
+  }
+
   public render() {
     const buttonLabel = `Diff ${__DARWIN__ ? 'Settings' : 'Options'}`
     return (
@@ -131,6 +164,7 @@ export class DiffOptions extends React.Component<
         <h3 id="diff-options-popover-header">{header}</h3>
         {this.renderHideWhitespaceChanges()}
         {this.renderShowSideBySide()}
+        {this.renderWrapDiffLines()}
         {this.renderShowDiffMinimap()}
       </Popover>
     )
@@ -202,6 +236,21 @@ export class DiffOptions extends React.Component<
           }
           onChange={this.onShowDiffMinimapChanged}
           label={__DARWIN__ ? 'Show Minimap' : 'Show minimap'}
+        />
+      </fieldset>
+    )
+  }
+
+  private renderWrapDiffLines() {
+    return (
+      <fieldset>
+        <legend>Line wrapping</legend>
+        <Checkbox
+          value={
+            this.state.wrapDiffLines ? CheckboxValue.On : CheckboxValue.Off
+          }
+          onChange={this.onWrapDiffLinesChanged}
+          label={__DARWIN__ ? 'Wrap Lines' : 'Wrap lines'}
         />
       </fieldset>
     )
