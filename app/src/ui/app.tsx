@@ -3463,6 +3463,13 @@ export class App extends React.Component<IAppProps, IAppState> {
           selectedSection={this.state.selectedAppSection}
           onSelectSection={this.onSelectAppSection}
           attentionCount={this.attentionCount()}
+          projects={this.state.repositories}
+          scopedProject={
+            this.state.selectedAppSection === AppSection.Home
+              ? null
+              : this.state.selectedState?.repository ?? null
+          }
+          onSelectScope={this.onSelectRailScope}
         />
         <div className="app-main">
           {this.renderToolbar()}
@@ -3477,6 +3484,21 @@ export class App extends React.Component<IAppProps, IAppState> {
 
   private onSelectAppSection = (section: AppSection) => {
     this.props.dispatcher.setAppSection(section)
+  }
+
+  /**
+   * The rail's project-scope selector: `null` means all projects (Home), a
+   * project scopes the app to it (reuses the existing repository selection, so
+   * Code and the rest follow along).
+   */
+  private onSelectRailScope = (
+    project: Repository | CloningRepository | null
+  ) => {
+    if (project === null) {
+      this.props.dispatcher.setAppSection(AppSection.Home)
+    } else {
+      this.props.dispatcher.selectRepository(project)
+    }
   }
 
   /**

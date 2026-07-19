@@ -3,6 +3,17 @@ import classNames from 'classnames'
 import { Octicon, OcticonSymbol } from '../octicons'
 import * as octicons from '../octicons/octicons.generated'
 import { AppSection } from '../../models/app-section'
+import { Repository } from '../../models/repository'
+import { CloningRepository } from '../../models/cloning-repository'
+
+type Project = Repository | CloningRepository
+
+/** The display name for a project: its alias when set, otherwise its name. */
+function projectName(project: Project): string {
+  return project instanceof Repository
+    ? project.alias ?? project.name
+    : project.name
+}
 
 interface IRailDestination {
   readonly section: AppSection
@@ -63,15 +74,105 @@ interface IAppRailProps {
   readonly onSelectSection: (section: AppSection) => void
   /** Shown as a badge on Home when projects need attention. */
   readonly attentionCount: number
+  /** Every known project, for the scope selector. */
+  readonly projects: ReadonlyArray<Project>
+  /** The project the rail is scoped to, or `null` for all projects. */
+  readonly scopedProject: Project | null
+  /** Select a project to scope to, or `null` for all projects. */
+  readonly onSelectScope: (project: Project | null) => void
+}
+
+interface IAppRailState {
+  readonly scopeExpanded: boolean
 }
 
 /** The app's primary navigation. Always present, never scrolls away. */
-export class AppRail extends React.Component<IAppRailProps> {
+export class AppRail extends React.Component<IAppRailProps, IAppRailState> {
+  public constructor(props: IAppRailProps) {
+    super(props)
+    this.state = { scopeExpanded: false }
+  }
+
+  private onToggleScope = () => {
+    this.setState({ scopeExpanded: !this.state.scopeExpanded })
+  }
+
+  private onPickScope = (project: Project | null) => {
+    this.setState({ scopeExpanded: false })
+    this.props.onSelectScope(project)
+  }
+
+  private renderScope() {
+    const { projects, scopedProject } = this.props
+    const { scopeExpanded } = this.state
+    const label =
+      scopedProject === null ? 'All projects' : projectName(scopedProject)
+
+    return (
+      <div className="app-rail-scope">
+        <button
+          className="app-rail-scope-toggle"
+          onClick={this.onToggleScope}
+          aria-expanded={scopeExpanded}
+          aria-haspopup="menu"
+          aria-label={`Project scope: ${label}`}
+        >
+          <Octicon
+            className="app-rail-scope-chevron"
+            symbol={
+              scopeExpanded ? octicons.chevronDown : octicons.chevronRight
+            }
+          />
+          <span className="app-rail-scope-label">{label}</span>
+        </button>
+        {scopeExpanded && (
+          <ul className="app-rail-scope-menu" role="menu">
+            <li role="none">
+              <button
+                role="menuitemradio"
+                aria-checked={scopedProject === null}
+                className={classNames('app-rail-scope-item', {
+                  selected: scopedProject === null,
+                })}
+                onClick={this.onPickAll}
+              >
+                All projects
+              </button>
+            </li>
+            {projects.map((project, i) => (
+              <li role="none" key={i}>
+                <button
+                  role="menuitemradio"
+                  aria-checked={project === scopedProject}
+                  className={classNames('app-rail-scope-item', {
+                    selected: project === scopedProject,
+                  })}
+                  onClick={this.onPickProject(project)}
+                >
+                  {projectName(project)}
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    )
+  }
+
+  private onPickAll = () => this.onPickScope(null)
+  private onPickProject = (project: Project) => () => this.onPickScope(project)
+
   public render() {
     const { selectedSection, attentionCount, onSelectSection } = this.props
 
     return (
-      <nav className="app-rail" aria-label="Primary">
+      <nav
+        className={classNames('app-rail', {
+          'scope-expanded': this.state.scopeExpanded,
+        })}
+        aria-label="Primary"
+      >
+        {this.renderScope()}
         {Destinations.map(destination => (
           <AppRailItem
             key={destination.section}

@@ -85,3 +85,83 @@
   font-size: var(--font-size-2xs);
   line-height: 1.2;
 }
+
+// Project-scope selector pinned at the top of the rail: view all projects, or
+// scope the app to one. Compact toggle (fits the 68px rail); the menu is a
+// popover that extends past the rail so project names stay readable.
+.app-rail-scope {
+  position: relative;
+  margin: 0 var(--spacing-half) var(--space-1);
+}
+
+.app-rail-scope-toggle {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  width: 100%;
+  padding: var(--spacing-half) 0;
+  border: none;
+  border-radius: var(--border-radius);
+  background: var(--box-background-color);
+  color: var(--text-secondary-color);
+  cursor: pointer;
+
+  &:hover {
+    color: var(--text-color);
+  }
+}
+
+.app-rail-scope-chevron {
+  flex-shrink: 0;
+}
+
+.app-rail-scope-label {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--font-size-2xs);
+  line-height: 1.1;
+}
+
+.app-rail-scope-menu {
+  position: absolute;
+  top: 0;
+  left: calc(var(--rail-width) - var(--spacing-half));
+  z-index: 10;
+
+  min-width: 200px;
+  max-height: 70vh;
+  overflow-y: auto;
+  margin: 0;
+  padding: var(--spacing-half);
+  list-style: none;
+
+  background: var(--box-background-color);
+  border: var(--base-border);
+  border-radius: var(--border-radius);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+}
+
+.app-rail-scope-item {
+  display: block;
+  width: 100%;
+  padding: var(--spacing-half) var(--spacing);
+  border: none;
+  border-radius: var(--border-radius);
+
+  background: transparent;
+  color: var(--text-color);
+  text-align: left;
+  white-space: nowrap;
+  cursor: pointer;
+
+  &:hover {
+    background: var(--box-alt-background-color);
+  }
+
+  &.selected {
+    background: var(--box-selected-background-color);
+  }
+}
