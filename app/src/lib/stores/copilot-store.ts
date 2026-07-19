@@ -105,7 +105,13 @@ export type CopilotModelRequest =
     }
 
 /** Copilot features that support per-model selection. */
-export type CopilotFeature = 'commit-message-generation' | 'conflict-resolution'
+export type CopilotFeature =
+  | 'commit-message-generation'
+  | 'conflict-resolution'
+  // The batched diff-annotation turn (#69). A single member added here is the
+  // whole feature registration: it grants per-model selection, BYOK and the
+  // preferences UI for the annotation batch with no feature-specific code.
+  | 'diff-annotation-batch'
 
 /** Concrete session config produced by resolving a {@link CopilotModelRequest}. */
 interface IResolvedConflictModelConfig {
