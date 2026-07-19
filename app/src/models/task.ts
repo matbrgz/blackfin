@@ -82,11 +82,33 @@ export interface ITask {
 /** A task's stable key across any provider: `${providerId}:${externalId}`. */
 export type TaskKey = string
 
-/** The link between a task and a branch (and, later, a worktree). Persisted by #74. */
+/**
+ * The link between a task and a branch (and, later, a worktree). Persisted by
+ * #74.
+ *
+ * The unique identity of a link is the triple `(taskKey, repositoryId,
+ * branchName)`, never a 1:1 task↔branch relation: one task may own several
+ * branches (a first attempt, a retry, a hotfix), and pretending the relation is
+ * 1:1 breaks on the first abandoned rebase.
+ */
 export interface ITaskLink {
   readonly taskKey: TaskKey
   readonly repositoryId: number
   readonly branchName: string
+  /**
+   * The branch tip at the instant of creation. This — not the name — is the
+   * anchor that survives `git branch -m`: a rename changes `branchName` but not
+   * the commit the branch was born at, so #74 re-finds a renamed branch by
+   * testing whether `createdAtSha` is an ancestor of a branch's current tip and
+   * then self-corrects the stored `branchName`.
+   */
+  readonly createdAtSha: string
+  /**
+   * Absolute path of the worktree the branch was born in, or null when it was
+   * created in the main working tree. A path — not a `Repository.id` — because
+   * switching worktrees mutates the `path` of the `Repository` row
+   * (`repositories-store.ts`), so the id is not a stable anchor.
+   */
   readonly worktreePath: string | null
   readonly createdAt: number
 }
