@@ -132,6 +132,7 @@ export enum PopupType {
   AddRemote = 'AddRemote',
   DeleteWorktreeFailed = 'DeleteWorktreeFailed',
   ConfirmWorkspaceCleanup = 'ConfirmWorkspaceCleanup',
+  ContextFileReader = 'ContextFileReader',
 }
 
 interface IBasePopup {
@@ -604,5 +605,18 @@ export type PopupDetail =
       type: PopupType.ConfirmWorkspaceCleanup
       repository: Repository
       artifacts: ReadonlyArray<IArtifactDirectory>
+    }
+  | {
+      type: PopupType.ContextFileReader
+      /** The absolute path to read the file's contents from. */
+      absolutePath: string
+      /** The repository- or home-relative path, shown in the header. */
+      displayPath: string
+      /**
+       * The repository the file lives in, or null for a global context file.
+       * This is what decides how "open externally" behaves — the editor for a
+       * project file, the file manager for a global one.
+       */
+      repository: Repository | null
     }
 export type Popup = IBasePopup & PopupDetail

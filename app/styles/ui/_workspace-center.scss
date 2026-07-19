@@ -314,3 +314,70 @@
 .workspace-global .workspace-detail {
   border-top: none;
 }
+
+// The in-app reader for a single context file. It borrows the diff's monospace
+// body, gutter and syntax colours (`.cm-s-default`, `.diff-line-number`) so a
+// context file reads here the way its edits read in the diff.
+#context-file-reader {
+  width: 850px;
+  max-width: 90vw;
+
+  .dialog-content {
+    padding: 0;
+  }
+
+  .context-file-reader-open-externally {
+    // Sit the affordance in the header without the default button chrome.
+    min-width: 0;
+    padding: 0 var(--spacing-half);
+    background: transparent;
+    border: none;
+    box-shadow: none;
+
+    .octicon {
+      fill: var(--text-secondary-color);
+    }
+  }
+
+  .context-file-reader-message {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-half);
+    padding: var(--spacing-double);
+    color: var(--text-secondary-color);
+  }
+
+  .context-file-reader-code {
+    max-height: 65vh;
+    overflow: auto;
+    padding: var(--spacing-half) 0;
+    color: var(--diff-text-color);
+    background: var(--background-color);
+    font-size: var(--diff-font-size, var(--font-size-sm));
+    font-family: var(--diff-font-family, var(--font-family-monospace));
+    line-height: 1.5;
+  }
+
+  .context-file-reader-line {
+    display: flex;
+    align-items: flex-start;
+    white-space: pre;
+  }
+
+  .context-file-reader-gutter {
+    position: sticky;
+    left: 0;
+    flex-shrink: 0;
+    padding: 0 var(--spacing) 0 var(--spacing-half);
+    background: var(--background-color);
+    // The gutter is scenery, not content: it should never land in a copy.
+    user-select: none;
+  }
+
+  .context-file-reader-line-content {
+    flex-grow: 1;
+    padding-right: var(--spacing);
+    tab-size: 4;
+  }
+}
