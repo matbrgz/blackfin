@@ -1,11 +1,15 @@
 import { readFile, stat } from 'fs/promises'
-import { extname } from 'path'
 
 import { Repository } from '../models/repository'
 import { Commit } from '../models/commit'
 import { getMergeBase } from './git/merge'
 import { getCommits } from './git/log'
 import { resolveWithin } from './path'
+import {
+  getLangFromPath,
+  makeFencedBlock,
+  sanitizeForMarkdown,
+} from './copilot/prompt-formatting'
 
 /** A single conflict hunk extracted from a file with conflict markers */
 export interface IConflictHunk {
@@ -490,35 +494,4 @@ function truncateBody(body: string): string {
     return body
   }
   return `${body.slice(0, MAX_PR_BODY_LENGTH)}\n…(truncated)`
-}
-
-/** Extract a language identifier from a file path for use in code fences. */
-function getLangFromPath(filePath: string): string {
-  const ext = extname(filePath)
-  const lang = ext.startsWith('.') ? ext.slice(1) : ''
-  // Only allow safe alphanumeric language tags
-  return /^[a-zA-Z0-9]+$/.test(lang) ? lang : ''
-}
-
-/**
- * Wrap content in a fenced code block using a delimiter long enough
- * to avoid breaking if the content itself contains backticks.
- */
-function makeFencedBlock(content: string, lang: string = ''): string {
-  let maxRun = 2
-  const runs = content.match(/`+/g)
-  if (runs) {
-    for (const run of runs) {
-      if (run.length > maxRun) {
-        maxRun = run.length
-      }
-    }
-  }
-  const fence = '`'.repeat(Math.max(3, maxRun + 1))
-  return `${fence}${lang}\n${content}\n${fence}`
-}
-
-/** Strip characters that could break markdown structure when used in headings/labels. */
-function sanitizeForMarkdown(text: string): string {
-  return text.replace(/[\r\n`]/g, '')
 }
