@@ -28,7 +28,6 @@
     "chalk": "^2.3.0",
     "classnames": "^2.2.5",
     "codemirror": "^5.65.17",
-    "ignore": "^7.0.5",
     "codemirror-mode-elixir": "^1.1.2",
     "codemirror-mode-luau": "^1.0.2",
     "codemirror-mode-zig": "^1.0.7",
@@ -45,6 +44,7 @@
     "focus-trap-react": "^8.1.0",
     "fs-admin": "^0.19.0",
     "fuzzaldrin-plus": "^0.6.0",
+    "ignore": "^7.0.5",
     "keytar": "^7.8.0",
     "lodash": "^4.18.1",
     "marked": "^4.0.10",
@@ -79,6 +79,7 @@
     "@testing-library/dom": "8.20.1",
     "@testing-library/react": "12.1.5",
     "electron-devtools-installer": "^4.0.0",
+    "grab": "^0.1.48",
     "webpack-hot-middleware": "^2.10.0"
   }
 }

@@ -81,6 +81,12 @@ import { createCredentialHelperTrampolineHandler } from '../lib/trampoline/tramp
 
 if (__DEV__) {
   installDevGlobals()
+
+  // React Grab (dev only): lets a coding agent select DOM context straight from
+  // the running UI. The dynamic import keeps it out of production bundles —
+  // `__DEV__` is statically false there, so this whole branch is
+  // dead-code-eliminated and `grab` never ships.
+  import('grab').catch(() => {})
 }
 
 migrateRendererGUID()
