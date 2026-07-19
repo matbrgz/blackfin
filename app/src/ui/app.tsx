@@ -107,6 +107,7 @@ import { UntrustedCertificate } from './untrusted-certificate'
 import { NoRepositoriesView } from './no-repositories'
 import { WorkspaceCenter } from './workspace/workspace-center'
 import { ConfirmCleanupDialog } from './workspace/confirm-cleanup-dialog'
+import { ContextFileReaderDialog } from './workspace/context-file-reader-dialog'
 import { HomeView } from './home/home-view'
 import { AppRail } from './rail/app-rail'
 import { AppSection } from '../models/app-section'
@@ -3117,6 +3118,17 @@ export class App extends React.Component<IAppProps, IAppState> {
           />
         )
       }
+      case PopupType.ContextFileReader:
+        return (
+          <ContextFileReaderDialog
+            key="context-file-reader"
+            dispatcher={this.props.dispatcher}
+            absolutePath={popup.absolutePath}
+            displayPath={popup.displayPath}
+            repository={popup.repository}
+            onDismissed={onPopupDismissedFn}
+          />
+        )
       case PopupType.ManageRemotes:
         return (
           <ManageRemotesDialog
@@ -4240,14 +4252,18 @@ export class App extends React.Component<IAppProps, IAppState> {
     })
   }
 
+  // Clicking a context file now opens it in the in-app reader. "Open
+  // externally" lives inside that reader, preserving the old behaviour.
   private onWorkspaceOpenFile = (
     repository: Repository,
     relativePath: string
   ) => {
-    this.props.dispatcher.openInExternalEditor(
+    this.props.dispatcher.showPopup({
+      type: PopupType.ContextFileReader,
+      absolutePath: Path.join(repository.path, relativePath),
+      displayPath: relativePath,
       repository,
-      Path.join(repository.path, relativePath)
-    )
+    })
   }
 
   private workspaceRepositories(): ReadonlyArray<Repository> {
@@ -4273,11 +4289,22 @@ export class App extends React.Component<IAppProps, IAppState> {
   }
 
   /**
-   * Global context files live outside any repository, so there is no repository
-   * to open them in. The OS knows what to do with a markdown file.
+   * Global context files live outside any repository, so there is none to open
+   * them in — "open externally" reveals them in the file manager instead. The
+   * header path stays home-relative when the file is under the home directory.
    */
   private onWorkspaceOpenPath = (absolutePath: string) => {
-    shell.showItemInFolder(absolutePath)
+    const home = this.state.globalAgentContext.homePath
+    const relative = Path.relative(home, absolutePath)
+    const displayPath =
+      relative !== '' && !relative.startsWith('..') ? relative : absolutePath
+
+    this.props.dispatcher.showPopup({
+      type: PopupType.ContextFileReader,
+      absolutePath,
+      displayPath,
+      repository: null,
+    })
   }
 
   private renderRepository() {
