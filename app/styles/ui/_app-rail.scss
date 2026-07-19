@@ -131,37 +131,44 @@
   left: calc(var(--rail-width) - var(--spacing-half));
   z-index: 10;
 
-  min-width: 200px;
+  display: flex;
+  flex-direction: column;
+
+  width: 260px;
+  height: 360px;
   max-height: 70vh;
-  overflow-y: auto;
-  margin: 0;
-  padding: var(--spacing-half);
-  list-style: none;
 
   background: var(--box-background-color);
   border: var(--base-border);
   border-radius: var(--border-radius);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+  overflow: hidden;
+
+  // The SectionFilterList is a flex column that fills the popover; its
+  // internal list container scrolls when the projects overflow.
+  .app-rail-scope-list {
+    flex: 1;
+    min-height: 0;
+  }
 }
 
 .app-rail-scope-item {
-  display: block;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-half);
   width: 100%;
-  padding: var(--spacing-half) var(--spacing);
-  border: none;
-  border-radius: var(--border-radius);
+  padding: 0 var(--spacing);
 
-  background: transparent;
   color: var(--text-color);
-  text-align: left;
   white-space: nowrap;
-  cursor: pointer;
 
-  &:hover {
-    background: var(--box-alt-background-color);
+  .app-rail-scope-item-name {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
-  &.selected {
-    background: var(--box-selected-background-color);
+  .app-rail-scope-item-check {
+    flex-shrink: 0;
   }
 }
