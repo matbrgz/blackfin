@@ -22,9 +22,11 @@ export const DesktopStashEntryMarker = '!!GitHub_Desktop'
  * RegEx for determining if a stash entry is created by Desktop
  *
  * This is done by looking for a magic string with the following
- * format: `!!GitHub_Desktop<branch>`
+ * format: `!!GitHub_Desktop<branch>`, optionally preceded by a
+ * URL-encoded user-provided name: `!!Name<name>!!GitHub_Desktop<branch>`
  */
-const desktopStashEntryMessageRe = /!!GitHub_Desktop<(.+)>$/
+const desktopStashEntryMessageRe =
+  /(?:!!Name<([^<>]+)>)?!!GitHub_Desktop<(.+)>$/
 
 type StashResult = {
   /** The stash entries created by Desktop */
@@ -49,6 +51,7 @@ export async function getStashes(repository: Repository): Promise<StashResult> {
     message: '%gs',
     tree: '%T',
     parents: '%P',
+    date: '%aI',
   })
 
   const result = await git(
@@ -69,20 +72,24 @@ export async function getStashes(repository: Repository): Promise<StashResult> {
 
   const entries = parse(result.stdout)
 
-  for (const { name, message, stashSha, tree, parents } of entries) {
-    const branchName = extractBranchFromMessage(message)
+  for (const { name, message, stashSha, tree, parents, date } of entries) {
+    const details = extractStashDetails(message)
 
-    if (branchName !== null) {
+    if (details !== null) {
       desktopEntries.push({
         name,
         stashSha,
-        branchName,
+        branchName: details.branchName,
+        customName: details.customName,
         tree,
         parents: parents.length > 0 ? parents.split(' ') : [],
+        createdAt: new Date(date),
         files,
       })
     }
   }
+
+  desktopEntries.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
 
   return { desktopEntries, stashEntryCount: entries.length - 1 }
 }
@@ -94,25 +101,82 @@ export async function getStashes(repository: Repository): Promise<StashResult> {
  */
 export async function moveStashEntry(
   repository: Repository,
-  { stashSha, parents, tree }: IStashEntry,
+  { stashSha, parents, tree, customName, createdAt }: IStashEntry,
   branchName: string
 ) {
-  const message = `On ${branchName}: ${createDesktopStashMessage(branchName)}`
+  const message = `On ${branchName}: ${createDesktopStashMessage(
+    branchName,
+    customName
+  )}`
+  await replaceStashEntry(
+    repository,
+    { stashSha, parents, tree, createdAt },
+    message
+  )
+}
+
+/**
+ * Sets or clears the user-provided name of a stash entry by means of
+ * creating a new stash entry with the updated message and dropping the
+ * old one.
+ */
+export async function renameStashEntry(
+  repository: Repository,
+  entry: IStashEntry,
+  newName: string | null
+): Promise<IStashEntry> {
+  const customName = newName?.trim() || null
+  if (customName === entry.customName) {
+    return entry
+  }
+
+  const { branchName, stashSha, parents, tree, createdAt } = entry
+  const message = `On ${branchName}: ${createDesktopStashMessage(
+    branchName,
+    customName
+  )}`
+  const newSha = await replaceStashEntry(
+    repository,
+    { stashSha, parents, tree, createdAt },
+    message
+  )
+  return { ...entry, stashSha: newSha, customName }
+}
+
+/**
+ * Stores a new stash entry with the given message pointing to the same
+ * contents as the given entry, then drops the old entry.
+ */
+async function replaceStashEntry(
+  repository: Repository,
+  {
+    stashSha,
+    parents,
+    tree,
+    createdAt,
+  }: Pick<IStashEntry, 'stashSha' | 'parents' | 'tree' | 'createdAt'>,
+  message: string
+): Promise<string> {
   const parentArgs = parents.flatMap(p => ['-p', p])
+  const date = createdAt.toISOString()
 
   const { stdout: commitId } = await git(
     ['commit-tree', ...parentArgs, '-m', message, '--no-gpg-sign', tree],
     repository.path,
-    'moveStashEntryToBranch'
+    'moveStashEntryToBranch',
+    { env: { GIT_AUTHOR_DATE: date, GIT_COMMITTER_DATE: date } }
   )
+  const newSha = commitId.trim()
 
   await git(
-    ['stash', 'store', '-m', message, commitId.trim()],
+    ['stash', 'store', '-m', message, newSha],
     repository.path,
     'moveStashEntryToBranch'
   )
 
   await dropDesktopStashEntry(repository, stashSha)
+
+  return newSha
 }
 
 /**
@@ -133,8 +197,22 @@ export async function getLastDesktopStashEntryForBranch(
 }
 
 /** Creates a stash entry message that indicates the entry was created by Desktop */
-export function createDesktopStashMessage(branchName: string) {
-  return `${DesktopStashEntryMarker}<${branchName}>`
+export function createDesktopStashMessage(
+  branchName: string,
+  customName: string | null = null
+) {
+  const namePrefix = customName
+    ? `!!Name<${encodeURIComponent(customName)}>`
+    : ''
+  return `${namePrefix}${DesktopStashEntryMarker}<${branchName}>`
+}
+
+function decodeStashName(encodedName: string): string {
+  try {
+    return decodeURIComponent(encodedName)
+  } catch {
+    return encodedName
+  }
 }
 
 /**
@@ -274,9 +352,19 @@ export async function popStashEntry(
   }
 }
 
-function extractBranchFromMessage(message: string): string | null {
+type StashDetails = {
+  readonly branchName: string
+  readonly customName: string | null
+}
+
+function extractStashDetails(message: string): StashDetails | null {
   const match = desktopStashEntryMessageRe.exec(message)
-  return match === null || match[1].length === 0 ? null : match[1]
+  if (match === null || match[2].length === 0) {
+    return null
+  }
+
+  const customName = match[1] !== undefined ? decodeStashName(match[1]) : null
+  return { branchName: match[2], customName }
 }
 
 /** Get the files that were changed in the given stash commit */

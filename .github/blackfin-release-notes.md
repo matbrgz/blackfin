@@ -6,13 +6,17 @@ Upstream: [GitHub Desktop 3.6.3 release notes](https://github.com/desktop/deskto
 
 ## **Changes and improvements:**
 
-- [#178] We now support Codeberg accounts as a first-class citizen in Desktop Plus! Thank you @fl-f!  
+- [#178] We now support **Codeberg** accounts in Desktop Plus! Thank you @fl-f for your contribution!  
   You can now sign in using your Codeberg account and:
   - Clone repositories from within the app.
   - Preview and create pull requests.
   - View pull request status, including checks.
   - Enjoy other minor UI improvements that make your experience with Codeberg better.
 
+- You can now rename stashes to make them easier to identify.  
+  Simply click the edit (pencil) icon next to the stash title, or right-click on a stash in the Changes list and select "Rename...".
+
+- All OAuth providers (GitHub, Bitbucket, GitLab, and Codeberg) now use PKCE (Proof Key for Code Exchange) for improved security. You shouldn't notice any difference in your sign-in experience, but if you encounter any problems, please [open an issue](https://github.com/desktop-plus/desktop-plus/issues/new/choose).
 
 ## Fixes:
 

@@ -7,8 +7,14 @@ export interface IStashEntry {
   /** The name of the branch at the time the entry was created. */
   readonly branchName: string
 
+  /** The user-provided name of the entry, if any. */
+  readonly customName: string | null
+
   /** The SHA of the commit object created as a result of stashing. */
   readonly stashSha: string
+
+  /** The date when the stash entry was created. */
+  readonly createdAt: Date
 
   /** The list of files this stash touches */
   readonly files: StashedFileChanges
@@ -44,6 +50,9 @@ export type StashedFileChanges =
 export type StashCallback = (stashEntry: IStashEntry) => Promise<void>
 
 export function entryToString(stashEntry: IStashEntry): string {
+  if (stashEntry.customName !== null) {
+    return stashEntry.customName
+  }
   if (stashEntry.files.kind !== StashedChangesLoadStates.Loaded) {
     return `${stashEntry.name} | Loading...`
   }

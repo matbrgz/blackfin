@@ -12,6 +12,8 @@ import {
   dropDesktopStashEntry,
   popStashEntry,
   getStashes,
+  renameStashEntry,
+  moveStashEntry,
 } from '../../../src/lib/git/stash'
 import { getStatusOrThrow } from '../../helpers/status'
 import { AppFileStatusKind } from '../../../src/models/status'
@@ -80,6 +82,41 @@ describe('git/stash', () => {
       assert.equal(entries[0].name, 'refs/stash@{0}')
       assert.equal(entries[1].name, 'refs/stash@{1}')
       assert.equal(entries[2].name, 'refs/stash@{2}')
+    })
+
+    it('parses entries without a custom name as unnamed', async t => {
+      const repository = await setupEmptyRepository(t)
+      const readme = path.join(repository.path, 'README.md')
+      await writeFile(readme, '')
+      await exec(['add', 'README.md'], repository.path)
+      await exec(['commit', '-m', 'initial commit'], repository.path)
+
+      await generateTestStashEntry(repository, 'master', true)
+
+      const stash = await getStashes(repository)
+      assert.equal(stash.desktopEntries.length, 1)
+      assert.equal(stash.desktopEntries[0].customName, null)
+    })
+
+    it('parses the custom name of named entries', async t => {
+      const repository = await setupEmptyRepository(t)
+      const readme = path.join(repository.path, 'README.md')
+      await writeFile(readme, '')
+      await exec(['add', 'README.md'], repository.path)
+      await exec(['commit', '-m', 'initial commit'], repository.path)
+
+      const customName = 'my custom <name> with 100% special chars!'
+      await appendFile(readme, generateString())
+      await stash(
+        repository,
+        'master',
+        createDesktopStashMessage('master', customName)
+      )
+
+      const stashes = await getStashes(repository)
+      assert.equal(stashes.desktopEntries.length, 1)
+      assert.equal(stashes.desktopEntries[0].branchName, 'master')
+      assert.equal(stashes.desktopEntries[0].customName, customName)
     })
   })
 
@@ -181,6 +218,149 @@ describe('git/stash', () => {
 
       assert.equal(message, '!!GitHub_Desktop<master>')
     })
+
+    it('prepends the URL-encoded custom name when one is given', () => {
+      const message = createDesktopStashMessage('master', 'my stash')
+
+      assert.equal(message, '!!Name<my%20stash>!!GitHub_Desktop<master>')
+    })
+
+    it('keeps named messages parseable by the old, unnamed format regex', () => {
+      const message = `On master: ${createDesktopStashMessage(
+        'master',
+        'my stash'
+      )}`
+
+      // Regex used by older versions of Desktop, which must still be able
+      // to extract the branch name from named stashes
+      const oldFormatRe = /!!GitHub_Desktop<(.+)>$/
+      const match = oldFormatRe.exec(message)
+
+      assert(match !== null)
+      assert.equal(match[1], 'master')
+    })
+
+    it('encodes characters that would break parsing', () => {
+      const message = createDesktopStashMessage('master', '<a>\r\nb')
+
+      assert.equal(message, '!!Name<%3Ca%3E%0D%0Ab>!!GitHub_Desktop<master>')
+    })
+
+    it('uses the unnamed format when the name is empty', () => {
+      const message = createDesktopStashMessage('master', '')
+
+      assert.equal(message, '!!GitHub_Desktop<master>')
+    })
+  })
+
+  describe('renameStashEntry', () => {
+    const setup = async (t: TestContext) => {
+      const repository = await setupEmptyRepository(t)
+      const readme = join(repository.path, 'README.md')
+      await writeFile(readme, '')
+      await exec(['add', 'README.md'], repository.path)
+      await exec(['commit', '-m', 'initial commit'], repository.path)
+
+      return repository
+    }
+
+    it('sets the custom name while preserving branch and contents', async t => {
+      const repository = await setup(t)
+
+      await generateTestStashEntry(repository, 'master', true)
+      await generateTestStashEntry(repository, 'master', true)
+
+      let entries = (await getStashes(repository)).desktopEntries
+      assert.equal(entries.length, 2)
+
+      const entryToRename = entries[1]
+      const returnedEntry = await renameStashEntry(
+        repository,
+        entryToRename,
+        'my stash'
+      )
+
+      entries = (await getStashes(repository)).desktopEntries
+      assert.equal(entries.length, 2)
+
+      const renamed = entries.find(e => e.customName === 'my stash')
+      assert(renamed !== undefined)
+      assert.equal(renamed.branchName, 'master')
+      assert.equal(renamed.tree, entryToRename.tree)
+      assert.deepEqual(renamed.parents, entryToRename.parents)
+
+      // the entry is recreated, so the old SHA no longer exists
+      assert(!entries.some(e => e.stashSha === entryToRename.stashSha))
+
+      // the returned entry points to the recreated stash
+      assert.equal(returnedEntry.stashSha, renamed.stashSha)
+      assert.equal(returnedEntry.customName, 'my stash')
+    })
+
+    it('clears the custom name when given null', async t => {
+      const repository = await setup(t)
+
+      await generateTestStashEntry(repository, 'master', true)
+
+      let entries = (await getStashes(repository)).desktopEntries
+      await renameStashEntry(repository, entries[0], 'my stash')
+
+      entries = (await getStashes(repository)).desktopEntries
+      assert.equal(entries[0].customName, 'my stash')
+
+      await renameStashEntry(repository, entries[0], null)
+
+      entries = (await getStashes(repository)).desktopEntries
+      assert.equal(entries.length, 1)
+      assert.equal(entries[0].customName, null)
+    })
+
+    it('is a no-op when the name is unchanged', async t => {
+      const repository = await setup(t)
+
+      await generateTestStashEntry(repository, 'master', true)
+
+      let entries = (await getStashes(repository)).desktopEntries
+      await renameStashEntry(repository, entries[0], 'my stash')
+
+      entries = (await getStashes(repository)).desktopEntries
+      const entry = entries[0]
+
+      const returnedEntry = await renameStashEntry(
+        repository,
+        entry,
+        'my stash'
+      )
+
+      entries = (await getStashes(repository)).desktopEntries
+      assert.equal(entries.length, 1)
+      assert.equal(entries[0].stashSha, entry.stashSha)
+      assert.equal(entries[0].customName, 'my stash')
+      assert.equal(returnedEntry, entry)
+    })
+  })
+
+  describe('moveStashEntry', () => {
+    it('preserves the custom name when moving to another branch', async t => {
+      const repository = await setupEmptyRepository(t)
+      const readme = join(repository.path, 'README.md')
+      await writeFile(readme, '')
+      await exec(['add', 'README.md'], repository.path)
+      await exec(['commit', '-m', 'initial commit'], repository.path)
+
+      await generateTestStashEntry(repository, 'master', true)
+
+      let entries = (await getStashes(repository)).desktopEntries
+      await renameStashEntry(repository, entries[0], 'my stash')
+
+      entries = (await getStashes(repository)).desktopEntries
+      await moveStashEntry(repository, entries[0], 'new-branch')
+
+      entries = (await getStashes(repository)).desktopEntries
+      assert.equal(entries.length, 1)
+      assert.equal(entries[0].branchName, 'new-branch')
+      assert.equal(entries[0].customName, 'my stash')
+    })
   })
 
   describe('dropDesktopStashEntry', () => {
@@ -221,9 +401,11 @@ describe('git/stash', () => {
       const doesNotExist: IStashEntry = {
         name: 'refs/stash@{0}',
         branchName: 'master',
+        customName: null,
         stashSha: 'xyz',
         tree: 'xyz',
         parents: ['abc'],
+        createdAt: new Date(),
         files: { kind: StashedChangesLoadStates.NotLoaded },
       }
 
@@ -237,9 +419,11 @@ describe('git/stash', () => {
       const doesNotExist: IStashEntry = {
         name: 'refs/stash@{4}',
         branchName: 'master',
+        customName: null,
         stashSha: 'xyz',
         tree: 'xyz',
         parents: ['abc'],
+        createdAt: new Date(),
         files: { kind: StashedChangesLoadStates.NotLoaded },
       }
       await generateTestStashEntry(repository, 'master', true)

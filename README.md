@@ -91,7 +91,7 @@ Blackfin is a fork of [GH Desktop Plus](https://github.com/desktop-plus/desktop-
 which is itself an up-to-date fork of GitHub Desktop. All of the following works today
 and is Pol Rivero's work, not ours.
 
-| <h4>Search commits by title, message, tag, or hash</h4> | <h4>Add multiple GitHub, Bitbucket & GitLab accounts</h4> |
+| <h4>Search commits by title, message, tag, or hash</h4> | <h4>Add multiple GitHub, Bitbucket, GitLab & Codeberg accounts</h4> |
 | :---: | :---: |
 | ![Commit search](docs/assets/blackfin-demo-search.webp) | ![Multiple accounts](docs/assets/blackfin-demo-multiaccount.webp) |
 | <h4>Create multiple stashes per branch</h4> | <h4>Visualize the Commit Graph</h4> |

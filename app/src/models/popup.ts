@@ -67,6 +67,7 @@ export enum PopupType {
   ConfirmForcePush = 'ConfirmForcePush',
   StashAndSwitchBranch = 'StashAndSwitchBranch',
   ConfirmDiscardStash = 'ConfirmDiscardStash',
+  RenameStash = 'RenameStash',
   ConfirmCheckoutCommit = 'ConfirmCheckoutCommit',
   ConfirmDeletePushedTag = 'ConfirmDeletePushedTag',
   CreateTutorialRepository = 'CreateTutorialRepository',
@@ -307,6 +308,11 @@ export type PopupDetail =
     }
   | {
       type: PopupType.ConfirmDiscardStash
+      repository: Repository
+      stash: IStashEntry
+    }
+  | {
+      type: PopupType.RenameStash
       repository: Repository
       stash: IStashEntry
     }
