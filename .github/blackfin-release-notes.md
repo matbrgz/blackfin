@@ -6,7 +6,7 @@ Upstream: [GitHub Desktop 3.6.3 release notes](https://github.com/desktop/deskto
 
 ## **Changes and improvements:**
 
-- [#178] We now support **Codeberg** accounts in Desktop Plus! Thank you @fl-f for your contribution!  
+- [#178] We now support **Codeberg** accounts in Blackfin! Thank you @fl-f for your contribution!  
   You can now sign in using your Codeberg account and:
   - Clone repositories from within the app.
   - Preview and create pull requests.
@@ -16,7 +16,7 @@ Upstream: [GitHub Desktop 3.6.3 release notes](https://github.com/desktop/deskto
 - You can now rename stashes to make them easier to identify.  
   Simply click the edit (pencil) icon next to the stash title, or right-click on a stash in the Changes list and select "Rename...".
 
-- All OAuth providers (GitHub, Bitbucket, GitLab, and Codeberg) now use PKCE (Proof Key for Code Exchange) for improved security. You shouldn't notice any difference in your sign-in experience, but if you encounter any problems, please [open an issue](https://github.com/desktop-plus/desktop-plus/issues/new/choose).
+- All OAuth providers (GitHub, Bitbucket, GitLab, and Codeberg) now use PKCE (Proof Key for Code Exchange) for improved security. You shouldn't notice any difference in your sign-in experience, but if you encounter any problems, please [open an issue](https://github.com/matbrgz/blackfin/issues/new/choose).
 
 ## Fixes:
 
@@ -24,4 +24,4 @@ Upstream: [GitHub Desktop 3.6.3 release notes](https://github.com/desktop/deskto
 
 - [#215] Avoid showing the developer tools panel when quickly hovering over PRs in the PR list.
 
-- The native title bar now shows the correct Desktop Plus logo instead of the upstream (GitHub Desktop) logo.
+- The native title bar now shows the correct Blackfin logo instead of the upstream (GitHub Desktop) logo.
