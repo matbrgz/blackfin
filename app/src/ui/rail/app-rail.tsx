@@ -88,9 +88,51 @@ interface IAppRailState {
 
 /** The app's primary navigation. Always present, never scrolls away. */
 export class AppRail extends React.Component<IAppRailProps, IAppRailState> {
+  private readonly scopeRef = React.createRef<HTMLDivElement>()
+
   public constructor(props: IAppRailProps) {
     super(props)
     this.state = { scopeExpanded: false }
+  }
+
+  public componentDidUpdate(
+    prevProps: IAppRailProps,
+    prevState: IAppRailState
+  ) {
+    // Listen for a dismiss only while the menu is open, so the rail adds no
+    // document-level listeners in its resting state.
+    if (this.state.scopeExpanded && !prevState.scopeExpanded) {
+      document.addEventListener('mousedown', this.onDocumentMouseDown)
+      document.addEventListener('keydown', this.onDocumentKeyDown)
+    } else if (!this.state.scopeExpanded && prevState.scopeExpanded) {
+      this.removeDismissListeners()
+    }
+  }
+
+  public componentWillUnmount() {
+    this.removeDismissListeners()
+  }
+
+  private removeDismissListeners() {
+    document.removeEventListener('mousedown', this.onDocumentMouseDown)
+    document.removeEventListener('keydown', this.onDocumentKeyDown)
+  }
+
+  private onDocumentMouseDown = (event: MouseEvent) => {
+    const target = event.target
+    if (
+      this.scopeRef.current !== null &&
+      target instanceof Node &&
+      !this.scopeRef.current.contains(target)
+    ) {
+      this.setState({ scopeExpanded: false })
+    }
+  }
+
+  private onDocumentKeyDown = (event: KeyboardEvent) => {
+    if (event.key === 'Escape') {
+      this.setState({ scopeExpanded: false })
+    }
   }
 
   private onToggleScope = () => {
@@ -109,7 +151,7 @@ export class AppRail extends React.Component<IAppRailProps, IAppRailState> {
       scopedProject === null ? 'All projects' : projectName(scopedProject)
 
     return (
-      <div className="app-rail-scope">
+      <div className="app-rail-scope" ref={this.scopeRef}>
         <button
           className="app-rail-scope-toggle"
           onClick={this.onToggleScope}
