@@ -6,7 +6,6 @@ import {
   getDiffLineColumnCount,
   getDiffUnwrappedWidth,
   getWrapDiffLines,
-  isMarkdownFile,
   setWrapDiffLines,
   WrapDiffLinesDefault,
 } from '../../src/ui/lib/diff-mode'
@@ -22,27 +21,6 @@ describe('diff presentation mode', () => {
     setWrapDiffLines(false)
 
     assert.strictEqual(getWrapDiffLines(), false)
-  })
-
-  it('recognizes Markdown file extensions case-insensitively', () => {
-    for (const path of [
-      'README.md',
-      'docs/guide.markdown',
-      'notes/example.mdown',
-      'notes/example.mkd',
-      'notes/example.mkdn',
-      'docs/component.MDX',
-    ]) {
-      assert.strictEqual(isMarkdownFile(path), true, path)
-    }
-
-    for (const path of [
-      'src/example.ts',
-      'docs/markdown-guide.txt',
-      'Makefile',
-    ]) {
-      assert.strictEqual(isMarkdownFile(path), false, path)
-    }
   })
 
   it('maps shifted and native horizontal wheel input to one delta', () => {

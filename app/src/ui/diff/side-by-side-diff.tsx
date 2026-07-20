@@ -62,7 +62,6 @@ import {
   getDiffHorizontalScrollDelta,
   getDiffLineColumnCount,
   getDiffUnwrappedWidth,
-  isMarkdownFile,
 } from '../lib/diff-mode'
 import { showContextualMenu } from '../../lib/menu-item'
 import { getTokens } from './get-tokens'
@@ -829,7 +828,6 @@ export class SideBySideDiff extends React.Component<
       'with-minimap': this.props.showDiffMinimap,
       'unified-diff': !this.props.showSideBySideDiff,
       'wrap-diff-lines': this.props.wrapDiffLines,
-      'word-wrap-diff-lines': isMarkdownFile(this.props.file.path),
       [`selecting-${this.state.selectingTextInRow}`]:
         this.props.showSideBySideDiff &&
         this.state.selectingTextInRow !== undefined,
