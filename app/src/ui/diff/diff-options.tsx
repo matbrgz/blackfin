@@ -10,11 +10,6 @@ import {
 } from '../lib/popover'
 import { Tooltip, TooltipDirection } from '../lib/tooltip'
 import { createObservableRef } from '../lib/observable-ref'
-import {
-  DiffLineWrappingChangedEvent,
-  getWrapDiffLines,
-  setWrapDiffLines,
-} from '../lib/diff-mode'
 
 interface IDiffOptionsProps {
   readonly isInteractiveDiff: boolean
@@ -29,13 +24,15 @@ interface IDiffOptionsProps {
   readonly showDiffMinimap: boolean
   readonly onShowDiffMinimapChanged: (showDiffMinimap: boolean) => void
 
+  readonly wrapDiffLines: boolean
+  readonly onWrapDiffLinesChanged: (wrapDiffLines: boolean) => void
+
   /** Called when the user opens the diff options popover */
   readonly onDiffOptionsOpened: () => void
 }
 
 interface IDiffOptionsState {
   readonly isPopoverOpen: boolean
-  readonly wrapDiffLines: boolean
 }
 
 export class DiffOptions extends React.Component<
@@ -50,28 +47,7 @@ export class DiffOptions extends React.Component<
     super(props)
     this.state = {
       isPopoverOpen: false,
-      wrapDiffLines: getWrapDiffLines(),
     }
-  }
-
-  public componentDidMount() {
-    document.addEventListener(
-      DiffLineWrappingChangedEvent,
-      this.onDiffLineWrappingChanged
-    )
-  }
-
-  public componentWillUnmount() {
-    document.removeEventListener(
-      DiffLineWrappingChangedEvent,
-      this.onDiffLineWrappingChanged
-    )
-  }
-
-  private onDiffLineWrappingChanged = (event: Event) => {
-    this.setState({
-      wrapDiffLines: (event as CustomEvent<boolean>).detail,
-    })
   }
 
   private onButtonClick = (event: React.FormEvent<HTMLButtonElement>) => {
@@ -120,7 +96,7 @@ export class DiffOptions extends React.Component<
   private onWrapDiffLinesChanged = (
     event: React.FormEvent<HTMLInputElement>
   ) => {
-    setWrapDiffLines(event.currentTarget.checked)
+    return this.props.onWrapDiffLinesChanged(event.currentTarget.checked)
   }
 
   public render() {
@@ -247,7 +223,7 @@ export class DiffOptions extends React.Component<
         <legend>Line wrapping</legend>
         <Checkbox
           value={
-            this.state.wrapDiffLines ? CheckboxValue.On : CheckboxValue.Off
+            this.props.wrapDiffLines ? CheckboxValue.On : CheckboxValue.Off
           }
           onChange={this.onWrapDiffLinesChanged}
           label={__DARWIN__ ? 'Wrap Lines' : 'Wrap lines'}

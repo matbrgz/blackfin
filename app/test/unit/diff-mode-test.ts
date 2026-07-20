@@ -2,7 +2,6 @@ import assert from 'node:assert'
 import { afterEach, describe, it } from 'node:test'
 
 import {
-  DiffLineWrappingChangedEvent,
   getDiffHorizontalScrollDelta,
   getDiffLineColumnCount,
   getDiffUnwrappedWidth,
@@ -23,19 +22,6 @@ describe('diff presentation mode', () => {
     setWrapDiffLines(false)
 
     assert.strictEqual(getWrapDiffLines(), false)
-  })
-
-  it('notifies active diff surfaces when line wrapping changes', () => {
-    let wrapDiffLines: boolean | undefined
-    const listener = (event: Event) => {
-      wrapDiffLines = (event as CustomEvent<boolean>).detail
-    }
-
-    document.addEventListener(DiffLineWrappingChangedEvent, listener)
-    setWrapDiffLines(false)
-    document.removeEventListener(DiffLineWrappingChangedEvent, listener)
-
-    assert.strictEqual(wrapDiffLines, false)
   })
 
   it('recognizes Markdown file extensions case-insensitively', () => {

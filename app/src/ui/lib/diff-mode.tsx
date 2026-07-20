@@ -8,7 +8,6 @@ export const ShowWholeFileDefault = false
 const showWholeFileKey = 'show-whole-file'
 export const WrapDiffLinesDefault = true
 const wrapDiffLinesKey = 'wrap-diff-lines'
-export const DiffLineWrappingChangedEvent = 'diff-line-wrapping-changed'
 
 /**
  * Gets a value indicating whether not to present diffs in a split view mode
@@ -62,17 +61,9 @@ export function getWrapDiffLines(): boolean {
   return getBoolean(wrapDiffLinesKey, WrapDiffLinesDefault)
 }
 
-/**
- * Persists the text diff line wrapping preference and notifies active diff
- * surfaces so they can invalidate their measured row heights.
- */
+/** Persists the text diff line wrapping preference. */
 export function setWrapDiffLines(wrapDiffLines: boolean) {
   setBoolean(wrapDiffLinesKey, wrapDiffLines)
-  document.dispatchEvent(
-    new window.CustomEvent<boolean>(DiffLineWrappingChangedEvent, {
-      detail: wrapDiffLines,
-    })
-  )
 }
 
 /**

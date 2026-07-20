@@ -59,11 +59,9 @@ import {
   isRowChanged,
 } from './diff-helpers'
 import {
-  DiffLineWrappingChangedEvent,
   getDiffHorizontalScrollDelta,
   getDiffLineColumnCount,
   getDiffUnwrappedWidth,
-  getWrapDiffLines,
   isMarkdownFile,
 } from '../lib/diff-mode'
 import { showContextualMenu } from '../../lib/menu-item'
@@ -166,6 +164,9 @@ interface ISideBySideDiffProps {
   /** Whether we'll show the diff minimap. */
   readonly showDiffMinimap: boolean
 
+  /** Whether text diff lines should wrap within the viewport. */
+  readonly wrapDiffLines: boolean
+
   /** Whether contextual gaps should be expanded to show the whole file. */
   readonly showWholeFile?: boolean
 
@@ -247,9 +248,6 @@ interface ISideBySideDiffState {
     hunkIndex: number
     expansionType: DiffHunkExpansionType
   } | null
-
-  /** Whether text diff lines should wrap within the viewport. */
-  readonly wrapDiffLines: boolean
 }
 
 const listRowsHeightCache = new CellMeasurerCache({
@@ -324,7 +322,6 @@ export class SideBySideDiff extends React.Component<
       selectingTextInRow: 'before',
       lastExpandedHunk: null,
       ariaLiveMessage: '',
-      wrapDiffLines: getWrapDiffLines(),
     }
   }
 
@@ -343,11 +340,6 @@ export class SideBySideDiff extends React.Component<
     document.addEventListener('copy', this.onCutOrCopy)
 
     document.addEventListener('selectionchange', this.onDocumentSelectionChange)
-    document.addEventListener(
-      DiffLineWrappingChangedEvent,
-      this.onDiffLineWrappingChanged
-    )
-
     this.addContextMenuListenerToDiff()
 
     if (this.isWholeFileModeControlled()) {
@@ -488,10 +480,6 @@ export class SideBySideDiff extends React.Component<
       'selectionchange',
       this.onDocumentSelectionChange
     )
-    document.removeEventListener(
-      DiffLineWrappingChangedEvent,
-      this.onDiffLineWrappingChanged
-    )
     document.removeEventListener('mousemove', this.onUpdateSelection)
     this.removeContextMenuListenerFromDiff()
   }
@@ -549,7 +537,10 @@ export class SideBySideDiff extends React.Component<
       this.resetHorizontalScroll()
     }
 
-    if (prevState.wrapDiffLines !== this.state.wrapDiffLines) {
+    if (prevProps.wrapDiffLines !== this.props.wrapDiffLines) {
+      if (this.props.wrapDiffLines) {
+        this.resetHorizontalScroll()
+      }
       this.invalidateMeasurements()
     }
 
@@ -723,15 +714,6 @@ export class SideBySideDiff extends React.Component<
     this.virtualListRef.current?.recomputeRowHeights()
   }
 
-  private onDiffLineWrappingChanged = (event: Event) => {
-    const wrapDiffLines = (event as CustomEvent<boolean>).detail
-    if (wrapDiffLines) {
-      this.resetHorizontalScroll()
-    }
-
-    this.setState({ wrapDiffLines })
-  }
-
   private onHorizontalScroll = (event: React.UIEvent<HTMLDivElement>) => {
     this.containerRef.current?.style.setProperty(
       '--diff-horizontal-scroll-offset',
@@ -740,7 +722,7 @@ export class SideBySideDiff extends React.Component<
   }
 
   private onWheel = (event: React.WheelEvent<HTMLDivElement>) => {
-    if (this.state.wrapDiffLines) {
+    if (this.props.wrapDiffLines) {
       return
     }
 
@@ -846,7 +828,7 @@ export class SideBySideDiff extends React.Component<
     const containerClassName = classNames('side-by-side-diff-container', {
       'with-minimap': this.props.showDiffMinimap,
       'unified-diff': !this.props.showSideBySideDiff,
-      'wrap-diff-lines': this.state.wrapDiffLines,
+      'wrap-diff-lines': this.props.wrapDiffLines,
       'word-wrap-diff-lines': isMarkdownFile(this.props.file.path),
       [`selecting-${this.state.selectingTextInRow}`]:
         this.props.showSideBySideDiff &&
@@ -906,7 +888,7 @@ export class SideBySideDiff extends React.Component<
                       selectedSearchResult={this.state.selectedSearchResult}
                       searchQuery={this.state.searchQuery}
                       showSideBySideDiff={this.props.showSideBySideDiff}
-                      wrapDiffLines={this.state.wrapDiffLines}
+                      wrapDiffLines={this.props.wrapDiffLines}
                       beforeTokens={this.state.beforeTokens}
                       afterTokens={this.state.afterTokens}
                       temporarySelection={this.state.temporarySelection}
@@ -945,7 +927,7 @@ export class SideBySideDiff extends React.Component<
               </>
             )}
           </div>
-          {!this.state.wrapDiffLines && (
+          {!this.props.wrapDiffLines && (
             <div
               className="diff-horizontal-scroll"
               ref={this.horizontalScrollRef}

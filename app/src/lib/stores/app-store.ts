@@ -389,10 +389,13 @@ import {
 import {
   ShowDiffMinimapDefault,
   ShowSideBySideDiffDefault,
+  WrapDiffLinesDefault,
   getShowDiffMinimap,
   getShowSideBySideDiff,
+  getWrapDiffLines,
   setShowDiffMinimap,
   setShowSideBySideDiff,
+  setWrapDiffLines,
 } from '../../ui/lib/diff-mode'
 import {
   abortCherryPick,
@@ -723,6 +726,7 @@ export class AppStore extends TypedBaseStore<IAppState> {
   private showCommitAuthorInfo: boolean = showCommitAuthorInfoDefault
   private showSideBySideDiff: boolean = ShowSideBySideDiffDefault
   private showDiffMinimap: boolean = ShowDiffMinimapDefault
+  private wrapDiffLines: boolean = WrapDiffLinesDefault
 
   private uncommittedChangesStrategy = defaultUncommittedChangesStrategy
 
@@ -1388,6 +1392,7 @@ export class AppStore extends TypedBaseStore<IAppState> {
       hideWhitespaceInPullRequestDiff: this.hideWhitespaceInPullRequestDiff,
       showSideBySideDiff: this.showSideBySideDiff,
       showDiffMinimap: this.showDiffMinimap,
+      wrapDiffLines: this.wrapDiffLines,
       selectedShell: this.selectedShell,
       repositoryFilterText: this.repositoryFilterText,
       resolvedExternalEditor: this.resolvedExternalEditor,
@@ -3023,6 +3028,7 @@ export class AppStore extends TypedBaseStore<IAppState> {
     )
     this.showSideBySideDiff = getShowSideBySideDiff()
     this.showDiffMinimap = getShowDiffMinimap()
+    this.wrapDiffLines = getWrapDiffLines()
 
     this.selectedTheme = getPersistedThemeName()
     // Make sure the persisted theme is applied
@@ -8913,6 +8919,14 @@ export class AppStore extends TypedBaseStore<IAppState> {
     if (showDiffMinimap !== this.showDiffMinimap) {
       setShowDiffMinimap(showDiffMinimap)
       this.showDiffMinimap = showDiffMinimap
+      this.emitUpdate()
+    }
+  }
+
+  public _setWrapDiffLines(wrapDiffLines: boolean) {
+    if (wrapDiffLines !== this.wrapDiffLines) {
+      setWrapDiffLines(wrapDiffLines)
+      this.wrapDiffLines = wrapDiffLines
       this.emitUpdate()
     }
   }

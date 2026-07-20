@@ -1,13 +1,14 @@
 import assert from 'node:assert'
-import { afterEach, describe, it } from 'node:test'
+import { describe, it } from 'node:test'
 import * as React from 'react'
 
 import { DiffOptions } from '../../../src/ui/diff/diff-options'
-import { getWrapDiffLines } from '../../../src/ui/lib/diff-mode'
 import { fireEvent, render, screen } from '../../helpers/ui/render'
 
-function renderDiffOptions() {
-  return render(
+function ControlledDiffOptions() {
+  const [wrapDiffLines, setWrapDiffLines] = React.useState(true)
+
+  return (
     <DiffOptions
       isInteractiveDiff={false}
       hideWhitespaceChanges={false}
@@ -16,18 +17,16 @@ function renderDiffOptions() {
       onShowSideBySideDiffChanged={() => {}}
       showDiffMinimap={false}
       onShowDiffMinimapChanged={() => {}}
+      wrapDiffLines={wrapDiffLines}
+      onWrapDiffLinesChanged={setWrapDiffLines}
       onDiffOptionsOpened={() => {}}
     />
   )
 }
 
 describe('DiffOptions', () => {
-  afterEach(() => {
-    localStorage.clear()
-  })
-
-  it('persists the line wrapping preference', () => {
-    renderDiffOptions()
+  it('controls the line wrapping preference through props', () => {
+    render(<ControlledDiffOptions />)
     fireEvent.click(
       screen.getByRole('button', { name: /^Diff (Options|Settings)$/ })
     )
@@ -37,7 +36,6 @@ describe('DiffOptions', () => {
 
     fireEvent.click(wrapLines)
 
-    assert.strictEqual(getWrapDiffLines(), false)
     assert.strictEqual((wrapLines as HTMLInputElement).checked, false)
   })
 })
