@@ -11,7 +11,11 @@ import { DiffOptions } from '../../diff/diff-options'
 import { Repository } from '../../../models/repository'
 import { Dispatcher } from '../../dispatcher'
 import { openFile } from '../../lib/open-file'
-import { getResolutionDiff } from '../../../lib/git'
+import { getResolutionDiff, IResolutionDiff } from '../../../lib/git'
+import {
+  IFileContents,
+  MaxDiffExpansionNewContentLength,
+} from '../../diff/syntax-highlighting'
 import { Button } from '../../lib/button'
 import { Octicon } from '../../octicons'
 import * as octicons from '../../octicons/octicons.generated'
@@ -35,6 +39,7 @@ interface ICopilotConflictsChangesProps {
 interface ICopilotConflictsChangesState {
   readonly selectedFile: CommittedFileChange | null
   readonly diff: IDiff | null
+  readonly fileContents: IFileContents | null
   readonly noResolution: boolean
   readonly diffError: boolean
   readonly showSideBySideDiff: boolean
@@ -65,6 +70,7 @@ export class CopilotConflictsChanges extends React.Component<
     this.state = {
       selectedFile: files.length > 0 ? files[0] : null,
       diff: null,
+      fileContents: null,
       noResolution: false,
       diffError: false,
       showSideBySideDiff: false,
@@ -115,7 +121,7 @@ export class CopilotConflictsChanges extends React.Component<
       if (selectedFile !== null) {
         this.loadDiffForFile(selectedFile)
       } else {
-        this.setState({ diff: null })
+        this.setState({ diff: null, fileContents: null })
       }
     }
 
@@ -152,9 +158,14 @@ export class CopilotConflictsChanges extends React.Component<
     )
 
     if (choice === 'ours' || choice === 'theirs') {
-      this.setState({ diff: null, noResolution: false, diffError: false })
+      this.setState({
+        diff: null,
+        fileContents: null,
+        noResolution: false,
+        diffError: false,
+      })
       try {
-        const diff = await getResolutionDiff(
+        const result = await getResolutionDiff(
           this.props.repository,
           file.path,
           { stage: choice },
@@ -162,12 +173,15 @@ export class CopilotConflictsChanges extends React.Component<
         )
 
         if (this.mounted && requestId === this.diffRequestId) {
-          this.setState({ diff })
+          this.setState({
+            diff: result.diff,
+            fileContents: this.buildFileContents(file, result),
+          })
         }
       } catch (e) {
         log.error('Failed to compute resolution diff', e)
         if (this.mounted && requestId === this.diffRequestId) {
-          this.setState({ diff: null, diffError: true })
+          this.setState({ diff: null, fileContents: null, diffError: true })
         }
       }
       return
@@ -178,14 +192,24 @@ export class CopilotConflictsChanges extends React.Component<
     )
 
     if (resolution === undefined) {
-      this.setState({ diff: null, noResolution: true, diffError: false })
+      this.setState({
+        diff: null,
+        fileContents: null,
+        noResolution: true,
+        diffError: false,
+      })
       return
     }
 
-    this.setState({ diff: null, noResolution: false, diffError: false })
+    this.setState({
+      diff: null,
+      fileContents: null,
+      noResolution: false,
+      diffError: false,
+    })
 
     try {
-      const diff = await getResolutionDiff(
+      const result = await getResolutionDiff(
         this.props.repository,
         file.path,
         { content: resolution.resolvedContent },
@@ -193,14 +217,42 @@ export class CopilotConflictsChanges extends React.Component<
       )
 
       if (this.mounted && requestId === this.diffRequestId) {
-        this.setState({ diff })
+        this.setState({
+          diff: result.diff,
+          fileContents: this.buildFileContents(file, result),
+        })
       }
     } catch (e) {
       log.error('Failed to compute resolution diff', e)
       if (this.mounted && requestId === this.diffRequestId) {
-        this.setState({ diff: null, diffError: true })
+        this.setState({ diff: null, fileContents: null, diffError: true })
       }
     }
+  }
+
+  /**
+   * Build the file contents that back syntax highlighting and context
+   * expansion from the exact base/target strings the resolution diff was
+   * generated from. This avoids fetching unrelated HEAD/HEAD^ blobs for the
+   * synthetic CommittedFileChange used by this tab.
+   */
+  private buildFileContents(
+    file: CommittedFileChange,
+    result: IResolutionDiff
+  ): IFileContents {
+    // Mirror the standard getFileContents path, which caps the amount of
+    // content it hands to the syntax-highlighting worker. We only allow
+    // expansion when the whole (untruncated) resolution fits under the limit.
+    const canBeExpanded =
+      result.newContents.length <= MaxDiffExpansionNewContentLength
+    const oldContents = result.oldContents
+      .slice(0, MaxDiffExpansionNewContentLength)
+      .split(/\r?\n/)
+    const newContents = result.newContents
+      .slice(0, MaxDiffExpansionNewContentLength)
+      .split(/\r?\n/)
+
+    return { file, oldContents, newContents, canBeExpanded }
   }
 
   private onSelectedFileChanged = (file: CommittedFileChange) => {
@@ -301,6 +353,7 @@ export class CopilotConflictsChanges extends React.Component<
       diffError,
       showSideBySideDiff,
       hideWhitespaceInDiff,
+      fileContents,
     } = this.state
 
     const choice =
@@ -399,6 +452,7 @@ export class CopilotConflictsChanges extends React.Component<
                 readOnly={true}
                 file={selectedFile}
                 diff={diff}
+                externalFileContents={fileContents}
                 imageDiffType={this.state.imageDiffType}
                 hideWhitespaceInDiff={hideWhitespaceInDiff}
                 showSideBySideDiff={showSideBySideDiff}
