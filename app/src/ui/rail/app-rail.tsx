@@ -1,10 +1,16 @@
 import * as React from 'react'
 import classNames from 'classnames'
+import memoizeOne from 'memoize-one'
 import { Octicon, OcticonSymbol } from '../octicons'
 import * as octicons from '../octicons/octicons.generated'
 import { AppSection } from '../../models/app-section'
 import { Repository } from '../../models/repository'
 import { CloningRepository } from '../../models/cloning-repository'
+import { SectionFilterList } from '../lib/section-filter-list'
+import { IFilterListItem, IFilterListGroup } from '../lib/filter-list'
+import { HighlightText } from '../lib/highlight-text'
+import { IMatches } from '../../lib/fuzzy-find'
+import { ClickSource } from '../lib/list'
 
 type Project = Repository | CloningRepository
 
@@ -13,6 +19,29 @@ function projectName(project: Project): string {
   return project instanceof Repository
     ? project.alias ?? project.name
     : project.name
+}
+
+/** Sentinel id for the special "All projects" scope item. */
+const AllProjectsItemId = '__all_projects__'
+
+/** Height of a single scope row in the popover, in pixels. */
+const ScopeRowHeight = 32
+
+/** A scope choice in the popover: the "All projects" item, or one project. */
+interface IScopeItem extends IFilterListItem {
+  /** A unique identifier for the item. */
+  readonly id: string
+  /** The text used for filtering (the project display name). */
+  readonly text: ReadonlyArray<string>
+  /** The project this item scopes to, or `null` for "All projects". */
+  readonly project: Project | null
+}
+
+/** A stable id for a scope item derived from its project. */
+function scopeItemId(project: Project): string {
+  return project instanceof Repository
+    ? `repository-${project.id}`
+    : `cloning-${project.id}`
 }
 
 interface IRailDestination {
@@ -84,15 +113,44 @@ interface IAppRailProps {
 
 interface IAppRailState {
   readonly scopeExpanded: boolean
+  /** The current filter text in the scope popover. */
+  readonly scopeFilterText: string
 }
 
 /** The app's primary navigation. Always present, never scrolls away. */
 export class AppRail extends React.Component<IAppRailProps, IAppRailState> {
   private readonly scopeRef = React.createRef<HTMLDivElement>()
 
+  /** The scope items ("All projects" + one per project) in a single group. */
+  private getScopeItems = memoizeOne(
+    (projects: ReadonlyArray<Project>): ReadonlyArray<IScopeItem> => [
+      { id: AllProjectsItemId, text: ['All projects'], project: null },
+      ...projects.map(project => ({
+        id: scopeItemId(project),
+        text: [projectName(project)],
+        project,
+      })),
+    ]
+  )
+
+  private getScopeGroups = memoizeOne(
+    (
+      items: ReadonlyArray<IScopeItem>
+    ): ReadonlyArray<IFilterListGroup<IScopeItem>> => [
+      { identifier: 'projects', showHeader: false, items },
+    ]
+  )
+
   public constructor(props: IAppRailProps) {
     super(props)
-    this.state = { scopeExpanded: false }
+    this.state = { scopeExpanded: false, scopeFilterText: '' }
+  }
+
+  private getSelectedScopeItem(
+    items: ReadonlyArray<IScopeItem>,
+    scopedProject: Project | null
+  ): IScopeItem | null {
+    return items.find(item => item.project === scopedProject) ?? null
   }
 
   public componentDidUpdate(
@@ -136,19 +194,58 @@ export class AppRail extends React.Component<IAppRailProps, IAppRailState> {
   }
 
   private onToggleScope = () => {
-    this.setState({ scopeExpanded: !this.state.scopeExpanded })
+    this.setState(prevState => ({
+      scopeExpanded: !prevState.scopeExpanded,
+      scopeFilterText: '',
+    }))
   }
 
   private onPickScope = (project: Project | null) => {
-    this.setState({ scopeExpanded: false })
+    this.setState({ scopeExpanded: false, scopeFilterText: '' })
     this.props.onSelectScope(project)
+  }
+
+  private onScopeItemClick = (item: IScopeItem, _source: ClickSource) => {
+    this.onPickScope(item.project)
+  }
+
+  private onScopeFilterTextChanged = (text: string) => {
+    this.setState({ scopeFilterText: text })
+  }
+
+  private onScopeFilterKeyDown = (
+    event: React.KeyboardEvent<HTMLInputElement>
+  ) => {
+    if (event.key === 'Escape') {
+      event.preventDefault()
+      this.setState({ scopeExpanded: false, scopeFilterText: '' })
+    }
+  }
+
+  private renderScopeItem = (item: IScopeItem, matches: IMatches) => {
+    const selected = item.project === this.props.scopedProject
+
+    return (
+      <div className={classNames('app-rail-scope-item', { selected })}>
+        <span className="app-rail-scope-item-name">
+          <HighlightText text={item.text[0]} highlight={matches.title} />
+        </span>
+        {selected && (
+          <Octicon
+            className="app-rail-scope-item-check"
+            symbol={octicons.check}
+          />
+        )}
+      </div>
+    )
   }
 
   private renderScope() {
     const { projects, scopedProject } = this.props
-    const { scopeExpanded } = this.state
+    const { scopeExpanded, scopeFilterText } = this.state
     const label =
       scopedProject === null ? 'All projects' : projectName(scopedProject)
+    const items = this.getScopeItems(projects)
 
     return (
       <div className="app-rail-scope" ref={this.scopeRef}>
@@ -168,41 +265,25 @@ export class AppRail extends React.Component<IAppRailProps, IAppRailState> {
           <span className="app-rail-scope-label">{label}</span>
         </button>
         {scopeExpanded && (
-          <ul className="app-rail-scope-menu" role="menu">
-            <li role="none">
-              <button
-                role="menuitemradio"
-                aria-checked={scopedProject === null}
-                className={classNames('app-rail-scope-item', {
-                  selected: scopedProject === null,
-                })}
-                onClick={this.onPickAll}
-              >
-                All projects
-              </button>
-            </li>
-            {projects.map((project, i) => (
-              <li role="none" key={i}>
-                <button
-                  role="menuitemradio"
-                  aria-checked={project === scopedProject}
-                  className={classNames('app-rail-scope-item', {
-                    selected: project === scopedProject,
-                  })}
-                  onClick={this.onPickProject(project)}
-                >
-                  {projectName(project)}
-                </button>
-              </li>
-            ))}
-          </ul>
+          <div className="app-rail-scope-menu">
+            <SectionFilterList<IScopeItem>
+              className="app-rail-scope-list"
+              rowHeight={ScopeRowHeight}
+              groups={this.getScopeGroups(items)}
+              selectedItem={this.getSelectedScopeItem(items, scopedProject)}
+              renderItem={this.renderScopeItem}
+              onItemClick={this.onScopeItemClick}
+              filterText={scopeFilterText}
+              onFilterTextChanged={this.onScopeFilterTextChanged}
+              onFilterKeyDown={this.onScopeFilterKeyDown}
+              invalidationProps={items}
+              placeholderText="Filter projects"
+            />
+          </div>
         )}
       </div>
     )
   }
-
-  private onPickAll = () => this.onPickScope(null)
-  private onPickProject = (project: Project) => () => this.onPickScope(project)
 
   public render() {
     const { selectedSection, attentionCount, onSelectSection } = this.props
