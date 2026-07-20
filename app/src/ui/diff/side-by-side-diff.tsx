@@ -61,6 +61,8 @@ import {
 import {
   DiffLineWrappingChangedEvent,
   getDiffHorizontalScrollDelta,
+  getDiffLineColumnCount,
+  getDiffUnwrappedWidth,
   getWrapDiffLines,
   isMarkdownFile,
 } from '../lib/diff-mode'
@@ -260,7 +262,7 @@ const getMaxDiffLineLength = memoize((diff: ITextDiff): number => {
 
   for (const hunk of diff.hunks) {
     for (const line of hunk.lines) {
-      maxLength = Math.max(maxLength, line.content.length)
+      maxLength = Math.max(maxLength, getDiffLineColumnCount(line.content))
     }
   }
 
@@ -830,11 +832,16 @@ export class SideBySideDiff extends React.Component<
     const { diff, ariaLiveMessage, isSearching } = this.state
 
     const rows = this.getCurrentDiffRows()
-    const unwrappedColumns = getMaxDiffLineLength(diff) + 8
+    const lineNumberWidth = getLineWidthFromDigitCount(
+      getNumberOfDigits(diff.maxLineNumber)
+    )
     const containerStyle = {
-      '--diff-unwrapped-width': this.props.showSideBySideDiff
-        ? `max(100%, calc(${unwrappedColumns}ch + 50%))`
-        : `max(100%, ${unwrappedColumns}ch)`,
+      '--diff-unwrapped-width': getDiffUnwrappedWidth(
+        getMaxDiffLineLength(diff),
+        lineNumberWidth,
+        this.props.showSideBySideDiff,
+        canSelect(this.props.file) && this.props.showDiffCheckMarks
+      ),
     } as React.CSSProperties
     const containerClassName = classNames('side-by-side-diff-container', {
       'with-minimap': this.props.showDiffMinimap,
