@@ -108,10 +108,10 @@ This is an **up-to-date** fork of [GitHub Desktop](https://desktop.github.com) w
 #### Using Winget (Recommended)
 
 ```powershell
-winget install polrivero.GitHubDesktopPlus
+winget install DesktopPlus.DesktopPlus
 ```
 
-To update, run `winget upgrade polrivero.GitHubDesktopPlus` or `winget upgrade --all` to update all your winget packages. Make sure to update regularly to get the latest features and fixes.
+To update, run `winget upgrade DesktopPlus.DesktopPlus` or `winget upgrade --all` to update all your winget packages. Make sure to update regularly to get the latest features and fixes.
 
 #### Manual download (Not recommended)
 
