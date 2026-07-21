@@ -20,4 +20,3 @@ junit*.xml
 *.swp
 tslint-rules/
 playwright-videos/
-private/
