@@ -110,6 +110,7 @@ export enum PopupType {
   ConfirmCommitFilteredChanges = 'ConfirmCommitFilteredChanges',
   TestAbout = 'TestAbout',
   TestCLIAction = 'TestCLIAction',
+  TestCopilotSnapshotCard = 'TestCopilotSnapshotCard',
   PushProtectionError = 'PushProtectionError',
   BypassPushProtection = 'BypassPushProtection',
   GenerateCommitMessageOverrideWarning = 'GenerateCommitMessageOverrideWarning',
@@ -125,6 +126,8 @@ export enum PopupType {
   CantDeleteCurrentBranchUncommittedChanges = 'CantDeleteCurrentBranchUncommittedChanges',
   EditCopilotBYOKProvider = 'EditCopilotBYOKProvider',
   EditCopilotBYOKModel = 'EditCopilotBYOKModel',
+  CopilotUserSettings = 'CopilotUserSettings',
+  CopilotCustomProviders = 'CopilotCustomProviders',
   ConfirmDeleteCopilotBYOKProvider = 'ConfirmDeleteCopilotBYOKProvider',
   CopilotConflictResolutionAlwaysNudge = 'CopilotConflictResolutionAlwaysNudge',
   ManageRemotes = 'ManageRemotes',
@@ -199,6 +202,11 @@ export type PopupDetail =
       otherModelIds: ReadonlyArray<string>
       onSave: (model: IBYOKModel) => void
     }
+  | {
+      type: PopupType.CopilotUserSettings
+      account: Account
+    }
+  | { type: PopupType.CopilotCustomProviders }
   | {
       type: PopupType.ConfirmDeleteCopilotBYOKProvider
       provider: IBYOKProvider
@@ -522,6 +530,9 @@ export type PopupDetail =
     }
   | {
       type: PopupType.TestCLIAction
+    }
+  | {
+      type: PopupType.TestCopilotSnapshotCard
     }
   | {
       type: PopupType.PushProtectionError
