@@ -1,0 +1,11 @@
+# Fixture: Codex (.codex/) — consumes the AGENTS.md convention
+# Anonymised. AgentId.Codex (AGENTS.md is agent=Shared).
+
+AGENTS.md                            -> Capability(instruction), agent=Shared, extensionId=null
+.codex/
+  config.toml                        -> Settings   (may declare MCP servers; UNVERIFIED shape)
+
+# Contract checks:
+#   - Codex reads AGENTS.md but the instruction Capability is agent=Shared, not Codex.
+#   - MCP-in-config.toml is UNVERIFIED -> classified as Settings today, content not parsed.
+#   - No skill/command/subagent/prompt/hook/plugin for Codex.

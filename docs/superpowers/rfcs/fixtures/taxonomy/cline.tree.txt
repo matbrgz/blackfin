@@ -1,0 +1,9 @@
+# Fixture: Cline (.clinerules)
+# Anonymised. AgentId.Cline.
+
+.clinerules                          -> Capability(instruction), agent=Cline, extensionId=null
+
+# Contract checks:
+#   - Matched by basename today. A .clinerules/ DIRECTORY form exists in the wild (UNVERIFIED)
+#     and is not yet handled; noted so #21 can decide.
+#   - Cline MCP support is UNVERIFIED -> no predicate.

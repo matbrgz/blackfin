@@ -1,0 +1,14 @@
+# Fixture: Copilot (.github/, no home of its own)
+# Anonymised. AgentId.Copilot.
+
+.github/
+  copilot-instructions.md            -> Capability(instruction), extensionId=null
+  instructions/
+    security.instructions.md         -> Capability(instruction), extensionId=null
+  prompts/
+    refactor.prompt.md               -> Capability(prompt),      extensionId=null
+
+# Contract checks:
+#   - Only these three shapes under .github are agent context; anything else -> null.
+#   - No Extension, no skill, no command, no subagent, no hook for Copilot.
+#   - Copilot MCP support is UNVERIFIED here -> no predicate, not classified.

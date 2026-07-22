@@ -1,0 +1,11 @@
+# Fixture: Goose (.goosehints) — name collision: Goose "extension" == MCP server
+# Anonymised. AgentId.Goose.
+
+.goosehints                          -> Capability(instruction), agent=Goose, extensionId=null
+
+# Goose "extensions" (its word) are MCP servers (config path UNVERIFIED, no predicate yet):
+#   goose extension "developer" -> Capability(mcp-server)   NOT a Blackfin Extension
+#
+# Contract checks:
+#   - Goose's "extension" translates to Blackfin's mcp-server Capability, NEVER to Extension.
+#     This is the sharpest translation collision in the survey.

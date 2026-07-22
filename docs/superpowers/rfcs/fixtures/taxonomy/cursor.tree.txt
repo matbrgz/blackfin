@@ -1,0 +1,18 @@
+# Fixture: Cursor (.cursor/) — rules + MCP, NO plugin, NO skill
+# Anonymised. AgentId.Cursor.
+
+.cursorrules                         -> Capability(instruction), extensionId=null   [hand-written, the orphan]
+.cursor/
+  rules/
+    typescript.mdc                   -> Capability(instruction), extensionId=null   [.mdc accepted by isMarkdown]
+    testing.mdc                      -> Capability(instruction), extensionId=null
+  mcp.json                           -> Settings container; ENTRIES become mcp-server Capabilities
+
+# mcp.json content (illustrative):
+#   mcpServers.github -> Capability(mcp-server)  command=gh-mcp  env: GITHUB_TOKEN=<PLACEHOLDER>
+#
+# Contract checks:
+#   - Cursor has NO Extension column (no plugin/skill concept) -> empty by construction (D7).
+#   - The `github` mcp-server here vs the one in .claude/settings.json: SAME Capability iff
+#     name+command+args match (sentence #2 identity test).
+#   - .cursorrules is the canonical "orphan" case: extensionId=null, no manifest.

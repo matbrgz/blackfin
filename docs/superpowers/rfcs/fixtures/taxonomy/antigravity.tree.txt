@@ -1,0 +1,10 @@
+# Fixture: Antigravity (.antigravity/) — in AgentId, reads AGENTS.md (D8)
+# Anonymised. AgentId.Antigravity. Capability surface UNVERIFIED beyond instructions.
+
+AGENTS.md                            -> Capability(instruction), agent=Shared, extensionId=null
+.antigravity/
+  guidelines.md                      -> Capability(instruction), agent=Antigravity, extensionId=null
+
+# Contract checks:
+#   - Antigravity is in the code, therefore in the contract (D8: sim).
+#   - Skills/commands/subagents/prompts/hooks/MCP/plugins: UNVERIFIED -> none until confirmed.

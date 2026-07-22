@@ -1,0 +1,9 @@
+# Fixture: Kimi (.kimi/)
+# Anonymised. AgentId.Kimi. Capability surface UNVERIFIED beyond instructions.
+
+KIMI.md                              -> Capability(instruction), extensionId=null
+.kimi/
+  style.md                           -> Capability(instruction), agent=Kimi, extensionId=null   [bare md in home]
+
+# Contract checks:
+#   - No verified skill/command/subagent/prompt/hook/MCP/plugin concept for Kimi.

@@ -1,0 +1,11 @@
+# Fixture: Windsurf (.windsurf/)
+# Anonymised. AgentId.Windsurf.
+
+.windsurfrules                       -> Capability(instruction), extensionId=null   [root, hand-written]
+.windsurf/
+  rules/
+    conventions.md                   -> Capability(instruction), extensionId=null
+
+# Contract checks:
+#   - No plugin concept for Windsurf -> empty Extension column (D7).
+#   - Windsurf 'workflows' and MCP are UNVERIFIED -> no predicate yet (see §4 no-translation).

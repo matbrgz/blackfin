@@ -1,0 +1,23 @@
+# Fixture: multi-transport mcp.json — an MCP server is an ENTRY, not a file
+# Anonymised. NO real tokens: every env value is <PLACEHOLDER>.
+# Today catalog.ts:182 classifies this whole file as ONE Settings blob.
+# The taxonomy demands THREE Capability(mcp-server), one per entry.
+
+.claude/mcp.json  (illustrative content, shown for the classifier contract):
+
+  {
+    "mcpServers": {
+      "github":     { "command": "gh-mcp",     "args": ["--stdio"],
+                      "env": { "GITHUB_TOKEN": "<PLACEHOLDER>" } },   -> Capability(mcp-server)  transport=stdio
+      "filesystem": { "command": "fs-mcp",      "args": ["/repo"] },  -> Capability(mcp-server)  transport=stdio
+      "sentry":     { "url": "https://mcp.example.test/sse" }         -> Capability(mcp-server)  transport=http
+    }
+  }
+
+# Contract checks:
+#   - 3 mcp-server Capabilities, NOT 1 Settings blob and NOT 1 file.
+#   - No env VALUE appears in any returned structure. Only key presence:
+#     github -> { GITHUB_TOKEN: configured }, never the token itself.  (#45, §6.3)
+#   - 'github' here is the SAME Capability as .cursor/mcp.json 'github' iff
+#     name + command + args match (sentence #2 cross-agent identity test).
+#   - An Extension may require 'filesystem' by name without containing it (sentence #4).

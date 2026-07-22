@@ -1,0 +1,11 @@
+# Fixture: Gemini (.gemini/)
+# Anonymised. AgentId.Gemini.
+
+GEMINI.md                            -> Capability(instruction), extensionId=null
+.gemini/
+  settings.json                      -> Settings   (Gemini CLI MCP lives here; UNVERIFIED)
+  notes.md                           -> Capability(instruction), extensionId=null   [bare md in home]
+
+# Contract checks:
+#   - No plugin/skill concept for Gemini -> empty Extension column (D7).
+#   - MCP-in-settings.json is UNVERIFIED -> Settings today, not parsed.
