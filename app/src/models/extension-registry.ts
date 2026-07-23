@@ -67,8 +67,17 @@ export interface IInstallation {
   /** Absolute root of the item: the Skill's directory, or the Command's file. */
   readonly rootPath: string
   readonly ownership: ExtensionOwnership
-  /** Reused from the RFC-#11 model (#21). Provenance kind, not location. */
-  readonly source: ExtensionSource
+  /**
+   * Reused from the RFC-#11 model (#21). Provenance KIND, not location.
+   *
+   * `null` is the ADOPTION sentinel (#36): Blackfin found this item on disk but
+   * did NOT install it, so its origin is genuinely unknown. We refuse to
+   * fabricate a git/url/marketplace source for a file we merely detected —
+   * guessing provenance is the exact dishonesty adoption exists to avoid. A
+   * `Managed` row therefore always carries a real, non-null source; a `Detected`
+   * row carries `null` unless Blackfin itself is the installer.
+   */
+  readonly source: ExtensionSource | null
   /** Reused convention: URL, git remote+ref, or marketplace id. Never a secret. */
   readonly sourceRef: string | null
   /** Reused correlation anchor: stable under rename/move/hand-edit. */
