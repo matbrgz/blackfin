@@ -2675,7 +2675,7 @@ export class App extends React.Component<IAppProps, IAppState> {
               this.state.byokProviders
             )}
             conflictResolutionDisabled={
-              this.state.selectedCopilotModels['conflict-resolution'] ===
+              selectedCopilotModels['conflict-resolution'] ===
               DisabledCopilotModel
             }
             openFileInExternalEditor={this.getOpenFileInExternalEditorHandler(
@@ -4322,10 +4322,9 @@ export class App extends React.Component<IAppProps, IAppState> {
           shouldShowGenerateCommitMessageCallOut={
             !this.state.commitMessageGenerationButtonClicked
           }
-          commitMessageGenerationDisabled={
-            this.state.selectedCopilotModels['commit-message-generation'] ===
-            DisabledCopilotModel
-          }
+          commitMessageGenerationDisabled={this.isCommitMessageGenerationDisabled(
+            selectedState.repository
+          )}
           skipCommitHooks={selectedState.state.skipCommitHooks}
           signOffCommits={selectedState.state.signOffCommits}
           allowEmptyCommit={selectedState.state.allowEmptyCommit}
@@ -4349,6 +4348,19 @@ export class App extends React.Component<IAppProps, IAppState> {
     } else {
       return assertNever(selectedState, `Unknown state: ${selectedState}`)
     }
+  }
+
+  private isCommitMessageGenerationDisabled(repository: Repository): boolean {
+    const commitMessageGenerationAccount = getAccountForCommitMessageGeneration(
+      this.state.accounts,
+      repository
+    )
+    return (
+      commitMessageGenerationAccount !== undefined &&
+      this.getSelectedCopilotModelsForAccount(commitMessageGenerationAccount)[
+        'commit-message-generation'
+      ] === DisabledCopilotModel
+    )
   }
 
   private renderWelcomeFlow() {

@@ -1211,9 +1211,9 @@ describe('CopilotPreferences', () => {
     const view = render(
       <CopilotPreferences
         {...defaults()}
-        selectedCopilotModels={{
+        selectedCopilotModelsByAccount={selectionsForDefaultAccount({
           'commit-message-generation': DisabledCopilotModel,
-        }}
+        })}
       />
     )
 
@@ -1229,7 +1229,7 @@ describe('CopilotPreferences', () => {
     const view = render(
       <CopilotPreferences
         {...defaults()}
-        onSelectedCopilotModelChanged={(f, m) =>
+        onSelectedCopilotModelChanged={(_, f, m) =>
           changed.push({ feature: f, model: m })
         }
       />

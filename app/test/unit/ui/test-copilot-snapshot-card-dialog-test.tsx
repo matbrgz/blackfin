@@ -12,6 +12,8 @@ function makeAccount(): Account {
     'octo',
     'https://enterprise.example.com/api/v3',
     'token',
+    'refreshToken',
+    0,
     [],
     'https://avatars.githubusercontent.com/u/2',
     2,

@@ -7,6 +7,7 @@ import {
 import { enableCopilotConflictResolution } from '../../lib/feature-flag'
 import {
   DefaultCopilotModel,
+  DisabledCopilotModel,
   type CopilotFeature,
   type CopilotModelSelections,
   type CopilotQuotaSnapshots,
@@ -212,6 +213,10 @@ export class CopilotUserSettings extends React.Component<ICopilotUserSettingsPro
     byokProviders: ReadonlyArray<IBYOKProvider>,
     raw: string | null
   ): string {
+    if (raw === DisabledCopilotModel) {
+      return DisabledCopilotModel
+    }
+
     if (raw !== null) {
       const key = parseModelKey(raw)
       if (key.kind === 'byok') {
