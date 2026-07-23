@@ -306,6 +306,9 @@ describe('validateMcpServer — a secret value never reaches the output', () => 
     assert.ok(serialized.includes('GITHUB_TOKEN'))
     // A valid https URL yields no invalid-url; the URL text is never surfaced.
     assert.ok(!hasCode(result.findings, 'invalid-url'))
-    assert.ok(!serialized.includes('api.example.com'))
+    // Prove the URL text (scheme, host, credentials) never reaches the output by
+    // asserting no URL scheme separator survives — a stronger check than matching
+    // one host literal, and it avoids substring-sanitising a URL by hostname.
+    assert.ok(!/:\/\//.test(serialized), 'no URL is surfaced in any finding')
   })
 })
