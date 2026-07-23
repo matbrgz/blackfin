@@ -9,7 +9,7 @@ import {
   type CopilotModelSelections,
   type CopilotModelSelectionsByAccount,
   type CopilotQuotaSnapshotsByAccount,
-  type CopilotQuotaSnapshots
+  type CopilotQuotaSnapshots,
 } from '../../lib/stores/copilot-store'
 import {
   isDotComAccount,
