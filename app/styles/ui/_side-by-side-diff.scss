@@ -115,7 +115,7 @@
   }
 
   .diff-horizontal-scroll-contents {
-    width: var(--diff-unwrapped-width);
+    width: var(--diff-unwrapped-width, 100%);
     height: 1px;
   }
 

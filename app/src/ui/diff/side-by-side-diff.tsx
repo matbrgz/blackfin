@@ -58,11 +58,7 @@ import {
   textDiffEquals,
   isRowChanged,
 } from './diff-helpers'
-import {
-  getDiffHorizontalScrollDelta,
-  getDiffLineColumnCount,
-  getDiffUnwrappedWidth,
-} from '../lib/diff-mode'
+import { getDiffHorizontalScrollDelta } from '../lib/diff-mode'
 import { showContextualMenu } from '../../lib/menu-item'
 import { getTokens } from './get-tokens'
 import { DiffSearchInput } from './diff-search-input'
@@ -254,18 +250,6 @@ const listRowsHeightCache = new CellMeasurerCache({
   fixedWidth: true,
 })
 
-const getMaxDiffLineLength = memoize((diff: ITextDiff): number => {
-  let maxLength = 0
-
-  for (const hunk of diff.hunks) {
-    for (const line of hunk.lines) {
-      maxLength = Math.max(maxLength, getDiffLineColumnCount(line.content))
-    }
-  }
-
-  return maxLength
-})
-
 export class SideBySideDiff extends React.Component<
   ISideBySideDiffProps,
   ISideBySideDiffState
@@ -278,6 +262,16 @@ export class SideBySideDiff extends React.Component<
 
   private virtualListRef = React.createRef<List>()
   private horizontalScrollRef = React.createRef<HTMLDivElement>()
+
+  /**
+   * Widest measured horizontal overflow (in pixels) across the diff rows that
+   * have been rendered so far due to virtualization.
+   */
+  private maxContentOverflow = 0
+
+  /** Pending animation frame handle used to coalesce overflow measurements. */
+  private pendingWidthMeasurement: number | null = null
+
   private diffContainer: HTMLDivElement | null = null
   private containerRef = React.createRef<HTMLDivElement>()
   private minimapResizeStartX = 0
@@ -469,6 +463,10 @@ export class SideBySideDiff extends React.Component<
   }
 
   public componentWillUnmount() {
+    if (this.pendingWidthMeasurement !== null) {
+      cancelAnimationFrame(this.pendingWidthMeasurement)
+      this.pendingWidthMeasurement = null
+    }
     this.teardownStyleObserver()
     window.removeEventListener('keydown', this.onWindowKeyDown)
     window.removeEventListener('mousemove', this.onMinimapResizeMove)
@@ -751,10 +749,61 @@ export class SideBySideDiff extends React.Component<
       this.horizontalScrollRef.current.scrollLeft = 0
     }
 
+    this.maxContentOverflow = 0
     this.containerRef.current?.style.setProperty(
       '--diff-horizontal-scroll-offset',
       '0px'
     )
+    this.containerRef.current?.style.setProperty(
+      '--diff-unwrapped-width',
+      '100%'
+    )
+  }
+
+  /**
+   * Measures the widest horizontal overflow of the rendered diff rows and, if
+   * it exceeds the previously measured maximum, widens the shared horizontal
+   * scrollbar to match. A content wrapper clips its line, so its
+   * `scrollWidth - clientWidth` is exactly the distance that line must be
+   * panned to fully reveal it.
+   */
+  private scheduleUnwrappedWidthUpdate() {
+    if (this.props.wrapDiffLines || this.pendingWidthMeasurement !== null) {
+      return
+    }
+
+    this.pendingWidthMeasurement = requestAnimationFrame(() => {
+      this.pendingWidthMeasurement = null
+      this.updateUnwrappedWidth()
+    })
+  }
+
+  private updateUnwrappedWidth() {
+    if (this.props.wrapDiffLines || this.diffContainer === null) {
+      return
+    }
+
+    let maxOverflow = this.maxContentOverflow
+    const wrappers =
+      this.diffContainer.querySelectorAll<HTMLElement>('.content-wrapper')
+
+    for (const wrapper of wrappers) {
+      if (wrapper.clientWidth === 0) {
+        continue
+      }
+      maxOverflow = Math.max(
+        maxOverflow,
+        wrapper.scrollWidth - wrapper.clientWidth
+      )
+    }
+
+    if (maxOverflow !== this.maxContentOverflow) {
+      this.maxContentOverflow = maxOverflow
+      this.containerRef.current?.style.setProperty(
+        '--diff-unwrapped-width',
+        `calc(100% + ${maxOverflow}px)`
+      )
+    }
   }
 
   private setupStyleObserver() {
@@ -807,23 +856,13 @@ export class SideBySideDiff extends React.Component<
   }) => {
     this.renderedStartIndex = info.startIndex
     this.renderedStopIndex = info.stopIndex
+    this.scheduleUnwrappedWidthUpdate()
   }
 
   public render() {
     const { diff, ariaLiveMessage, isSearching } = this.state
 
     const rows = this.getCurrentDiffRows()
-    const lineNumberWidth = getLineWidthFromDigitCount(
-      getNumberOfDigits(diff.maxLineNumber)
-    )
-    const containerStyle = {
-      '--diff-unwrapped-width': getDiffUnwrappedWidth(
-        getMaxDiffLineLength(diff),
-        lineNumberWidth,
-        this.props.showSideBySideDiff,
-        canSelect(this.props.file) && this.props.showDiffCheckMarks
-      ),
-    } as React.CSSProperties
     const containerClassName = classNames('side-by-side-diff-container', {
       'with-minimap': this.props.showDiffMinimap,
       'unified-diff': !this.props.showSideBySideDiff,
@@ -844,7 +883,6 @@ export class SideBySideDiff extends React.Component<
       <div
         ref={this.containerRef}
         className={containerClassName}
-        style={containerStyle}
         onMouseDown={this.onMouseDown}
         onKeyDown={this.onKeyDown}
         onWheel={this.onWheel}
