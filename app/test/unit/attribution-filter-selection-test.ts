@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test'
 import assert from 'node:assert'
-import { LineAttribution } from '../../src/models/diff-attribution'
+import { LineAuthorship } from '../../src/lib/diff/commit-ai-signature'
 import {
   computeCollapsedRegions,
   IAttributableRow,
@@ -17,50 +17,41 @@ import {
 // inputs, returns regions, and mutates nothing — so no wiring built on it *can*
 // alter the selection through it.
 
-const agentLine: LineAttribution = {
-  state: 'agent',
-  agentId: 'claude-code',
-  sessionId: 'a3f1c0',
-  recordedAt: 1000,
-  lowConfidence: false,
-}
-const unclaimed: LineAttribution = { state: 'unknown', reason: 'unclaimed' }
-
 function buildDiff(
   count: number,
-  agentIndices: ReadonlyArray<number>
+  aiIndices: ReadonlyArray<number>
 ): {
   readonly rows: ReadonlyArray<IAttributableRow>
-  readonly attribution: ReadonlyMap<number, LineAttribution>
+  readonly authorships: ReadonlyMap<number, LineAuthorship>
 } {
   const rows: Array<IAttributableRow> = []
-  const attribution = new Map<number, LineAttribution>()
-  const agentSet = new Set(agentIndices)
+  const authorships = new Map<number, LineAuthorship>()
+  const aiSet = new Set(aiIndices)
   for (let i = 0; i < count; i++) {
     rows.push({ isHunkHeader: false, diffLineNumber: i })
-    attribution.set(i, agentSet.has(i) ? agentLine : unclaimed)
+    authorships.set(i, aiSet.has(i) ? 'ai' : 'non-ai')
   }
-  return { rows, attribution }
+  return { rows, authorships }
 }
 
 describe('attribution filter does not alter the underlying diff', () => {
   it('does not mutate the row array or its elements', () => {
-    const { rows, attribution } = buildDiff(200, [90, 91, 92, 93, 94])
+    const { rows, authorships } = buildDiff(200, [90, 91, 92, 93, 94])
     const snapshot = rows.map(r => ({ ...r }))
-    computeCollapsedRegions(rows, attribution, new Set(), { contextLines: 3 })
+    computeCollapsedRegions(rows, authorships, new Set(), { contextLines: 3 })
     assert.strictEqual(rows.length, snapshot.length)
     for (let i = 0; i < rows.length; i++) {
       assert.deepStrictEqual(rows[i], snapshot[i])
     }
   })
 
-  it('does not mutate the attribution map', () => {
-    const { rows, attribution } = buildDiff(200, [90, 91, 92, 93, 94])
-    const before = new Map(attribution)
-    computeCollapsedRegions(rows, attribution, new Set(), { contextLines: 3 })
-    assert.strictEqual(attribution.size, before.size)
+  it('does not mutate the authorship map', () => {
+    const { rows, authorships } = buildDiff(200, [90, 91, 92, 93, 94])
+    const before = new Map(authorships)
+    computeCollapsedRegions(rows, authorships, new Set(), { contextLines: 3 })
+    assert.strictEqual(authorships.size, before.size)
     for (const [key, value] of before) {
-      assert.deepStrictEqual(attribution.get(key), value)
+      assert.deepStrictEqual(authorships.get(key), value)
     }
   })
 
@@ -69,8 +60,8 @@ describe('attribution filter does not alter the underlying diff', () => {
     // order — so mapping a selection back through the view is lossless. Turning
     // the filter on then reading the visible rows can only ever hide, never
     // reorder or rewrite, the lines the selection addresses.
-    const { rows, attribution } = buildDiff(300, [100, 101, 102, 200, 201])
-    const regions = computeCollapsedRegions(rows, attribution, new Set(), {
+    const { rows, authorships } = buildDiff(300, [100, 101, 102, 200, 201])
+    const regions = computeCollapsedRegions(rows, authorships, new Set(), {
       contextLines: 3,
     })
     const visible = visibleRowIndices(rows.length, regions)
@@ -89,9 +80,9 @@ describe('attribution filter does not alter the underlying diff', () => {
     // "Off" is the full index range; "on" is a subset of the very same indices.
     // No index in the filtered view points at a different row than it did
     // unfiltered — the property that keeps the commit identical.
-    const { rows, attribution } = buildDiff(300, [100, 101, 102, 200, 201])
+    const { rows, authorships } = buildDiff(300, [100, 101, 102, 200, 201])
     const off = visibleRowIndices(rows.length, [])
-    const regions = computeCollapsedRegions(rows, attribution, new Set(), {
+    const regions = computeCollapsedRegions(rows, authorships, new Set(), {
       contextLines: 3,
     })
     const on = visibleRowIndices(rows.length, regions)

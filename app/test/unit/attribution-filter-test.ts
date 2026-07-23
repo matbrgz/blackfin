@@ -1,8 +1,7 @@
 import { describe, it } from 'node:test'
 import assert from 'node:assert'
-import { LineAttribution } from '../../src/models/diff-attribution'
+import { LineAuthorship } from '../../src/lib/diff/commit-ai-signature'
 import {
-  AttributionFilterMode,
   computeCollapsedRegions,
   DefaultAttributionContextLines,
   expandAll,
@@ -18,23 +17,9 @@ import {
 // The attribution filter's pure core (#71).
 //
 // Every test here builds a synthetic diff as an array of rows, hands it a plain
-// attribution map, and asserts which contiguous regions fold. No renderer, no
-// git, no disk — the point of the module is that this is possible.
-
-const agentLine: LineAttribution = {
-  state: 'agent',
-  agentId: 'claude-code',
-  sessionId: 'a3f1c0',
-  recordedAt: 1000,
-  lowConfidence: false,
-}
-
-const unclaimed: LineAttribution = { state: 'unknown', reason: 'unclaimed' }
-const superseded: LineAttribution = {
-  state: 'unknown',
-  reason: 'claim-superseded',
-}
-const noData: LineAttribution = { state: 'unknown', reason: 'no-data' }
+// authorship map (the per-line verdict from #70: `ai | non-ai | uncommitted`),
+// and asserts which contiguous regions fold. No renderer, no git, no disk — the
+// point of the module is that this is possible.
 
 /** A plain line row whose diff line number equals its index, for easy mapping. */
 function line(index: number): IAttributableRow {
@@ -47,24 +32,26 @@ function hunk(): IAttributableRow {
 }
 
 /**
- * Build `count` line rows whose diffLineNumber equals the row index, then mark a
- * set of those indices as agent-attributed. Keeps the tests declarative.
+ * Build `count` line rows whose diffLineNumber equals the row index, mark a set
+ * of those indices `'ai'`, and give every other line the supplied verdict
+ * (`'non-ai'` by default). Keeps the tests declarative.
  */
 function buildDiff(
   count: number,
-  agentIndices: ReadonlyArray<number>
+  aiIndices: ReadonlyArray<number>,
+  rest: LineAuthorship = 'non-ai'
 ): {
   readonly rows: ReadonlyArray<IAttributableRow>
-  readonly attribution: Map<number, LineAttribution>
+  readonly authorships: Map<number, LineAuthorship>
 } {
   const rows: Array<IAttributableRow> = []
-  const attribution = new Map<number, LineAttribution>()
-  const agentSet = new Set(agentIndices)
+  const authorships = new Map<number, LineAuthorship>()
+  const aiSet = new Set(aiIndices)
   for (let i = 0; i < count; i++) {
     rows.push(line(i))
-    attribution.set(i, agentSet.has(i) ? agentLine : unclaimed)
+    authorships.set(i, aiSet.has(i) ? 'ai' : rest)
   }
-  return { rows, attribution }
+  return { rows, authorships }
 }
 
 const noAnnotations: ReadonlySet<number> = new Set<number>()
@@ -76,44 +63,44 @@ function regionsAt(
 }
 
 describe('computeCollapsedRegions — the veracity lock', () => {
-  it('folds nothing when the attribution map is empty (no data)', () => {
+  it('folds nothing when the authorship map is empty (no verdict)', () => {
     const rows = Array.from({ length: 50 }, (_, i) => line(i))
     const regions = computeCollapsedRegions(rows, new Map(), noAnnotations, {})
     assert.deepStrictEqual(regions, [])
   })
 
-  it("folds nothing when every line is unknown/'no-data'", () => {
+  it("folds nothing when every line is 'uncommitted' (nothing to attribute)", () => {
     const rows = Array.from({ length: 50 }, (_, i) => line(i))
-    const attribution = new Map<number, LineAttribution>()
+    const authorships = new Map<number, LineAuthorship>()
     for (let i = 0; i < 50; i++) {
-      attribution.set(i, noData)
+      authorships.set(i, 'uncommitted')
     }
     const regions = computeCollapsedRegions(
       rows,
-      attribution,
+      authorships,
       noAnnotations,
       {}
     )
     assert.deepStrictEqual(regions, [])
   })
 
-  it('folds nothing when no line is attributed to an agent', () => {
-    const { rows, attribution } = buildDiff(80, [])
+  it("folds nothing when no line is 'ai' (all committed without AI)", () => {
+    const { rows, authorships } = buildDiff(80, [])
     const regions = computeCollapsedRegions(
       rows,
-      attribution,
+      authorships,
       noAnnotations,
       {}
     )
     assert.deepStrictEqual(regions, [])
   })
 
-  it('folds nothing when 100% of lines are the agent (nothing to filter)', () => {
+  it('folds nothing when 100% of lines are AI (nothing to filter)', () => {
     const all = Array.from({ length: 40 }, (_, i) => i)
-    const { rows, attribution } = buildDiff(40, all)
+    const { rows, authorships } = buildDiff(40, all)
     const regions = computeCollapsedRegions(
       rows,
-      attribution,
+      authorships,
       noAnnotations,
       {}
     )
@@ -126,12 +113,12 @@ describe('computeCollapsedRegions — the veracity lock', () => {
   })
 })
 
-describe('computeCollapsedRegions — a single agent block', () => {
+describe('computeCollapsedRegions — a single AI block', () => {
   it('keeps the block plus 3 context rows each side; folds the rest', () => {
-    // 100 rows; the agent owns rows 48..52. Context 3 keeps 45..55.
-    const agentIndices = [48, 49, 50, 51, 52]
-    const { rows, attribution } = buildDiff(100, agentIndices)
-    const regions = computeCollapsedRegions(rows, attribution, noAnnotations, {
+    // 100 rows; the AI owns rows 48..52. Context 3 keeps 45..55.
+    const aiIndices = [48, 49, 50, 51, 52]
+    const { rows, authorships } = buildDiff(100, aiIndices)
+    const regions = computeCollapsedRegions(rows, authorships, noAnnotations, {
       contextLines: DefaultAttributionContextLines,
     })
     // Two folds: 0..44 (before context) and 56..99 (after context).
@@ -142,12 +129,12 @@ describe('computeCollapsedRegions — a single agent block', () => {
   })
 })
 
-describe('computeCollapsedRegions — two agent blocks', () => {
+describe('computeCollapsedRegions — two AI blocks', () => {
   it('does NOT fold a 5-row gap between blocks (context swallows it)', () => {
     // Block A ends at row 10; block B starts at row 16 — rows 11..15 between.
     // Context 3 preserves 11,12,13 (after A) and 13,14,15 (before B): all 5.
-    const { rows, attribution } = buildDiff(40, [10, 16])
-    const regions = computeCollapsedRegions(rows, attribution, noAnnotations, {
+    const { rows, authorships } = buildDiff(40, [10, 16])
+    const regions = computeCollapsedRegions(rows, authorships, noAnnotations, {
       contextLines: 3,
     })
     // The only folds are the far ends; nothing between 10 and 16.
@@ -164,8 +151,8 @@ describe('computeCollapsedRegions — two agent blocks', () => {
   it('folds exactly one region of 194 rows for a 200-row gap', () => {
     // Block A at row 10, block B at row 211 — 200 rows (11..210) between.
     // Context 3 keeps 11..13 and 208..210, folding 14..207 = 194 rows.
-    const { rows, attribution } = buildDiff(400, [10, 211])
-    const regions = computeCollapsedRegions(rows, attribution, noAnnotations, {
+    const { rows, authorships } = buildDiff(400, [10, 211])
+    const regions = computeCollapsedRegions(rows, authorships, noAnnotations, {
       contextLines: 3,
     })
     const gapRegion = regions.find(
@@ -179,25 +166,25 @@ describe('computeCollapsedRegions — two agent blocks', () => {
 })
 
 describe('computeCollapsedRegions — MinCollapseSize', () => {
-  it('does NOT fold a standalone 3-row unattributed region', () => {
-    // 3 rows (0..2), then an agent block far enough that context does not reach
-    // them. Agent at rows 6..40; context 3 reaches down to row 3, so 0..2 stay
-    // a run of length 3 < MinCollapseSize(4) and must NOT fold.
-    const agentIndices = Array.from({ length: 35 }, (_, i) => i + 6)
-    const { rows, attribution } = buildDiff(41, agentIndices)
-    const regions = computeCollapsedRegions(rows, attribution, noAnnotations, {
+  it('does NOT fold a standalone 3-row non-AI region', () => {
+    // 3 rows (0..2), then an AI block far enough that context does not reach
+    // them. AI at rows 6..40; context 3 reaches down to row 3, so 0..2 stay a
+    // run of length 3 < MinCollapseSize(4) and must NOT fold.
+    const aiIndices = Array.from({ length: 35 }, (_, i) => i + 6)
+    const { rows, authorships } = buildDiff(41, aiIndices)
+    const regions = computeCollapsedRegions(rows, authorships, noAnnotations, {
       contextLines: 3,
       minCollapseSize: MinCollapseSize,
     })
     assert.deepStrictEqual(regions, [])
   })
 
-  it('DOES fold a standalone 4-row unattributed region', () => {
-    // Rows 0..3 unattributed, agent 7..40; context reaches down to row 4, so
-    // 0..3 is a run of length 4 == MinCollapseSize and folds.
-    const agentIndices = Array.from({ length: 34 }, (_, i) => i + 7)
-    const { rows, attribution } = buildDiff(41, agentIndices)
-    const regions = computeCollapsedRegions(rows, attribution, noAnnotations, {
+  it('DOES fold a standalone 4-row non-AI region', () => {
+    // Rows 0..3 non-AI, AI 7..40; context reaches down to row 4, so 0..3 is a
+    // run of length 4 == MinCollapseSize and folds.
+    const aiIndices = Array.from({ length: 34 }, (_, i) => i + 7)
+    const { rows, authorships } = buildDiff(41, aiIndices)
+    const regions = computeCollapsedRegions(rows, authorships, noAnnotations, {
       contextLines: 3,
       minCollapseSize: MinCollapseSize,
     })
@@ -207,12 +194,12 @@ describe('computeCollapsedRegions — MinCollapseSize', () => {
 
 describe('computeCollapsedRegions — never fold protected rows', () => {
   it('splits a folding region around an annotated row', () => {
-    // Agent block at 60..64 keeps 57..67. Row 20 is annotated. Without the
+    // AI block at 60..64 keeps 57..67. Row 20 is annotated. Without the
     // annotation, 0..56 would be one fold; the annotation at 20 splits it into
     // 0..19 and 21..56.
-    const { rows, attribution } = buildDiff(100, [60, 61, 62, 63, 64])
+    const { rows, authorships } = buildDiff(100, [60, 61, 62, 63, 64])
     const annotated = new Set<number>([20])
-    const regions = computeCollapsedRegions(rows, attribution, annotated, {
+    const regions = computeCollapsedRegions(rows, authorships, annotated, {
       contextLines: 3,
     })
     assert.deepStrictEqual(regionsAt(regions), [
@@ -223,18 +210,18 @@ describe('computeCollapsedRegions — never fold protected rows', () => {
   })
 
   it('never folds a hunk-header row; it splits the run', () => {
-    // 0..49 line rows, a hunk header at index 50, then agent block 80..84.
+    // 0..49 line rows, a hunk header at index 50, then AI block 80..84.
     const rows: Array<IAttributableRow> = []
-    const attribution = new Map<number, LineAttribution>()
+    const authorships = new Map<number, LineAuthorship>()
     for (let i = 0; i < 100; i++) {
       if (i === 50) {
         rows.push(hunk())
         continue
       }
       rows.push(line(i))
-      attribution.set(i, i >= 80 && i <= 84 ? agentLine : unclaimed)
+      authorships.set(i, i >= 80 && i <= 84 ? 'ai' : 'non-ai')
     }
-    const regions = computeCollapsedRegions(rows, attribution, noAnnotations, {
+    const regions = computeCollapsedRegions(rows, authorships, noAnnotations, {
       contextLines: 3,
     })
     // The header at 50 splits the leading fold into 0..49 and 51..76.
@@ -247,12 +234,12 @@ describe('computeCollapsedRegions — never fold protected rows', () => {
     assert.strictEqual(isRowCollapsed(regions, 50), false)
   })
 
-  it("folds a 'claim-superseded' line with the unattributed rows", () => {
-    // Agent block 40..44. Row 10 was the agent's but the content changed:
-    // superseded -> unknown -> collapsible, folded with its neighbours.
-    const { rows, attribution } = buildDiff(80, [40, 41, 42, 43, 44])
-    attribution.set(10, superseded)
-    const regions = computeCollapsedRegions(rows, attribution, noAnnotations, {
+  it("folds an 'uncommitted' line in with the non-AI rows", () => {
+    // AI block 40..44. Row 10 is uncommitted (working-directory, no signature):
+    // not the AI's, so collapsible, folded with its neighbours.
+    const { rows, authorships } = buildDiff(80, [40, 41, 42, 43, 44])
+    authorships.set(10, 'uncommitted')
+    const regions = computeCollapsedRegions(rows, authorships, noAnnotations, {
       contextLines: 3,
     })
     // Row 10 is inside the leading fold, not preserved.
@@ -264,28 +251,38 @@ describe('computeCollapsedRegions — never fold protected rows', () => {
   })
 })
 
-describe('computeCollapsedRegions — unattributed mode (honest inverse)', () => {
-  it('folds the agent block, keeps the unattributed lines', () => {
-    // Inverse view: keep what no agent claimed, fold the agent's block.
-    const agentIndices = Array.from({ length: 30 }, (_, i) => i + 35)
-    const { rows, attribution } = buildDiff(100, agentIndices)
-    const mode: AttributionFilterMode = 'unattributed'
-    const regions = computeCollapsedRegions(rows, attribution, noAnnotations, {
-      mode,
+describe('computeCollapsedRegions — uncommitted folds like non-AI', () => {
+  it('folds a mix of non-AI and uncommitted around an AI block the same way', () => {
+    // AI block at 48..52 (context keeps 45..55). Half the rest is non-AI, half
+    // uncommitted — both fold identically, so the regions match the pure-non-AI
+    // single-block case: 0..44 and 56..99.
+    const rows: Array<IAttributableRow> = []
+    const authorships = new Map<number, LineAuthorship>()
+    for (let i = 0; i < 100; i++) {
+      rows.push(line(i))
+      if (i >= 48 && i <= 52) {
+        authorships.set(i, 'ai')
+      } else {
+        authorships.set(i, i % 2 === 0 ? 'non-ai' : 'uncommitted')
+      }
+    }
+    const regions = computeCollapsedRegions(rows, authorships, noAnnotations, {
       contextLines: 3,
     })
-    // Agent 35..64; context keeps 32..34 and 65..67; folds 38..61.
-    assert.deepStrictEqual(regionsAt(regions), [[38, 61]])
+    assert.deepStrictEqual(regionsAt(regions), [
+      [0, 44],
+      [56, 99],
+    ])
   })
+})
 
-  it('folds nothing in unattributed mode when every line is the agent', () => {
-    const all = Array.from({ length: 30 }, (_, i) => i)
-    const { rows, attribution } = buildDiff(30, all)
-    const regions = computeCollapsedRegions(rows, attribution, noAnnotations, {
-      mode: 'unattributed',
+describe("computeCollapsedRegions — 'all' mode folds nothing", () => {
+  it('keeps every row when the filter is off (show all)', () => {
+    const { rows, authorships } = buildDiff(100, [48, 49, 50, 51, 52])
+    const regions = computeCollapsedRegions(rows, authorships, noAnnotations, {
+      mode: 'all',
+      contextLines: 3,
     })
-    // Every line is a non-target (agent), so there IS a fold pool; but there are
-    // no unattributed targets to preserve, so the lock trips: fold nothing.
     assert.deepStrictEqual(regions, [])
   })
 })
@@ -327,26 +324,47 @@ describe('expandRegion / expandAll / visibleRowIndices', () => {
 })
 
 describe('summarizeAttributionCounts — the honest counter', () => {
-  it('counts agent vs unattributed line rows, ignoring hunk headers', () => {
-    // 800 line rows, 600 agent; plus 3 hunk headers that must not be counted.
+  it('counts AI vs non-AI line rows, ignoring hunk headers', () => {
+    // 800 line rows, 600 AI; plus 3 hunk headers that must not be counted.
     const rows: Array<IAttributableRow> = []
-    const attribution = new Map<number, LineAttribution>()
+    const authorships = new Map<number, LineAuthorship>()
     for (let i = 0; i < 800; i++) {
       rows.push(line(i))
-      attribution.set(i, i < 600 ? agentLine : unclaimed)
+      authorships.set(i, i < 600 ? 'ai' : 'non-ai')
     }
     rows.push(hunk(), hunk(), hunk())
-    const counts = summarizeAttributionCounts(rows, attribution)
-    assert.strictEqual(counts.agentLineCount, 600)
-    assert.strictEqual(counts.unattributedLineCount, 200)
+    const counts = summarizeAttributionCounts(rows, authorships)
+    assert.strictEqual(counts.aiLineCount, 600)
+    assert.strictEqual(counts.nonAiLineCount, 200)
     assert.strictEqual(counts.totalLineCount, 800)
   })
 
-  it('reports zero attributed when there is no data', () => {
+  it('pools uncommitted lines into the non-AI count', () => {
+    // 100 rows: 40 AI, 30 non-AI, 30 uncommitted. The header says "40 with AI,
+    // 60 without" — uncommitted is not the AI's either.
+    const rows: Array<IAttributableRow> = []
+    const authorships = new Map<number, LineAuthorship>()
+    for (let i = 0; i < 100; i++) {
+      rows.push(line(i))
+      if (i < 40) {
+        authorships.set(i, 'ai')
+      } else if (i < 70) {
+        authorships.set(i, 'non-ai')
+      } else {
+        authorships.set(i, 'uncommitted')
+      }
+    }
+    const counts = summarizeAttributionCounts(rows, authorships)
+    assert.strictEqual(counts.aiLineCount, 40)
+    assert.strictEqual(counts.nonAiLineCount, 60)
+    assert.strictEqual(counts.totalLineCount, 100)
+  })
+
+  it('reports zero AI when there is no verdict', () => {
     const rows = Array.from({ length: 30 }, (_, i) => line(i))
     const counts = summarizeAttributionCounts(rows, new Map())
-    assert.strictEqual(counts.agentLineCount, 0)
-    assert.strictEqual(counts.unattributedLineCount, 30)
+    assert.strictEqual(counts.aiLineCount, 0)
+    assert.strictEqual(counts.nonAiLineCount, 30)
     assert.strictEqual(counts.totalLineCount, 30)
   })
 })
