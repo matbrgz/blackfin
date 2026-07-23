@@ -30,6 +30,7 @@ interface ICopilotConflictsChangesProps {
   readonly ourBranch: string | undefined
   readonly theirBranch: string | undefined
   readonly onResolutionDropdownClick: (path: string) => void
+  readonly wrapDiffLines: boolean
 }
 
 interface ICopilotConflictsChangesState {
@@ -217,6 +218,10 @@ export class CopilotConflictsChanges extends React.Component<
     this.setState({ showDiffMinimap })
   }
 
+  private onWrapDiffLinesChanged = (wrapDiffLines: boolean) => {
+    this.props.dispatcher.onWrapDiffLinesChanged(wrapDiffLines)
+  }
+
   private onHideWhitespaceInDiffChanged = (hideWhitespaceInDiff: boolean) => {
     this.setState({ hideWhitespaceInDiff })
   }
@@ -335,9 +340,11 @@ export class CopilotConflictsChanges extends React.Component<
             onHideWhitespaceChangesChanged={this.onHideWhitespaceInDiffChanged}
             showSideBySideDiff={showSideBySideDiff}
             showDiffMinimap={showDiffMinimap}
+            wrapDiffLines={this.props.wrapDiffLines}
             onShowSideBySideDiffChanged={this.onShowSideBySideDiffChanged}
             onDiffOptionsOpened={this.onDiffOptionsOpened}
             onShowDiffMinimapChanged={this.onShowDiffMinimapChanged}
+            onWrapDiffLinesChanged={this.onWrapDiffLinesChanged}
           />
         </div>
         <div className="copilot-changes-content">
@@ -412,6 +419,7 @@ export class CopilotConflictsChanges extends React.Component<
                 hideWhitespaceInDiff={hideWhitespaceInDiff}
                 showSideBySideDiff={showSideBySideDiff}
                 showDiffMinimap={showDiffMinimap}
+                wrapDiffLines={this.props.wrapDiffLines}
                 showDiffCheckMarks={false}
                 onOpenBinaryFile={this.onOpenBinaryFile}
                 onChangeImageDiffType={this.onChangeImageDiffType}

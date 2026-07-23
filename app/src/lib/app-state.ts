@@ -311,6 +311,9 @@ export interface IAppState {
   /** Whether we should show the diff minimap */
   readonly showDiffMinimap: boolean
 
+  /** Whether text diff lines should wrap within the viewport */
+  readonly wrapDiffLines: boolean
+
   /** The user's preferred shell. */
   readonly selectedShell: Shell
 

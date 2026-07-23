@@ -2665,6 +2665,11 @@ export class Dispatcher {
     return this.appStore._setShowDiffMinimap(showDiffMinimap)
   }
 
+  /** Change the diff line wrapping setting */
+  public onWrapDiffLinesChanged(wrapDiffLines: boolean) {
+    return this.appStore._setWrapDiffLines(wrapDiffLines)
+  }
+
   /** Install the global Git LFS filters. */
   public installGlobalLFSFilters(force: boolean): Promise<void> {
     return this.appStore._installGlobalLFSFilters(force)
