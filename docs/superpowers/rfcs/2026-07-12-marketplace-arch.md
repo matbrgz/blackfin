@@ -2,7 +2,7 @@
 
 - **Date:** 2026-07-12
 - **Issue:** [#13](https://github.com/matbrgz/blackfin/issues/13) — *RFC: Marketplace architecture — registry, distribution, versioning*
-- **Status:** Proposal. Recommends **Option B (static Git index) as the spine + Option D (federation) added incrementally**, rejects **Option C (own backend)**, and records **Option A (no registry, Git/URL install only)** as the acceptable fallback if M3 is cut. Awaiting maintainer ratification of **D1** and **D5** (see "DECISÃO PENDENTE (ratificar)").
+- **Status:** **RATIFIED** by the maintainer. Adopted: **Option B (static Git index) as the spine + Option D (federation) added incrementally**; **Option C (own backend) rejected**; **Option A (Git/URL install only) recorded as the acceptable fallback if M3 is cut**. And **D5 ratified: Blackfin NEVER hosts bytes** — it only indexes/points; artifacts live at their origin (§13). M3 (#47–54) may proceed on these.
 - **Depends on:** [#10](https://github.com/matbrgz/blackfin/issues/10) — *taxonomy* (**RATIFIED**, `docs/superpowers/rfcs/2026-07-12-taxonomy.md`) and [#11](https://github.com/matbrgz/blackfin/issues/11) — *extension domain model* (**RATIFIED**, `docs/superpowers/rfcs/2026-07-12-extension-model.md`). Without `Extension`, `source` and `IExtensionRecord`, the word "update" has no subject. Where this document and the two ratified RFCs touch, **the ratified RFCs win.**
 - **Blocks:** #47 (registry client), #48 / #49 (marketplace UI), #52 (channels), #54 (publishing) — and, via #47, #51 (integrity).
 - **Scope of this document:** the strategic decision (own registry or not), the shape of a catalog entry, the distribution mechanism, versioning and update semantics, and the security posture that follows. **No production code. No schema is created.** The concrete Dexie schema is #14; the trust/permission model is #12/#50; integrity, signatures and provenance mechanics are #51; the UI is #48/#49; publishing and curation are #54.
@@ -487,13 +487,18 @@ them.
 None of D1–D9 may remain in `open` status at merge of the implementation issues; here they
 carry recommendations awaiting ratification.
 
-## 13. DECISÃO PENDENTE (ratificar)
+## 13. DECISÃO RATIFICADA
 
-**The own-registry-vs-federate call is the maintainer's, and it is the reason this RFC is
-rated L.** Engineering recommends **Option B (static Git index) as the spine + Option D
-(federation) incrementally**, with **Option C (own backend) rejected** and **Option A (no
-registry) recorded as the acceptable fallback if M3 is cut**. Nothing downstream (#47, #48,
-#49, #52, #54) should be built until **D1** is ratified.
+**RATIFICADO pelo mantenedor.** Both strategic calls are settled; M3 (#47, #48, #49, #52, #54)
+may proceed on them:
+
+- **D1 = Option B (static Git index) as the spine + Option D (federation) incrementally.**
+  Option C (own backend) is **rejected**; Option A (Git/URL install only) is the acceptable
+  fallback if M3 is cut.
+- **D5 = Blackfin NEVER hosts bytes** — it only indexes/points; artifacts live at their origin.
+
+The original recommendation matched the ratification. The engineering reasoning is preserved
+below for the record.
 
 The two strategic decisions the maintainer must rule on:
 
