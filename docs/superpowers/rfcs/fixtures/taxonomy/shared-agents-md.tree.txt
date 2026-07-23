@@ -1,0 +1,17 @@
+# Fixture: Shared (AGENTS.md convention + .agents/) — belongs to NO agent
+# Anonymised. AgentId.Shared.
+
+AGENTS.md                            -> Capability(instruction), agent=Shared, extensionId=null
+AGENT.md                             -> Capability(instruction), agent=Shared, extensionId=null
+
+# The ownerless `npx skills add` target. A loose skill installed here.
+.agents/
+  skills/
+    pdf/
+      SKILL.md                       -> Capability(skill), agent=Shared, extensionId=null
+
+# Contract checks:
+#   - AGENTS.md is agent=Shared, never attributed to Codex/OpenCode/Antigravity/etc.
+#   - This .agents/skills/pdf/SKILL.md is the SAME Capability as .claude/skills/pdf/SKILL.md
+#     when contentHash + name match (D4): one Capability in two places (scopes/agents),
+#     NOT two skills.

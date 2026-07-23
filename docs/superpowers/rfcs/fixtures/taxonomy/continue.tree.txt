@@ -1,0 +1,15 @@
+# Fixture: Continue (.continue/) — "blocks" are config, NOT containers-with-manifest
+# Anonymised. AgentId.Continue.
+
+.continue/
+  rules/
+    style.md                         -> Capability(instruction), extensionId=null
+  config.yaml                        -> Settings   (Continue 'blocks' live here; UNVERIFIED shape)
+
+# Continue "blocks" (models, rules, MCP servers, prompts):
+#   - a block is a unit of config, NOT a container with a trust decision.
+#   - a block is therefore NOT a Blackfin Extension.
+#   - an MCP-server block -> Capability(mcp-server) (UNVERIFIED path, no predicate yet).
+#
+# Contract checks:
+#   - Do not treat a Continue block as an Extension despite Continue's framing.

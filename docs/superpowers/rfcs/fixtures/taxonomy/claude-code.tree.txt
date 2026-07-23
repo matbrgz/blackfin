@@ -1,0 +1,50 @@
+# Fixture: Claude Code (.claude/) — the richest ecosystem
+# Anonymised. No real tokens. Every env value is a placeholder marker.
+# Expected classification annotated as  ->  Extension / Capability(kind) / Settings.
+
+.claude/
+  CLAUDE.md                          -> Capability(instruction), extensionId=null   [detected]
+  CLAUDE.local.md                    -> Capability(instruction), extensionId=null   [detected]
+  settings.json                      -> Settings (contains an mcpServers block, see below)
+  mcp.json                           -> Settings container; its ENTRIES become mcp-server Capabilities
+  rules/
+    house-style.md                   -> Capability(instruction), extensionId=null
+
+  # --- A PLUGIN: one Extension, many Capabilities (cardinality > 1) ---
+  plugins/
+    superpowers/
+      plugin.json                    -> Extension(id=superpowers, version=1.3.0)  [manifest = predicate]
+      skills/
+        brainstorming/
+          SKILL.md                   -> Capability(skill),   extensionId=superpowers
+        writing-plans/
+          SKILL.md                   -> Capability(skill),   extensionId=superpowers
+      commands/
+        plan.md                      -> Capability(command), extensionId=superpowers
+        review.md                    -> Capability(command), extensionId=superpowers
+        ship.md                      -> Capability(command), extensionId=superpowers
+      hooks/
+        pre-commit.sh                -> Capability(hook),    extensionId=superpowers
+      # The plugin DECLARES it requires an MCP server; it does not contain it.
+      # -> Extension.requiresMcp = ['filesystem']
+
+  # --- Loose (detected) skill: no manifest, so extensionId=null ---
+  skills/
+    pdf/
+      SKILL.md                       -> Capability(skill),   extensionId=null   [detected]
+  commands/
+    deploy.md                        -> Capability(command), extensionId=null
+  agents/
+    reviewer.md                      -> Capability(subagent), extensionId=null
+  prompts/
+    changelog.md                     -> Capability(prompt),  extensionId=null
+
+# settings.json / mcp.json content (illustrative — see mcp-multi-transport.tree.txt):
+#   mcpServers.github     -> Capability(mcp-server)  command=gh-mcp   env: GITHUB_TOKEN=<PLACEHOLDER>
+#   mcpServers.filesystem -> Capability(mcp-server)  (the one 'superpowers' requires)
+#
+# Contract checks:
+#   - The plugin yields 1 Extension + 6 Capabilities, NOT 7 loose items.
+#   - Removing Extension(superpowers) removes 2 skills + 3 commands + 1 hook.
+#   - Extension(superpowers).requiresMcp=['filesystem'] is satisfied here; if absent -> unmet.
+#   - No env VALUE ever enters a returned structure; only key presence.

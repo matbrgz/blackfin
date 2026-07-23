@@ -1,0 +1,14 @@
+# Fixture: OpenCode (.opencode/) — AGENTS.md + singular command/agent dirs
+# Anonymised. AgentId.OpenCode.
+
+AGENTS.md                            -> Capability(instruction), agent=Shared, extensionId=null
+.opencode/
+  opencode.json                      -> Settings   (may declare MCP; UNVERIFIED)
+  command/
+    build.md                         -> Capability(command),  extensionId=null   [singular 'command' dir]
+  agent/
+    tester.md                        -> Capability(subagent), extensionId=null   [singular 'agent' dir]
+
+# Contract checks:
+#   - 'command'/'agent' (singular) map to Command/Subagent just like plural.
+#   - Whether OpenCode itself populates these is UNVERIFIED; the predicate stands.

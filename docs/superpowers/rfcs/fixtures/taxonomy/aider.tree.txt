@@ -1,0 +1,8 @@
+# Fixture: Aider (CONVENTIONS.md, no home dir)
+# Anonymised. AgentId.Aider.
+
+CONVENTIONS.md                       -> Capability(instruction), agent=Aider, extensionId=null
+
+# Contract checks:
+#   - Aider anchors on a single root file; no home directory.
+#   - No plugin/skill/command/subagent/prompt/hook. MCP support UNVERIFIED -> no predicate.
