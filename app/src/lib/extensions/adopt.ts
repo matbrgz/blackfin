@@ -93,14 +93,24 @@ function rootPathFor(
   kind: CapabilityKind,
   relativePath: string
 ): string {
-  const absolute = Path.resolve(scopeRoot, relativePath)
+  // POSIX path arithmetic, deterministic on every platform. Native `Path` is
+  // `path.win32` on Windows, where `resolve('/repo', rel)` injects the current
+  // drive and backslashes — output the model (whose `relativePath` is POSIX)
+  // never expects. `join` (not `resolve`) since `scopeRoot` is already absolute;
+  // fs accepts forward slashes on Windows, so the stored path stays usable.
+  const absolute = Path.posix.join(toPosix(scopeRoot), toPosix(relativePath))
   if (
     kind === CapabilityKind.Skill &&
-    Path.basename(absolute).toLowerCase() === 'skill.md'
+    Path.posix.basename(absolute).toLowerCase() === 'skill.md'
   ) {
-    return Path.dirname(absolute)
+    return Path.posix.dirname(absolute)
   }
   return absolute
+}
+
+/** Normalise Windows backslash separators to POSIX forward slashes. */
+function toPosix(p: string): string {
+  return p.replace(/\\/g, '/')
 }
 
 /**
