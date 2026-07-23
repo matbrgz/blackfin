@@ -6,6 +6,8 @@ import {
   IRegistryEvent,
   RegistryEventKind,
 } from '../../models/extension-registry'
+import { IDetectedCapability } from '../../models/extension'
+import { adoptionFromDetected, IAdoptionContext } from '../extensions/adopt'
 
 /** Fields that identify an installation and may never change after `record()`. */
 type InstallationIdentity =
@@ -93,6 +95,26 @@ export class ExtensionRegistryStore extends BaseStore {
     )
 
     this.emitUpdate()
+  }
+
+  /**
+   * Adopt an already-installed item (#36): register a detected item exactly
+   * where it lives, WITHOUT moving, copying or rewriting a single byte. This is
+   * a registry write and nothing more — the pure `adoptionFromDetected` builds
+   * the row (`ownership: Detected`, `files: []`, `source: null` = unknown
+   * provenance) and `record()` persists it, emitting the `registered` event.
+   *
+   * The returned installation is the row as recorded. Idempotency, batch results
+   * and the symlink/scope safety check belong to the UI-facing layer of #36;
+   * this wrapper is the honest headless core the rest builds on.
+   */
+  public async adopt(
+    detected: IDetectedCapability,
+    context: IAdoptionContext
+  ): Promise<IInstallation> {
+    const installation = adoptionFromDetected(detected, context, this.now())
+    await this.record(installation)
+    return installation
   }
 
   /** Apply a patch to the mutable fields of an existing installation. */
