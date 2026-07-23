@@ -2,7 +2,7 @@
 
 - **Date:** 2026-07-12
 - **Issue:** [#11](https://github.com/matbrgz/blackfin/issues/11) — *RFC: The extension domain model — kind, scope, source, state, manifest*
-- **Status:** Proposal. Recommends **Option C** (two stores + a stable anchor + a pure reconciliation). Awaiting maintainer ratification of the decision register (D1–D9) and, above all, the three genuine forks in "DECISÕES PENDENTES (ratificar)".
+- **Status:** **RATIFIED** by the maintainer. Option C (two stores + a stable anchor + a pure reconciliation) is adopted, and the three genuine forks are ruled on (§15): scope inheritance = **computed relation**; correlation anchor = `scope+agent+kind+logicalName(basename)+contentHashAtInstall`; **disable edits the config** (the never-write invariant is relaxed to *never-write-silently*, §11). #21/#35 implement against these.
 - **Depends on:** [#10](https://github.com/matbrgz/blackfin/issues/10) — *RFC: What a Plugin, a Skill, and an MCP server actually are* — **RATIFIED as Option C**. This document builds directly on the ratified taxonomy (`docs/superpowers/rfcs/2026-07-12-taxonomy.md`) and MUST stay consistent with it. Where the two touch, the taxonomy wins.
 - **Blocks:** #12 (trust), #13 (registry), #14 (persistence), #21 (migration), #35 (Blackfin-side records), #22 (containment) — and, transitively, all of M1, M2 and M3.
 - **Scope of this document:** the fields each ratified noun carries, and the boundary that keeps filesystem truth and Blackfin data from ever merging into one row. No production code. No `catalog.ts` change, no `workspace-inventory.ts` change — that migration is #21.
@@ -273,15 +273,18 @@ failure:
   `IExtensionRecord.installedVersion` (Blackfin) **and** the registry's available version
   (#13). Without a record it does not exist: a `detected` item can **never** be `outdated`,
   and the UI must not pretend it can (explicit negative assertion in §9).
-- **`disabled` — [blackfin], the only state that is pure Blackfin data, and therefore the
-  most dangerous.** It cannot be derived from disk. See §11 and **D4** — the single most
-  expensive decision in this document.
+- **`disabled` — [computed], read from disk** (RATIFIED D4, §11). Disabling is an explicit
+  user operation that edits the config (moves the capability aside / edits the agent's config);
+  Blackfin then *reads the disabled state back* from disk on the next scan, exactly like
+  `broken`. It is **not** a pure-Blackfin datum and is **not** stored as one — so it can never
+  be a lie. There is therefore **no** pure-Blackfin *state* datum for a detected item; Blackfin's
+  own data (§6) is install provenance only.
 - `enabled` is the default — the absence of `disabled`, `broken` and `outdated`.
 
 ```ts
 export type ExtensionState =
   | { readonly kind: 'enabled' }
-  | { readonly kind: 'disabled' } //                         [blackfin] from Side B
+  | { readonly kind: 'disabled' } //                         [computed] from Side A (disk)
   | { readonly kind: 'broken'; readonly reason: string } //  [computed] from Side A
   | { readonly kind: 'outdated'; readonly available: string } // [computed] A + B + registry
 ```
@@ -354,10 +357,12 @@ export interface IDetectedCapability {
 Note there is **no `extensionId` field on `IDetectedCapability`.** The ratified taxonomy
 carries `extensionId: string | null` on the Capability as the boundary line; in the
 materialised two-store model, putting a Blackfin-owned id on the disk object would *itself*
-violate the invariant "no Side A field is written by Blackfin." So the boundary is expressed
-one level up, as a **relation**: the taxonomy's `extensionId: null` becomes *"no matching
-`IExtensionRecord`"*, resolved by `reconcile()` (§8). The seed is the same; it just never
-lands as a mutable column on the disk row.
+violate the invariant "no Blackfin-owned field is stored on a Side A (disk) object." So the
+boundary is expressed one level up, as a **relation**: the taxonomy's `extensionId: null`
+becomes *"no matching `IExtensionRecord`"*, resolved by `reconcile()` (§8). The seed is the
+same; it just never lands as a mutable column on the disk row. (This is distinct from the
+explicit `disable` edit of §11: disable changes the user's *config file* — a capability
+operation the user asked for — it does not stamp a Blackfin field onto the model.)
 
 ## 6. Side B — Blackfin data, assembled
 
@@ -574,8 +579,10 @@ The model is invisible, but it fixes what the UI can say without lying. Each sen
 test the model must satisfy:
 
 1. **"This skill is disabled in the project, but enabled globally."** — requires `scope` +
-   `state` as separate axes, and a `disabled` state that is Blackfin's, not disk's.
-   Satisfied: §5.2 (`scope`) + §5.4 (`state.disabled` from Side B).
+   `state` as separate axes, and a `disabled` state that is scoped and truthful.
+   Satisfied: §5.2 (`scope`) + §5.4 (`state.disabled`, a disk fact per RATIFIED D4 — the
+   explicit disable edited the project config, so it is genuinely disabled there and read back
+   from disk, not a badge over a file the agent still loads).
 2. **"You hand-edited this file since you installed it. Updating would overwrite your
    changes."** — requires the anchor + a content hash captured at install.
    Satisfied: §6 (`contentHashAtInstall`) + §7.2 + §8 (`locallyModified`).
@@ -591,32 +598,35 @@ test the model must satisfy:
 And the negative promise the UI must be able to make: **"Blackfin wrote nothing to your
 files."** Any field that makes this sentence false is rejected in review of this RFC (§11).
 
-## 11. The hard invariant: no field may imply writing to a detected user file
+## 11. The write boundary: no *silent* write; disable is an explicit, reversible edit
 
-No field defined here may imply rewriting a file Blackfin detected. This is the reason `state`
-decomposes (§5.4) and the reason `disabled` is quarantined onto Side B: "disable a skill"
-**cannot** be an `enabled: boolean` on the user's file, because persisting it there is
-rewriting the user's file.
+**RATIFIED (D4): "disable" edits the user's config.** Blackfin never writes a detected file as
+a *side effect* of its own bookkeeping — but an explicit, user-initiated **disable** *does*
+change what is on disk, because that is the only thing that actually disables a capability:
+the agents read the disk, not Blackfin's database, so a record-only "disabled" badge over a
+skill the agent still loads would be a lie. The maintainer ruled that the honest feature wins
+over the never-touch-a-file absolute.
 
-But storing `disabled: true` in Blackfin's own database raises the sharpest open question in
-this document, **D4 — what does "disable" actually do?** — because a `disabled` badge over a
-skill the agent still loads is the worst possible outcome of this RFC. The options, none good:
+So the boundary is reframed from "Blackfin writes nothing" to **"Blackfin writes nothing
+silently"**:
 
-- **(a) record-only:** a row in Blackfin, and the agent **keeps reading the file.** Honest
-  about not touching the file, but the UI would *lie* by saying "disabled" when nothing
-  changed for the agent. If (a) is chosen, the UI is **obligated** to say the agent still
-  reads the file.
-- **(b) move the file** to an inactive directory: actually works, but **Blackfin edits the
-  user's files** — violates the boundary.
-- **(c) edit the agent's `settings.json`:** works, is the mechanism the agent itself offers,
-  but is a rewrite of a user file, and every agent has a different syntax.
-- **(d) there is no "disable":** Blackfin only knows how to *remove*.
+- **Disable performs the agent's own disable mechanism** — moving the capability aside (e.g.
+  into an inactive directory) or editing that agent's config — done **transparently** (the
+  user asked for it and sees exactly what changed) and **reversibly** (enable puts it back).
+- **`disabled` is therefore a disk fact, not a Blackfin opinion** (§5.4): after the edit,
+  Blackfin *reads back* the disabled state from disk on the next scan, exactly like `broken`.
+  It can never be a lie, because it is no longer stored as one.
+- **The only writes to a detected file are the explicit capability operations the user asked
+  for** — `disable` / `enable` / `remove`. Blackfin's own data (install provenance: `source`,
+  `version`, `contentHashAtInstall`) stays on Side B, in Blackfin's own database, and **never
+  leaks into a user file.** That half of the boundary is unchanged and still enforced by the
+  type (§7.1): no Side B field is ever written onto a detected file.
 
-**This is a genuine fork.** The recommendation this RFC makes is **(a) with a truthful UI**
-(record-only; the badge reads "disabled by Blackfin — the agent still reads this file until
-you remove it"), because it is the only option that does not write to a detected file. But
-the decision is the maintainer's, and whichever is chosen, the UI must tell the truth about
-it. `disabled: true` must never be a lie (§ Security).
+The still-forbidden thing is the failure mode the original invariant guarded against: a
+`enabled: boolean` (or any Blackfin state) *persisted onto the object representing a user
+file*, which is how "track a little state on disk" silently becomes "rewrite the user's file
+behind their back." That remains impossible by construction — Side B is a separate store, and
+`source: 'detected'` is not a storable value.
 
 ## 12. Database boundary (logical only; concrete schema is #14)
 
@@ -651,8 +661,10 @@ the logical boundary only.
   annotations (never a line index — `docs/BRIEFING.md` §5). A bad anchor would make Blackfin say
   "you did not edit this" about an edited file — or worse, offer to remove the wrong item.
 - **Orphan records are shown, never silently deleted** (D9).
-- **`disabled: true` cannot be a lie** (§11). A "disabled" badge over a skill the agent still
-  loads is the worst outcome of this RFC.
+- **`disabled` cannot be a lie** (§11, RATIFIED D4). It is a disk fact Blackfin reads back after
+  the explicit disable edit, not a Blackfin opinion stored over a file the agent still loads.
+  The writes to detected files are only the explicit `disable`/`enable`/`remove` the user asked
+  for — shown and reversible — never a silent side effect of Blackfin's bookkeeping.
 
 ## 14. Decision register
 
@@ -661,7 +673,7 @@ the logical boundary only.
 | D1 | Adopt Option C (two models + anchor + pure reconciliation)? | **Yes** | @matbrgz | everything |
 | D2 | Fate of `ContextRole.Settings` and `ContextRole.Prompt`. | `Settings` **dissolves** (becomes the *container* of `mcp-server` items); `Prompt` **survives** as a kind. | eng | #21 |
 | D3 | Exact anchor composition, incl. `logicalName` for an item with no frontmatter (`.cursorrules` has no `name`). | `scope + agent + kind + logicalName + contentHashAtInstall`, `relativePath`/`gitDir` as hints; `logicalName` = frontmatter `name` else basename. | eng | #35, #29 |
-| D4 | **The most expensive: what does "disable" do?** | **(a) record-only, with a truthful UI** that says the agent still reads the file. No option writes to a detected file except (b)/(c), which are rejected by the boundary. *Genuine fork — see below.* | @matbrgz + eng | #40, #31 |
+| D4 | **The most expensive: what does "disable" do?** | **RATIFIED: disable EDITS the config** — the agent's own disable mechanism (move the capability aside / edit its config), transparent + reversible. `disabled` becomes a disk fact (§11, §5.4). Record-only was rejected: the agents read the disk, so it would be a lie. | @matbrgz | #40, #31 |
 | D5 | What does `worktree` scope anchor on, given `repositoryId` mutates (`repositories-store.ts` ~`:524`)? | **`gitDir` + worktree path**, never `repositoryId`. | eng | #55, #14 |
 | D6 | Is `plugin` a `kind`? | **No** — a plugin is an Extension providing > 1 Capability (taxonomy §6.1). No `kind: 'plugin'`. | eng | #22 |
 | D7 | Can an item have more than one `kind`? | **No** — `kind` is single; containment is a relation. | eng | #22 |
@@ -671,27 +683,27 @@ the logical boundary only.
 No decision may be left in `open` status at merge of the implementation issues; here they carry
 recommendations awaiting ratification.
 
-## 15. DECISÕES PENDENTES (ratificar)
+## 15. DECISÕES RATIFICADAS
 
-Three genuine forks need a human decision before #21/#35 implement. The rest of the register
-carries recommendations solid enough to proceed on; these three do not:
+The three genuine forks were ruled on by the maintainer. All three are now settled; #21/#35
+implement against these answers.
 
-- **(a) Scope inheritance — enum member vs. computed relation.** This RFC **recommends a
-  computed relation** (§5.2), for three grounded reasons: `scope: 'inherited'` is an impossible
-  state (inherited *from where?*), it would break the scanner's per-scope purity
-  (`scan-global.ts:78`), and it matches the existing `broken`-is-computed precedent
-  (`IContextReference.exists`, `:89-93`). **Ratify the relation, or overrule with a reason.**
-- **(b) The correlation-key (anchor) design.** This RFC **recommends**
-  `scope + agent + kind + logicalName + contentHashAtInstall`, with `relativePath` a hint and
-  `gitDir` (never `repositoryId`) for project/worktree scope, resolving by path → hash → name →
-  orphan (§7.2, D3, D5). The open sub-question is **`logicalName` for items with no frontmatter**
-  (`.cursorrules`): the recommendation is the basename, but confirm.
-- **(c) The disable-without-writing mechanism (D4).** This RFC **recommends (a) record-only with
-  a truthful UI**, because it is the only mechanism that does not write to a detected user file —
-  at the cost of the agent continuing to read the file until removal. (b) moving the file and (c)
-  editing the agent's own settings both work but rewrite a user file and are rejected by the
-  boundary; (d) "no disable, only remove" is honest but poorer UX. **This is the one decision the
-  product owner must make, and the UI must tell the truth about whichever is chosen.**
+- **(a) Scope inheritance — RATIFIED: computed relation** (§5.2). The `scope` enum stays
+  `global | project | worktree`; `inherited`/`overridden` are computed between items, never
+  stored — because `scope: 'inherited'` is an impossible state (inherited *from where?*), it
+  would break the scanner's per-scope purity (`scan-global.ts:78`), and it matches the existing
+  `broken`-is-computed precedent (`IContextReference.exists`, `:89-93`).
+- **(b) Correlation-key (anchor) — RATIFIED:** `scope + agent + kind + logicalName +
+  contentHashAtInstall`, with `relativePath` a hint and `gitDir` (never `repositoryId`) for
+  project/worktree scope, resolving by path → hash → name → orphan (§7.2, D3, D5). For an item
+  with no frontmatter (`.cursorrules`), **`logicalName` = the basename.**
+- **(c) Disable — RATIFIED: it edits the config** (D4, §11). Disable performs the agent's own
+  disable mechanism (move the capability aside / edit its config), transparently and reversibly;
+  `disabled` becomes a disk fact Blackfin reads back. Record-only was **rejected**: since agents
+  read the disk, it would show "disabled" over a capability the agent still loads — a lie. The
+  never-write invariant is relaxed to **never-write-*silently***: the only writes to a detected
+  file are the explicit `disable`/`enable`/`remove` operations the user asked for, and Blackfin's
+  own install data still never leaks into a user file (§11, §7.1).
 
 ## 16. Acceptance criteria (self-check)
 
