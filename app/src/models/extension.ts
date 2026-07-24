@@ -642,6 +642,11 @@ export function reconcile(
       relation: relations[index],
       locallyModified:
         record !== null &&
+        // An unread capability (`UnknownContentHash`, the adapter's sentinel for
+        // "nobody hashed these bytes") is not a hand-edited one. Without this
+        // guard every installed item detected from an inventory — which carries
+        // no hash — would report as locally modified the moment it had a record.
+        item.contentHash.length > 0 &&
         item.contentHash !== record.anchor.contentHashAtInstall,
     })
   })
