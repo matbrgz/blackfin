@@ -4,7 +4,11 @@ import {
 } from '../models/workspace-inventory'
 import { AppSection } from '../models/app-section'
 import { IScanProgress } from './stores/workspace-store'
-import type { CopilotModelSelections } from './stores/copilot-store'
+import type {
+  CopilotModelsByAccount,
+  CopilotModelSelectionsByAccount,
+  CopilotQuotaSnapshotsByAccount,
+} from './stores/copilot-store'
 import type { IBYOKProvider } from './copilot/byok'
 import type { IConflictResolutionModelDisplay } from './copilot/conflict-resolution-model'
 import type {
@@ -78,7 +82,6 @@ import { IAPIRepoRuleset } from './api'
 import { ICustomIntegration } from './custom-integration'
 import { Emoji } from './emoji'
 import { IUpdateState } from '../ui/lib/update-store'
-import type { Model } from '@github/copilot-sdk/dist/generated/rpc'
 
 export enum SelectionType {
   Repository,
@@ -336,6 +339,9 @@ export interface IAppState {
   /** Whether we should show the diff minimap */
   readonly showDiffMinimap: boolean
 
+  /** Whether text diff lines should wrap within the viewport */
+  readonly wrapDiffLines: boolean
+
   /** The user's preferred shell. */
   readonly selectedShell: Shell
 
@@ -501,17 +507,14 @@ export interface IAppState {
   /** Whether the changes filter is shown */
   readonly showChangesFilter: boolean
 
-  /**
-   * Per-feature Copilot model selections. An absent key means the default
-   * model will be used for that feature.
-   */
-  readonly selectedCopilotModels: CopilotModelSelections
+  /** Account-scoped Copilot model selections. */
+  readonly selectedCopilotModelsByAccount: CopilotModelSelectionsByAccount
 
-  /**
-   * The list of available Copilot models fetched from the SDK.
-   * Null when the list has not been fetched yet.
-   */
-  readonly copilotModels: ReadonlyArray<Model> | null
+  /** Account-scoped Copilot model lists, keyed by Copilot account cache key. */
+  readonly copilotModelsByAccount: CopilotModelsByAccount
+
+  /** Account-scoped Copilot quota snapshots, keyed by Copilot account cache key. */
+  readonly copilotQuotaSnapshotsByAccount: CopilotQuotaSnapshotsByAccount
 
   /**
    * The list of user-configured Copilot model providers (BYOK). Empty when
