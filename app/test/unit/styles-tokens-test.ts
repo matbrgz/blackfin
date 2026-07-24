@@ -15,7 +15,9 @@ const SetAtRuntime = new Set([
   '--available-width', // ui/lib/popover.tsx
   '--diff-font-family', // ui/app.tsx
   '--diff-font-size', // ui/app.tsx
+  '--diff-horizontal-scroll-offset', // ui/diff/side-by-side-diff.tsx
   '--diff-line-height', // ui/app.tsx
+  '--diff-unwrapped-width', // ui/diff/side-by-side-diff.tsx
   '--font-family', // ui/get-monospace-font-family.ts
 ])
 
